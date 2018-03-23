@@ -1,0 +1,68 @@
+{
+	"name": "fresh-data",
+	"version": "0.1.0",
+	"description": "Describe the data you need and simply use it in your app.",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/coderkevin/fresh-data.git"
+	},
+	"license": "GPL-2.0+",
+	"authors": [
+		"Kevin Killingsworth <kevin.killingsworth@automattic.com> (https://github.com/coderkevin)"
+	],
+	"homepage": "https://github.com/coderkevin/fresh-data#readme",
+	"bugs": {
+		"url": "https://github.com/coderkevin/fresh-data/issues"
+	},
+	"keywords": [
+		"javascript",
+		"react",
+		"redux",
+		"api",
+		"data"
+	],
+	"browserlist": [
+		"last 2 versions",
+		"Safari >= 10",
+		"iOS >= 10",
+		"not ie <= 10",
+		"> 1%"
+	],
+	"engines": {
+		"node": "8.9.4",
+		"npm": "5.6.0"
+	},
+	"babel": {
+		"presets": [
+			"env",
+			"react",
+			"stage-2"
+		],
+		"plugins": [
+			"add-module-exports"
+		]
+	},
+	"scripts": {
+		"test": "cross-env NODE_ENV=test jest --runInBand",
+		"test:watch": "npm test -- --watch",
+	},
+	"devDependencies": {
+		"babel-loader": "^7.1.4",
+		"babel-plugin-add-module-exports": "^0.2.1",
+		"babel-preset-env": "^1.6.1",
+		"babel-preset-react": "^6.24.1",
+		"babel-preset-stage-2": "^6.24.1",
+		"cross-env": "^5.1.4",
+		"webpack": "^4.1.1",
+		"webpack-cli": "^2.0.12",
+		"webpack-dev-server": "^3.1.1"
+	},
+	"dependencies": {
+		"debug": "^3.1.0",
+		"jest": "^22.4.3",
+		"lodash": "^4.17.5",
+		"react": "^16.2.0",
+		"react-dom": "^16.2.0"
+	}
+}
