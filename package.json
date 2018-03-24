@@ -55,7 +55,6 @@
 		"babel-preset-env": "^1.6.1",
 		"babel-preset-react": "^6.24.1",
 		"babel-preset-stage-2": "^6.24.1",
-		"babel-register": "^6.26.0",
 		"cross-env": "^5.1.4",
 		"eslint": "^4.19.1",
 		"eslint-config-wordpress": "^2.0.0",
