@@ -45,7 +45,7 @@
 	},
 	"scripts": {
 		"test": "cross-env NODE_ENV=test jest --runInBand",
-		"test:watch": "npm test -- --watch",
+		"test:watch": "npm test -- --watch"
 	},
 	"devDependencies": {
 		"babel-loader": "^7.1.4",
