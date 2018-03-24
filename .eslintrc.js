@@ -42,6 +42,7 @@ module.exports = {
 		'jest',
 	],
 	rules: {
+		'comma-dangle': 'off',
 		'jsx-a11y/media-has-caption': 'off',
 		'jsx-a11y/no-noninteractive-tabindex': 'off',
 		'jsx-a11y/role-has-required-aria-props': 'off',
