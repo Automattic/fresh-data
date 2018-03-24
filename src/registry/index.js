@@ -1,5 +1,4 @@
 import debugFactory from 'debug';
-import { get } from 'lodash';
 import isApiValid from '../utils/is-api-valid';
 
 const debug = debugFactory( 'fresh-data:registry' );
@@ -18,3 +17,4 @@ export function registerApi( api, apis = _apis ) {
 	apis.set( api.name, api );
 	return apis;
 }
+

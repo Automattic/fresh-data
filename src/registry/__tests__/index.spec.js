@@ -74,9 +74,9 @@ describe( 'registerApi', () => {
 	it( 'should not register an api object twice', () => {
 		const apis = new Map();
 		const api = { name: 'testapi', methods: {}, endpoints: {}, selectors: {} };
-		const api2 = { name: 'testapi', methods: {}, endpoints: {}, selectors: {} };
 		expect( registerApi( api, apis ).get( 'testapi' ) ).toBe( api );
 		expect( () => registerApi( api, apis ) ).toThrowError( 'API "testapi" already registered' );
 		expect( apis.get( 'testapi' ) ).toBe( api );
 	} );
 } );
+
