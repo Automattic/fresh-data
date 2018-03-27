@@ -4,7 +4,7 @@ export default function calculateUpdates( clientRequirements, clientState, now =
 	return Object.keys( clientRequirements ).reduce(
 		( updateInfo, endpointName ) => {
 			const endpointRequirements = clientRequirements[ endpointName ];
-			const endpointState = clientState[ endpointName ];
+			const endpointState = clientState[ endpointName ] || {};
 			const endpointUpdateInfo = calculateEndpointUpdates(
 				endpointRequirements,
 				endpointState,
