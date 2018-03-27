@@ -1,5 +1,6 @@
 import debugFactory from 'debug';
-import { calculateClientUpdates, reduceEndpointRequirements } from './requirements';
+import { reduceEndpointRequirements } from './requirements';
+import calculateUpdates from './calculate-updates';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
@@ -33,7 +34,7 @@ export default class ApiClient {
 	}
 
 	updateRequirements = () => {
-		const updateInfo = calculateClientUpdates( this.clientRequirements, this.state );
+		const updateInfo = calculateUpdates( this.clientRequirements, this.state );
 
 		debug( 'Updating API requirements: ', updateInfo.updates );
 
