@@ -104,5 +104,17 @@ describe( 'ApiClient', () => {
 	} );
 
 	it( 'should map selectors to new state when it changes', () => {
+		const apiClient = new ApiClient( api, '123' );
+		const state1 = {
+			stuff: { 1: { data: 'abc' }, 2: { data: 'def' } },
+		};
+		const state2 = {
+			stuff: { ...state1.stuff, 3: { data: 'ghi' } },
+		};
+		apiClient.setState( state1, null );
+		expect( apiClient.selectors.getStuff( 2, {} ) ).toEqual( 'def' );
+
+		apiClient.setState( state2, null );
+		expect( apiClient.selectors.getStuff( 3, {} ) ).toEqual( 'ghi' );
 	} );
 } );
