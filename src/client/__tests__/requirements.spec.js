@@ -368,6 +368,14 @@ describe( 'calculateClientUpdates', () => {
 		expect( updateInfo ).toEqual( { updates: {}, nextUpdate: DEFAULT_NEXT_UPDATE } );
 	} );
 
+	it( 'should update info when there are no previous requirements', () => {
+		const now = new Date();
+		const clientState = {};
+
+		const updateInfo = calculateClientUpdates( {}, clientState, now );
+		expect( updateInfo ).toEqual( { updates: {}, nextUpdate: DEFAULT_NEXT_UPDATE } );
+	} );
+
 	it( 'should give updates for multiple endpoints', () => {
 		const now = new Date();
 		const clientState = {
