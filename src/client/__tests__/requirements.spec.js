@@ -11,6 +11,11 @@ describe( 'reduceItemRequirements', () => {
 		expect( reqs ).toBe( DEFAULTS );
 	} );
 
+	it( 'should imply defaults when no old requirements exist', () => {
+		const reqs = reduceItemRequirements( undefined, { freshness: 90 * SECOND } );
+		expect( reqs.timeout ).toEqual( DEFAULTS.timeout );
+	} );
+
 	it( 'should update freshness to a smaller value', () => {
 		const freshness = DEFAULTS.freshness - 1000;
 		const reqs1 = { ...DEFAULTS, freshness };
@@ -87,3 +92,4 @@ describe( 'reduceEndpointRequirements', () => {
 		expect( endpointReqs1[ 2 ].freshness ).toEqual( 45 * SECOND );
 	} );
 } );
+

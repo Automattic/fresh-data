@@ -16,7 +16,7 @@ export function reduceEndpointRequirements( endpointRequirements, ids, newRequir
 	}, endpointRequirements );
 }
 
-export function reduceItemRequirements( oldRequirements, newRequirements ) {
+export function reduceItemRequirements( oldRequirements = DEFAULTS, newRequirements ) {
 	const { freshness, timeout } = newRequirements;
 	let requirements = oldRequirements;
 
