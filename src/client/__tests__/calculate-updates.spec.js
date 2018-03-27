@@ -229,3 +229,4 @@ describe( 'calculateUpdates', () => {
 		expect( nextUpdate / 1000 ).toBeCloseTo( -( 1 * SECOND ) / 1000, 1 );
 	} );
 } );
+

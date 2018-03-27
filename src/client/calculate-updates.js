@@ -141,3 +141,4 @@ export function getFreshnessLeft( requirements, state, now ) {
 	}
 	return freshness ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
 }
+
