@@ -5,16 +5,14 @@ import calculateUpdates from './calculate-updates';
 const debug = debugFactory( 'fresh-data:api-client' );
 
 export default class ApiClient {
-	constructor( api, key, state = null, dispatch = null ) {
+	constructor( api, key, state = null ) {
 		this.api = api;
 		this.key = key;
 		this.clientRequirements = {};
-		this.setState( state, dispatch );
+		this.setState( state );
 	}
 
-	setState = ( state, dispatch ) => {
-		this.dispatch = dispatch;
-
+	setState = ( state ) => {
 		if ( this.state !== state ) {
 			const { selectors } = this.api;
 			this.state = state;
