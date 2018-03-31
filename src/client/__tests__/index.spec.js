@@ -3,11 +3,7 @@ import { SECOND } from '../../utils/constants';
 
 describe( 'ApiClient', () => {
 	const api = {
-		methods: {
-			get: ( key, endpointName, params, data ) => {
-				return { type: '%%%get%%%', key, endpointName, params, data };
-			},
-		},
+		methods: { get: () => {} },
 		endpoints: {
 			stuff: {
 				fetchByIds: { method: 'get', params: { include: 'ids' } },
@@ -106,18 +102,20 @@ describe( 'ApiClient', () => {
 			expect( apiClient.updateEndpointItems ).toBeCalledWith( 'stuff', [ '1', '2' ] );
 		} );
 
-		it( 'should dispatch a method action for each item needing updating', () => {
-			const dispatch = jest.fn();
-			const apiClient = new ApiClient( api, '123', {}, dispatch );
+		it( 'should call a method function for each item needing updating', () => {
+			const apiWithGet = { ...api, methods: { get: jest.fn() } };
+			const apiClient = new ApiClient( apiWithGet, '123' );
 			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
 			apiClient.requireData( 'stuff', [ 2 ], { freshness: 90 * SECOND } );
-			expect( dispatch ).toBeCalledWith( {
-				type: '%%%get%%%',
-				key: '123',
-				endpointName: 'stuff',
-				params: { include: [ '1', '2' ] },
-				data: undefined,
-			} );
+
+			const params = { include: [ '1', '2' ] };
+			expect( apiWithGet.methods.get ).toBeCalledWith( '123', 'stuff', params );
+		} );
+
+		it( 'should not throw when api method is missing (debug logged instead)', () => {
+			const apiWithNoMethods = { ...api, methods: {} };
+			const apiClient = new ApiClient( apiWithNoMethods, '123' );
+			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
 		} );
 	} );
 

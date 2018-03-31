@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import { isEmpty } from 'lodash';
+import { isFunction } from 'lodash';
 
 import calculateUpdates from './calculate-updates';
 import { reduceEndpointRequirements } from './requirements';
@@ -7,7 +7,7 @@ import { reduceEndpointRequirements } from './requirements';
 const debug = debugFactory( 'fresh-data:api-client' );
 
 export default class ApiClient {
-	constructor( api, key, state = null ) {
+	constructor( api, key, state = {} ) {
 		this.api = api;
 		this.key = key;
 		this.clientRequirements = {};
@@ -39,11 +39,8 @@ export default class ApiClient {
 
 		debug( 'Updating API requirements: ', updateInfo.updates );
 
-		// Only perform updates if we have a dispatch function to do it.
-		if ( this.dispatch && ! isEmpty( updates ) > 0 ) {
-			const endpointNames = Object.keys( updates );
-			endpointNames.forEach( name => this.updateEndpointItems( name, updates[ name ] ) );
-		}
+		const endpointNames = Object.keys( updates );
+		endpointNames.forEach( name => this.updateEndpointItems( name, updates[ name ] ) );
 
 		// TODO: Set next update.
 	}
@@ -53,12 +50,15 @@ export default class ApiClient {
 		const { fetchByIds } = apiEndpoint;
 
 		const params = parseApiParams( fetchByIds.params, { ids } );
-		const createAction = this.api.methods[ fetchByIds.method ];
-		const requestAction = createAction( this.key, name, params );
+		const apiMethod = this.api.methods[ fetchByIds.method ];
 
-		// TODO: Add actions that update lastRequested in state.
-		//this.dispatch( requestedAction( this.siteKey, name, ids ) );
-		this.dispatch( requestAction );
+		if ( ! isFunction( apiMethod ) ) {
+			debug( `API Method ${ fetchByIds.method } not found in api methods.` );
+			return;
+		}
+
+		// TODO: Add function call that that updates lastRequested in state.
+		apiMethod( this.key, name, params );
 	}
 }
 
