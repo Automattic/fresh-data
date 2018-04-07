@@ -1,0 +1,8 @@
+{
+  "short_name": "Fresh Data",
+  "name": "Fresh Data Example - Hello World",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
