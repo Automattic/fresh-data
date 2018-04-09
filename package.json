@@ -43,6 +43,12 @@
 			"add-module-exports"
 		]
 	},
+	"jest": {
+		"verbose": true,
+		"moduleNameMapper": {
+			"\\.(css)$": "identity-obj-proxy"
+		}
+	},
 	"scripts": {
 		"lint": "eslint .",
 		"test": "cross-env BABEL_ENV=test NODE_ENV=test jest --runInBand --coverage",
@@ -62,6 +68,7 @@
 		"eslint-plugin-jsx-a11y": "^6.0.3",
 		"eslint-plugin-react": "^7.7.0",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
+		"identity-obj-proxy": "^3.0.0",
 		"webpack": "^4.1.1",
 		"webpack-cli": "^2.0.12",
 		"webpack-dev-server": "^3.1.1"
