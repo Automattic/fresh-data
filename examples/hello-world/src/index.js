@@ -1,6 +1,10 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { render } from 'react-dom';
 import './index.css';
 import App from './App';
+import createStore from './create-store';
+import reducer from './reducer';
 
-ReactDOM.render( <App />, document.getElementById( 'root' ) );
+const store = createStore( reducer );
+
+render( <App store={ store } />, document.getElementById( 'root' ) );
