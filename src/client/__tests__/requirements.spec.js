@@ -92,4 +92,3 @@ describe( 'reduceEndpointRequirements', () => {
 		expect( endpointReqs1[ 2 ].freshness ).toEqual( 45 * SECOND );
 	} );
 } );
-
