@@ -12,9 +12,9 @@ class FreshDataReduxProvider extends Component {
 	}
 }
 
-function mapStateToProps( state ) {
-	return {
-	};
+function mapStateToProps() {
+	// TODO: Add api state here.
+	return {};
 }
 
 export default connect( mapStateToProps )( FreshDataReduxProvider );
