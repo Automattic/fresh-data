@@ -1,9 +1,9 @@
-import ApiClient from '../index';
+import ApiClient, { parseApiParams } from '../index';
 import { SECOND } from '../../utils/constants';
 
 describe( 'ApiClient', () => {
 	const api = {
-		methods: {},
+		methods: { get: () => {} },
 		endpoints: {
 			stuff: {
 				fetchByIds: { method: 'get', params: { include: 'ids' } },
@@ -20,7 +20,7 @@ describe( 'ApiClient', () => {
 
 	it( 'should initialize to empty state', () => {
 		const apiClient = new ApiClient( api, '123' );
-		expect( apiClient.state ).toBe( null );
+		expect( apiClient.state ).toEqual( {} );
 	} );
 
 	describe( 'setState', () => {
@@ -93,6 +93,32 @@ describe( 'ApiClient', () => {
 		} );
 	} );
 
+	describe( 'updateRequirements', () => {
+		it( 'should call updateEndpointItems for each item needing updating', () => {
+			const apiClient = new ApiClient( api, '123', {}, () => {} );
+			apiClient.updateEndpointItems = jest.fn();
+			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
+			apiClient.requireData( 'stuff', [ 2 ], { freshness: 90 * SECOND } );
+			expect( apiClient.updateEndpointItems ).toBeCalledWith( 'stuff', [ '1', '2' ] );
+		} );
+
+		it( 'should call a method function for each item needing updating', () => {
+			const apiWithGet = { ...api, methods: { get: jest.fn() } };
+			const apiClient = new ApiClient( apiWithGet, '123' );
+			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
+			apiClient.requireData( 'stuff', [ 2 ], { freshness: 90 * SECOND } );
+
+			const params = { include: [ '1', '2' ] };
+			expect( apiWithGet.methods.get ).toBeCalledWith( '123', 'stuff', params );
+		} );
+
+		it( 'should not throw when api method is missing (debug logged instead)', () => {
+			const apiWithNoMethods = { ...api, methods: {} };
+			const apiClient = new ApiClient( apiWithNoMethods, '123' );
+			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
+		} );
+	} );
+
 	it( 'should map selectors to current state', () => {
 		const apiClient = new ApiClient( api, '123' );
 		const state = {
@@ -116,5 +142,21 @@ describe( 'ApiClient', () => {
 
 		apiClient.setState( state2, null );
 		expect( apiClient.selectors.getStuff( 3, {} ) ).toEqual( 'ghi' );
+	} );
+} );
+
+describe( 'parseApiParams', () => {
+	const methodParams = { includes: 'includeIds', excludes: 'excludeIds' };
+	const paramData = { includeIds: [ 1, 3, 4 ], excludeIds: [ 2 ] };
+
+	it( 'should map parameter data to the correct parameters', () => {
+		const params = parseApiParams( methodParams, paramData );
+		expect( params.includes ).toEqual( [ 1, 3, 4 ] );
+		expect( params.excludes ).toEqual( [ 2 ] );
+	} );
+
+	it( 'should skip over parameters that are missing data', () => {
+		const params = parseApiParams( { ...methodParams, missing: 'missingIds' }, paramData );
+		expect( params.missing ).toBeUndefined();
 	} );
 } );
