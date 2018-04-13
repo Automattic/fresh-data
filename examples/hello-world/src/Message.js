@@ -1,18 +1,22 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import { withApiClient, SECOND } from 'fresh-data';
 
-const Message = ( { subject } ) => (
+const Message = ( { noun } ) => (
 	<p className="App-intro">
-		Hello { subject }!
+		Hello { noun || 'stranger' }!
 	</p>
 );
 
-function mapStateToProps( state ) {
-	const subject = state;
+function mapApiToProps( selectors ) {
+	const noun = selectors.getNoun( { freshness: 5 * SECOND } );
 
 	return {
-		subject,
+		noun,
 	};
 }
 
-export default connect( mapStateToProps )( Message );
+function getClientKey( props ) {
+	return { api: 'test-api', id: props.siteId };
+}
+
+export default withApiClient( getClientKey, mapApiToProps )( Message );
