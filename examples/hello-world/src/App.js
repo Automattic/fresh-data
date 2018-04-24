@@ -11,7 +11,8 @@ const App = ( { store } ) => (
 				<header className="App-header">
 					<h1 className="App-title">Fresh Data</h1>
 				</header>
-				<Message siteId={ 1 } />
+				<Message siteId={ 1 } seconds={ 5 } />
+				<Message siteId={ 1 } seconds={ 10 } />
 			</div>
 		</FreshDataProvider>
 	</ReduxProvider>

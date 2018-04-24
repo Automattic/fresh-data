@@ -1,9 +1,9 @@
 export const DEFAULT_NEXT_UPDATE = Number.MAX_SAFE_INTEGER;
 
-export default function calculateUpdates( clientRequirements, clientState, now = new Date() ) {
-	return Object.keys( clientRequirements ).reduce(
+export default function calculateUpdates( requirementsByEndpoint, clientState, now = new Date() ) {
+	return Object.keys( requirementsByEndpoint ).reduce(
 		( updateInfo, endpointName ) => {
-			const endpointRequirements = clientRequirements[ endpointName ];
+			const endpointRequirements = requirementsByEndpoint[ endpointName ];
 			const endpointState = clientState[ endpointName ] || {};
 			const endpointUpdateInfo = calculateEndpointUpdates(
 				endpointRequirements,
@@ -24,7 +24,9 @@ export function calculateEndpointUpdates(
 	now = new Date()
 ) {
 	return Object.keys( endpointRequirements ).reduce(
-		( updateInfo, id ) => {
+		( updateInfo, paramString ) => {
+			const params = JSON.parse( paramString );
+			console.log( 'params: ', params );
 			const itemRequirements = endpointRequirements[ id ];
 			const itemState = endpointState[ id ] || {};
 			const itemNextUpdate = calculateNextItemUpdate( itemRequirements, itemState, now );
