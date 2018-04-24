@@ -1,3 +1,4 @@
+import { isUndefined } from 'lodash';
 import { SECOND } from '../utils/constants';
 
 export const DEFAULTS = {
@@ -5,26 +6,61 @@ export const DEFAULTS = {
 	timeout: 20 * SECOND,
 };
 
-export function reduceEndpointRequirements( endpointRequirements, ids, newRequirements ) {
-	return ids.reduce( ( requirements, id ) => {
-		const oldRequirements = endpointRequirements[ id ];
-		const itemRequirements = reduceItemRequirements( oldRequirements, newRequirements );
-		if ( itemRequirements !== oldRequirements ) {
-			return { ...requirements, [ id ]: itemRequirements };
-		}
-		return requirements;
-	}, endpointRequirements );
+export function reduceComponentRequirements( requirementsByEndpoint, requirementsByComponent ) {
+	let requirements = requirementsByEndpoint;
+	requirementsByComponent.forEach( ( componentRequirements ) => {
+		Object.keys( componentRequirements ).forEach( ( endpointName ) => {
+			const existingEndpointRequirements = requirements[ endpointName ] || [];
+			const endpointRequirements = reduceEndpointRequirements(
+				existingEndpointRequirements,
+				componentRequirements[ endpointName ],
+			);
+
+			if ( endpointRequirements !== existingEndpointRequirements ) {
+				requirements = { ...requirements, [ endpointName ]: endpointRequirements };
+			}
+		} );
+	} );
+	return requirements;
 }
 
-export function reduceItemRequirements( oldRequirements = DEFAULTS, newRequirements ) {
-	const { freshness, timeout } = newRequirements;
-	let requirements = oldRequirements;
+export function reduceEndpointRequirements( existingEndpointRequirements, newEndpointRequirements ) {
+	return Object.keys( newEndpointRequirements ).reduce( ( endpointRequirements, key ) => {
+		const existingRequirement = endpointRequirements[ key ];
+		const newRequirement = newEndpointRequirements[ key ];
+		const requirement = reduceRequirement( existingRequirement, newRequirement );
 
-	if ( freshness < oldRequirements.freshness ) {
-		requirements = { ...requirements, freshness };
+		if ( requirement !== existingRequirement ) {
+			return { ...endpointRequirements, [ key ]: requirement };
+		}
+		return endpointRequirements;
+	}, existingEndpointRequirements );
+}
+
+export function reduceRequirement( existingRequirement = DEFAULTS, newRequirement ) {
+	const { freshness, timeout } = newRequirement;
+	let requirement = existingRequirement;
+
+	requirement = reduceFreshness( requirement, freshness );
+	requirement = reduceTimeout( requirement, timeout );
+	return requirement;
+}
+
+function reduceFreshness( requirement, freshness ) {
+	if ( freshness ) {
+		if ( isUndefined( requirement.freshness ) || freshness < requirement.freshness ) {
+			return { ...requirement, freshness };
+		}
 	}
-	if ( timeout < oldRequirements.timeout ) {
-		requirements = { ...requirements, timeout };
+	return requirement;
+}
+
+// TODO: DRY this with reduceFreshness into one function.
+function reduceTimeout( requirement, timeout ) {
+	if ( timeout ) {
+		if ( isUndefined( requirement.timeout ) || timeout < requirement.timeout ) {
+			return { ...requirement, timeout };
+		}
 	}
-	return requirements;
+	return requirement;
 }

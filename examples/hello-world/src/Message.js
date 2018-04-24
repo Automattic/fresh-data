@@ -7,8 +7,9 @@ const Message = ( { noun } ) => (
 	</p>
 );
 
-function mapApiToProps( selectors ) {
-	const noun = selectors.getNoun( { freshness: 5 * SECOND } );
+function mapApiToProps( selectors, ownProps ) {
+	const { seconds } = ownProps;
+	const noun = selectors.getNoun( { freshness: seconds * SECOND } );
 
 	return {
 		noun,

@@ -2,39 +2,62 @@ import debugFactory from 'debug';
 import { isFunction } from 'lodash';
 
 import calculateUpdates from './calculate-updates';
-import { reduceEndpointRequirements } from './requirements';
+import { reduceComponentRequirements, reduceRequirement } from './requirements';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
 export default class ApiClient {
-	constructor( api, key, state = {} ) {
+	constructor( api, id ) {
 		this.api = api;
-		this.key = key;
-		this.clientRequirements = {};
-		this.setState( state );
+		this.id = id;
+		this.requirementsByComponent = new Map();
+		this.requirementsByEndpoint = {};
+		this.state = {};
 	}
 
 	setState = ( state ) => {
-		if ( this.state !== state ) {
-			const { selectors } = this.api;
-			this.state = state;
-			this.selectors = mapSelectorsToState( selectors, state, this.requireData );
-		}
+		this.state = state;
+		this.updateRequiredData();
 	}
 
-	// TODO: Add code to clear out data requirements on re-render.
-	requireData = ( endpointName, ids, requirements ) => {
-		const oldEndpointReqs = this.clientRequirements[ endpointName ] || {};
-		const newEndpointReqs = reduceEndpointRequirements( oldEndpointReqs, ids, requirements );
-
-		if ( oldEndpointReqs !== newEndpointReqs ) {
-			this.clientRequirements[ endpointName ] = newEndpointReqs;
-			this.updateRequirements();
-		}
+	setComponentRequirements = ( component, requirements ) => {
+		debug( `Setting requirements for ${ component.constructor.displayName }: `, requirements );
+		this.requirementsByComponent.set( component, requirements );
+		this.updateRequirements();
 	}
+
+	clearComponentRequirements = ( component ) => {
+		debug( `Clearing requirements for ${ component.constructor.displayName }` );
+		this.requirementsByComponent.delete( component );
+		this.updateRequirements();
+		// TODO: Clear out unneeded data?
+	}
+
+	selectComponentData = ( component, state, selectFunc ) => {
+		const componentRequirements = {};
+		const selectors = mapSelectors( this.api.selectors, componentRequirements, state );
+		const returnValue = selectFunc( selectors );
+		this.setComponentRequirements( component, componentRequirements );
+		return returnValue;
+	};
 
 	updateRequirements = () => {
-		const updateInfo = calculateUpdates( this.clientRequirements, this.state );
+		const requirementsByEndpoint = reduceComponentRequirements(
+			this.requirementsByEndpoint,
+			this.requirementsByComponent
+		);
+
+		if ( this.requirementsByEndpoint !== requirementsByEndpoint ) {
+			this.requirementsByEndpoint = requirementsByEndpoint;
+			this.updateRequiredData();
+			debug( 'Updating requirements' );
+			console.log( 'requirementsByEndpoint: ', requirementsByEndpoint );
+			// TODO: Add schedule update here.
+		}
+	}
+
+	updateRequiredData = () => {
+		const updateInfo = calculateUpdates( this.requirementsByEndpoint, this.state );
 		const { updates } = updateInfo;
 
 		debug( 'Updating API requirements: ', updateInfo.updates );
@@ -45,6 +68,7 @@ export default class ApiClient {
 		// TODO: Set next update.
 	}
 
+	// TODO: Remove this.
 	updateEndpointItems = ( name, ids ) => {
 		const apiEndpoint = this.api.endpoints[ name ];
 		const { fetchByIds } = apiEndpoint;
@@ -58,10 +82,26 @@ export default class ApiClient {
 		}
 
 		// TODO: Add function call that that updates lastRequested in state.
-		apiMethod( this.key, name, params );
+		apiMethod( this.id, name, params );
 	}
 }
 
+export const mapSelectors = ( selectors, componentRequirements, state ) => {
+	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
+		mappedSelectors[ selectorName ] = selectors[ selectorName ]( state, requireData( componentRequirements ) );
+		return mappedSelectors;
+	}, {} );
+};
+
+export const requireData = ( componentRequirements ) => ( requirement, endpointName, params ) => {
+	console.log( 'requireData( ', requirement, ', ', endpointName, ', ', params, ' )' );
+	const endpointRequirements = componentRequirements[ endpointName ] || {};
+	const key = JSON.stringify( params );
+	endpointRequirements[ key ] = reduceRequirement( endpointRequirements[ key ], requirement );
+	componentRequirements[ endpointName ] = endpointRequirements;
+};
+
+// TODO: Remove this.
 export function parseApiParams( methodParams, paramData ) {
 	return Object.keys( methodParams ).reduce( ( params, key ) => {
 		const dataName = methodParams[ key ];
@@ -72,12 +112,5 @@ export function parseApiParams( methodParams, paramData ) {
 			debug( 'Missing data "' + dataName + '"' );
 		}
 		return params;
-	}, {} );
-}
-
-function mapSelectorsToState( selectors, state, requireData ) {
-	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
-		mappedSelectors[ selectorName ] = selectors[ selectorName ]( state, requireData );
-		return mappedSelectors;
 	}, {} );
 }
