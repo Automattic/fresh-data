@@ -1,196 +1,231 @@
 import { SECOND } from '../../utils/constants';
 import calculateUpdates, {
 	DEFAULT_NEXT_UPDATE,
-	calculateEndpointUpdates,
-	calculateNextItemUpdate,
+	getFreshnessLeft,
+	getTimeoutLeft,
 } from '../calculate-updates';
 
-describe( 'calculateNextItemUpdate', () => {
-	const requirements = {
-		freshness: 90 * SECOND,
-		timeout: 30 * SECOND,
-	};
-
-	it( 'should be negative value with no itemState', () => {
-		const now = new Date();
-
-		const nextUpdate = calculateNextItemUpdate( requirements, undefined, now );
-		expect( nextUpdate ).toEqual( -( now - Number.MIN_SAFE_INTEGER - requirements.freshness ) );
+describe( 'getTimeoutLeft', () => {
+	const now = new Date();
+	it( 'should return max integer for empty input.', () => {
+		expect( getTimeoutLeft( {}, {}, now ) ).toEqual( Number.MAX_SAFE_INTEGER );
 	} );
 
-	it( 'should be negative value when timeout is reached', () => {
-		const now = new Date();
-		const itemState = {
-			lastReceived: new Date( now - ( 80 * SECOND ) ),
-			lastRequested: new Date( now - ( 35 * SECOND ) ),
-		};
-
-		const nextUpdate = calculateNextItemUpdate( requirements, itemState, now );
-		expect( nextUpdate ).toEqual( -( 5 * SECOND ) );
+	it( 'should return max integer if never requested', () => {
+		const requirement = { timeout: 10 * SECOND };
+		expect( getTimeoutLeft( requirement, {}, now ) ).toEqual( Number.MAX_SAFE_INTEGER );
 	} );
 
-	it( 'should be negative value when stale', () => {
-		const now = new Date();
-		const itemState = {
-			lastReceived: new Date( now - ( 120 * SECOND ) ),
-			lastRequested: null,
-		};
-
-		const nextUpdate = calculateNextItemUpdate( requirements, itemState, now );
-		expect( nextUpdate ).toEqual( -( 30 * SECOND ) );
+	it( 'should return how long ago time has expired.', () => {
+		const requirement = { timeout: 10 * SECOND };
+		const state = { lastRequested: now - ( 11 * SECOND ) };
+		expect( getTimeoutLeft( requirement, state, now ) ).toEqual( -( 1 * SECOND ) );
 	} );
 
-	it( 'should be positive value when fresh', () => {
-		const now = new Date();
-		const itemState = {
-			lastReceived: new Date( now - ( 40 * SECOND ) ),
-			lastRequested: null,
-		};
-
-		const nextUpdate = calculateNextItemUpdate( requirements, itemState, now );
-		expect( nextUpdate ).toEqual( 50 * SECOND );
-	} );
-
-	it( 'should be positive value when fetching', () => {
-		const now = new Date();
-		const itemState = {
-			lastReceived: new Date( now - ( 40 * SECOND ) ),
-			lastRequested: new Date( now - ( 25 * SECOND ) ),
-		};
-
-		const nextUpdate = calculateNextItemUpdate( requirements, itemState, now );
-		expect( nextUpdate ).toEqual( 5 * SECOND );
-	} );
-
-	it( 'should give max integer when there is no freshness set', () => {
-		const now = new Date();
-		const itemState = {
-			lastReceived: new Date( now - ( 40 * SECOND ) ),
-			lastRequested: null,
-		};
-
-		const nextUpdate = calculateNextItemUpdate( { timeout: 30 * SECOND }, itemState, now );
-		expect( nextUpdate ).toEqual( Number.MAX_SAFE_INTEGER );
+	it( 'should return how long until expiration is reached.', () => {
+		const requirement = { timeout: 10 * SECOND };
+		const state = { lastRequested: now - ( 4 * SECOND ) };
+		expect( getTimeoutLeft( requirement, state, now ) ).toEqual( 6 * SECOND );
 	} );
 } );
 
-describe( 'calculateEndpointUpdates', () => {
-	const endpointRequirements = {
-		1: { freshness: 90 * SECOND, timeout: 30 * SECOND },
-		2: { freshness: 45 * SECOND, timeout: 30 * SECOND },
-		3: { freshness: 300 * SECOND, timeout: 30 * SECOND },
-	};
-
-	it( 'should give default update info when there are no requirements', () => {
-		const now = new Date();
-		const endpointState = {};
-
-		const updateInfo = calculateEndpointUpdates( {}, endpointState, now );
-		expect( updateInfo ).toEqual( { updates: [], nextUpdate: DEFAULT_NEXT_UPDATE } );
+describe( 'getFreshnessLeft', () => {
+	const now = new Date();
+	it( 'should return max integer for empty input.', () => {
+		expect( getFreshnessLeft( {}, {}, now ) ).toEqual( Number.MAX_SAFE_INTEGER );
 	} );
 
-	it( 'should give nearest freshness update between several items', () => {
-		const now = new Date();
-		const endpointState = {
-			1: { lastReceived: new Date( now - ( 5 * SECOND ) ) },
-			2: { lastReceived: new Date( now - ( 5 * SECOND ) ) },
-			3: { lastReceived: new Date( now - ( 5 * SECOND ) ) },
-		};
-
-		const updateInfo = calculateEndpointUpdates( endpointRequirements, endpointState, now );
-		expect( updateInfo.nextUpdate ).toEqual( 40 * SECOND );
+	it( 'should return min integer if never received.', () => {
+		const requirement = { freshness: 90 * SECOND };
+		expect( getFreshnessLeft( requirement, {}, now ) ).toEqual( Number.MIN_SAFE_INTEGER );
 	} );
 
-	it( 'should include all items that are stale', () => {
-		const now = new Date();
-		const endpointState = {
-			1: { lastReceived: new Date( now - ( 95 * SECOND ) ) },
-			2: { lastReceived: new Date( now - ( 95 * SECOND ) ) },
-			3: { lastReceived: new Date( now - ( 95 * SECOND ) ) },
-		};
-
-		const updateInfo = calculateEndpointUpdates( endpointRequirements, endpointState, now );
-		expect( updateInfo.nextUpdate ).toEqual( -( 50 * SECOND ) );
-		expect( updateInfo.updates ).toEqual( [ '1', '2' ] );
+	it( 'should return how long ago freshness has expired.', () => {
+		const requirement = { freshness: 90 * SECOND };
+		const state = { lastReceived: now - ( 93 * SECOND ) };
+		expect( getFreshnessLeft( requirement, state, now ) ).toEqual( -( 3 * SECOND ) );
 	} );
 
-	it( 'should include an item that has timed out', () => {
-		const now = new Date();
-		const endpointState = {
-			1: {
-				lastReceived: new Date( now - ( 60 * SECOND ) ),
-				lastRequested: new Date( now - ( 32 * SECOND ) ),
-			},
-			2: { lastReceived: new Date( now - ( 5 * SECOND ) ) },
-			3: { lastReceived: new Date( now - ( 5 * SECOND ) ) },
-		};
-
-		const updateInfo = calculateEndpointUpdates( endpointRequirements, endpointState, now );
-		expect( updateInfo.nextUpdate ).toEqual( -( 2 * SECOND ) );
-		expect( updateInfo.updates ).toEqual( [ '1' ] );
+	it( 'should return how long until freshness expires.', () => {
+		const requirement = { freshness: 90 * SECOND };
+		const state = { lastReceived: now - ( 20 * SECOND ) };
+		expect( getFreshnessLeft( requirement, state, now ) ).toEqual( 70 * SECOND );
 	} );
 } );
 
-describe( 'calculateClientUpdates', () => {
-	const clientRequirements = {
-		primaryStuff: {
-			1: { freshness: 90 * SECOND, timeout: 30 * SECOND },
-			2: { freshness: 120 * SECOND, timeout: 30 * SECOND },
-			3: { freshness: 180 * SECOND, timeout: 30 * SECOND },
-			4: { freshness: 240 * SECOND, timeout: 30 * SECOND },
-		},
-		secondaryStuff: {
-			11: { freshness: 240 * SECOND, timeout: 15 * SECOND },
-			12: { freshness: 150 * SECOND, timeout: 15 * SECOND },
-			13: { freshness: 100 * SECOND, timeout: 15 * SECOND },
-			14: { freshness: 60 * SECOND, timeout: 15 * SECOND },
-		},
-		emptyStuff: {
-		},
-	};
+describe( 'calculateUpdates', () => {
+	const now = new Date();
 
-	it( 'should give default update info when there are no requirements', () => {
-		const now = new Date();
-		const clientState = {};
-
-		const updateInfo = calculateUpdates( {}, clientState, now );
-		expect( updateInfo ).toEqual( { updates: {}, nextUpdate: DEFAULT_NEXT_UPDATE } );
+	it( 'should return empty if there are no requirements.', () => {
+		const { updates } = calculateUpdates( {}, {} );
+		expect( updates ).toEqual( [] );
 	} );
 
-	it( 'should update info when there are no previous requirements', () => {
-		const now = new Date();
-		const clientState = {};
-
-		const updateInfo = calculateUpdates( {}, clientState, now );
-		expect( updateInfo ).toEqual( { updates: {}, nextUpdate: DEFAULT_NEXT_UPDATE } );
-	} );
-
-	it( 'should give updates for multiple endpoints', () => {
-		const now = new Date();
-		const clientState = {
-			primaryStuff: {
-				1: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-				2: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-				3: {
-					lastReceived: new Date( now - ( 110 * SECOND ) ),
-					lastRequested: new Date( now - ( 35 * SECOND ) ),
+	it( 'should return a single endpoint update for a stale endpoint', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: 60 * SECOND },
 				},
-				4: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
 			},
-			secondaryStuff: {
-				11: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-				12: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-				13: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-				14: { lastReceived: new Date( now - ( 110 * SECOND ) ) },
-			}
+		};
+		const endpointsState = {
+			things: {
+				endpoints: {
+					1: { lastReceived: now - ( 62 * SECOND ) },
+				},
+			},
 		};
 
-		const updateInfo = calculateUpdates( clientRequirements, clientState, now );
-		expect( updateInfo.updates ).toEqual( {
-			primaryStuff: [ '1', '3' ],
-			secondaryStuff: [ '13', '14' ],
-			emptyStuff: [],
-		} );
-		expect( updateInfo.nextUpdate ).toEqual( -( 50 * SECOND ) );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [
+			{ endpointPath: [ 'things', '1' ] },
+		] );
+	} );
+
+	it( 'should return a single endpoint update for a stale endpoint query', () => {
+		const requirementsByEndpoint = {
+			things: {
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: 120 * SECOND },
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				queries: [
+					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 121 * SECOND ) },
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [
+			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
+		] );
+	} );
+
+	it( 'should return an empty set if nothing needs an update', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: 60 * SECOND },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: 120 * SECOND },
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				endpoints: {
+					1: { lastReceived: now - ( 59 * SECOND ) },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 50 * SECOND ) },
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [] );
+	} );
+
+	it( 'should add updates for requirements that are not yet present in state', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: 60 * SECOND },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: 120 * SECOND },
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, {}, now );
+		expect( updates ).toEqual( [
+			{ endpointPath: [ 'things', '1' ] },
+			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
+		] );
+	} );
+
+	it( 'should give a default nextUpdate value in the absence of any needed updates', () => {
+		expect( calculateUpdates( {}, {} ).nextUpdate ).toEqual( DEFAULT_NEXT_UPDATE );
+	} );
+
+	it( 'should return default value if nothing is required earlier.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: DEFAULT_NEXT_UPDATE + SECOND },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: DEFAULT_NEXT_UPDATE + SECOND },
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				endpoints: {
+					1: { lastReceived: now - ( 1 * SECOND ) },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 1 * SECOND ) },
+				],
+			},
+		};
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
+		expect( nextUpdate / 1000 ).toBeCloseTo( DEFAULT_NEXT_UPDATE / 1000, 1 );
+	} );
+
+	it( 'should return time difference for earliest required endpoint.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: 60 * SECOND },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: 90 * SECOND },
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				endpoints: {
+					1: { lastReceived: now - ( 40 * SECOND ) },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 40 * SECOND ) },
+				],
+			},
+		};
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
+		expect( nextUpdate / 1000 ).toBeCloseTo( ( 20 * SECOND ) / 1000, 1 );
+	} );
+
+	it( 'should return negative value for overdue endpoint.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				endpoints: {
+					1: { freshness: 60 * SECOND },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, freshness: 90 * SECOND },
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				endpoints: {
+					1: { lastReceived: now - ( 61 * SECOND ) },
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 40 * SECOND ) },
+				],
+			},
+		};
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
+		expect( nextUpdate / 1000 ).toBeCloseTo( -( 1 * SECOND ) / 1000, 1 );
 	} );
 } );
