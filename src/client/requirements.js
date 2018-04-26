@@ -59,3 +59,4 @@ export function addRequirementParams( endpointRequirements, reqParams ) {
 	endpointRequirements.freshness = Math.min( freshness, newFreshness );
 	endpointRequirements.timeout = Math.min( timeout, newTimeout );
 }
+
