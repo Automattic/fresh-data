@@ -2,119 +2,128 @@ import ApiClient from '../index';
 import { SECOND } from '../../utils/constants';
 
 describe( 'ApiClient', () => {
-	const api = {
+	const emptyApi = {
 		methods: {},
+		endpoints: {},
+		selectors: {},
+	};
+
+	const thingSelectors = {
+		getThing: ( getData, requireData ) => ( requirement, id ) => {
+			const path = [ 'things', id ];
+			requireData( requirement, path );
+			return getData( path );
+		}
+	};
+
+	const thing1 = { name: 'Thing 1' };
+	const thing1ClientState = {
 		endpoints: {
-			stuff: {
-				fetchByIds: { method: 'get', params: { include: 'ids' } },
+			things: {
+				endpoints: {
+					1: {
+						data: thing1,
+					},
+				},
+				queries: [
+					{ params: { page: 1, perPage: 3 }, data: [ thing1 ] },
+				],
 			},
-		},
-		selectors: {
-			getStuff: ( apiClientState, requireData ) => ( stuffId, requirements ) => {
-				requireData( 'stuff', [ stuffId ], requirements );
-				const stuff = apiClientState.stuff[ stuffId ];
-				return stuff ? stuff.data : null;
-			}
 		},
 	};
 
 	it( 'should initialize to empty state', () => {
-		const apiClient = new ApiClient( api, '123' );
-		expect( apiClient.state ).toBe( null );
+		const apiClient = new ApiClient( emptyApi, '123' );
+		expect( apiClient.state ).toEqual( {} );
 	} );
 
-	describe( 'setState', () => {
-		it( 'should set state initially', () => {
-			const apiClient = new ApiClient( api, '123' );
-			const state = {
-				stuff: { },
-			};
-			apiClient.setState( state, null );
-			expect( apiClient.state ).toBe( state );
-		} );
-
-		it( 'should do nothing when the state has not changed', () => {
-			const state = {
-				stuff: { },
-			};
-			const apiClient = new ApiClient( api, '123', state );
-			apiClient.setState( state, null );
-			expect( apiClient.state ).toBe( state );
-		} );
-
-		it( 'should set state when state has changed', () => {
-			const state1 = {
-				stuff: { 1: { data: 'abc' }, 2: { data: 'def' } },
-			};
-			const state2 = {
-				stuff: { ...state1.stuff, 3: { data: 'ghi' } },
-			};
-			const apiClient = new ApiClient( api, '123', state1 );
-			apiClient.setState( state2, null );
-			expect( apiClient.state ).toBe( state2 );
-		} );
+	it( 'should set state', () => {
+		const clientState = { endpoints: {} };
+		const apiClient = new ApiClient( emptyApi, '123' );
+		apiClient.setState( clientState );
+		expect( apiClient.state ).toBe( clientState );
 	} );
 
-	describe( 'requireData', () => {
-		it( 'should set requirements for an item', () => {
-			const reqs = { freshness: 90 * SECOND, timeout: 20 * SECOND };
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.updateRequirements = () => {}; // Prevent API method calls.
-			apiClient.requireData( 'stuff', [ 1 ], reqs );
-			expect( apiClient.clientRequirements.stuff[ 1 ] ).toEqual( reqs );
-		} );
-
-		it( 'should not call updateReqiurements when no requirements have changed', () => {
-			const reqs = { freshness: 90 * SECOND, timeout: 20 * SECOND };
-			const apiClient = new ApiClient( api, '123' );
-
-			apiClient.updateRequirements = jest.fn();
-			apiClient.requireData( 'stuff', [ 1 ], reqs );
-			expect( apiClient.updateRequirements ).toHaveBeenCalled();
-
-			apiClient.updateRequirements = jest.fn();
-			apiClient.requireData( 'stuff', [ 1 ], reqs );
-			expect( apiClient.updateRequirements ).not.toHaveBeenCalled();
-		} );
-
-		it( 'should call updateRequirements when a new requirement is added', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.updateRequirements = jest.fn();
-			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
-			expect( apiClient.updateRequirements ).toHaveBeenCalled();
-		} );
-
-		it( 'should call updateRequirements when a requirement is changed', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.updateRequirements = jest.fn();
-			apiClient.requireData( 'stuff', [ 1 ], { freshness: 90 * SECOND } );
-			apiClient.requireData( 'stuff', [ 1 ], { freshness: 80 * SECOND } );
-			expect( apiClient.updateRequirements ).toHaveBeenCalledTimes( 2 );
-		} );
-	} );
-
-	it( 'should map selectors to current state', () => {
-		const apiClient = new ApiClient( api, '123' );
-		const state = {
-			stuff: { 1: { data: 'abc' }, 2: { data: 'def' } },
+	it( 'should map api methods to client key', () => {
+		const checkMethod = jest.fn();
+		const api = {
+			methods: {
+				get: ( clientKey ) => ( endpointPath ) => ( params ) => {
+					checkMethod( 'get', clientKey, endpointPath, params );
+				},
+				post: ( clientKey ) => ( endpointPath ) => ( params ) => {
+					checkMethod( 'post', clientKey, endpointPath, params );
+				},
+			},
 		};
-		apiClient.setState( state, null );
-		const { getStuff } = apiClient.selectors;
-		expect( getStuff( 2, {} ) ).toEqual( 'def' );
+		const apiClient = new ApiClient( api, '123' );
+
+		const thingsPath = [ 'things' ];
+		const pageParams = { page: 1, perPage: 3 };
+		apiClient.methods.get( thingsPath )( pageParams );
+		expect( checkMethod ).toHaveBeenCalledWith( 'get', '123', thingsPath, pageParams );
+
+		const thing2Path = [ 'things', 2 ];
+		apiClient.methods.post( thing2Path )();
+		expect( checkMethod ).toHaveBeenCalledWith( 'post', '123', thing2Path, undefined );
 	} );
 
-	it( 'should map selectors to new state when it changes', () => {
+	it( 'should map getData to current state', () => {
+		const api = {
+			methods: {},
+			endpoints: {},
+			selectors: thingSelectors,
+		};
 		const apiClient = new ApiClient( api, '123' );
-		const state1 = {
-			stuff: { 1: { data: 'abc' }, 2: { data: 'def' } },
-		};
-		const state2 = {
-			stuff: { ...state1.stuff, 3: { data: 'ghi' } },
-		};
-		apiClient.setState( state1, null );
-		expect( apiClient.selectors.getStuff( 2, {} ) ).toEqual( 'def' );
+		apiClient.setState( thing1ClientState );
 
-		apiClient.setState( state2, null );
-		expect( apiClient.selectors.getStuff( 3, {} ) ).toEqual( 'ghi' );
+		const dataThing1 = apiClient.getData( [ 'things', 1 ] );
+		expect( dataThing1 ).toBe( thing1 );
+
+		const queryData = apiClient.getData( [ 'things' ], { page: 1, perPage: 3 } );
+		expect( queryData ).toHaveLength( 1 );
+		expect( queryData[ 0 ] ).toBe( thing1 );
+	} );
+
+	describe( '#selectComponentData', () => {
+		it( 'should select data for component from last state set', () => {
+			const api = {
+				methods: {},
+				endpoints: {},
+				selectors: thingSelectors,
+			};
+
+			const component = () => {};
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.selectComponentData( component, ( selectors ) => {
+				expect( selectors.getThing( {}, 1 ) ).toBe( thing1 );
+			} );
+		} );
+
+		it( 'should set requirements for component', () => {
+			const api = {
+				methods: {},
+				endpoints: {},
+				selectors: thingSelectors,
+			};
+
+			const component = () => {};
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.selectComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+
+			const componentRequirements = apiClient.requirementsByComponent.get( component );
+			expect( componentRequirements ).toEqual( [
+				{
+					freshness: 90 * SECOND,
+					endpoint: [ 'things', 1 ],
+				}
+			] );
+		} );
 	} );
 } );

@@ -1,48 +1,55 @@
 import debugFactory from 'debug';
-import { reduceEndpointRequirements } from './requirements';
-import calculateUpdates from './calculate-updates';
+import getData from './get-data';
+import requireData from './require-data';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
 export default class ApiClient {
-	constructor( api, key, state = null ) {
+	constructor( api, key ) {
 		this.api = api;
 		this.key = key;
-		this.clientRequirements = {};
-		this.setState( state );
+		this.requirementsByComponent = new Map();
+		this.requirementsByEndpoint = {};
+		this.methods = mapMethods( api.methods, key );
+		this.setState( {} );
+		debug( 'New ApiClient "' + key + '" for api: ', api );
 	}
 
 	setState = ( state ) => {
 		if ( this.state !== state ) {
-			const { selectors } = this.api;
 			this.state = state;
-			this.selectors = mapSelectorsToState( selectors, state, this.requireData );
+			// TODO: Check and update endpoint requirements.
 		}
 	}
 
-	// TODO: Add code to clear out data requirements on re-render.
-	requireData = ( endpointName, ids, requirements ) => {
-		const oldEndpointReqs = this.clientRequirements[ endpointName ] || {};
-		const newEndpointReqs = reduceEndpointRequirements( oldEndpointReqs, ids, requirements );
+	getData = ( endpointPath, params ) => {
+		return getData( this.state )( endpointPath, params );
+	};
 
-		if ( oldEndpointReqs !== newEndpointReqs ) {
-			this.clientRequirements[ endpointName ] = newEndpointReqs;
-			this.updateRequirements();
+	selectComponentData = ( component, selectorFunc ) => {
+		let componentRequirements = this.requirementsByComponent.get( component );
+		if ( ! componentRequirements ) {
+			componentRequirements = [];
+			this.requirementsByComponent.set( component, componentRequirements );
 		}
-	}
 
-	updateRequirements = () => {
-		const updateInfo = calculateUpdates( this.clientRequirements, this.state );
+		const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
+		selectorFunc( selectors );
 
-		debug( 'Updating API requirements: ', updateInfo.updates );
-
-		// TODO: Add code here that calls the API methods and sets the next update.
-	}
+		// TODO: Check if the endpoint requirements have changed and update if they have.
+	};
 }
 
-function mapSelectorsToState( selectors, state, requireData ) {
-	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
-		mappedSelectors[ selectorName ] = selectors[ selectorName ]( state, requireData );
-		return mappedSelectors;
+function mapMethods( methods, clientKey ) {
+	return Object.keys( methods ).reduce( ( mappedMethods, methodName ) => {
+		mappedMethods[ methodName ] = methods[ methodName ]( clientKey );
+		return mappedMethods;
 	}, {} );
+}
+
+function mapSelectors( selectors, clientGetData, clientRequireData ) {
+	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
+		mappedSelectors[ selectorName ] = selectors[ selectorName ]( clientGetData, clientRequireData );
+		return mappedSelectors;
+	}, [] );
 }
