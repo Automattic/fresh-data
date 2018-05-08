@@ -26,16 +26,12 @@ export default class ApiClient {
 		return getData( this.state )( endpointPath, params );
 	};
 
-	selectComponentData = ( component, selectorFunc ) => {
-		let componentRequirements = this.requirementsByComponent.get( component );
-		if ( ! componentRequirements ) {
-			componentRequirements = [];
-			this.requirementsByComponent.set( component, componentRequirements );
-		}
-
+	setComponentData = ( component, selectorFunc ) => {
+		const componentRequirements = [];
 		const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
 		selectorFunc( selectors );
 
+		this.requirementsByComponent.set( component, componentRequirements );
 		// TODO: Check if the endpoint requirements have changed and update if they have.
 	};
 }

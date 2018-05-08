@@ -85,7 +85,7 @@ describe( 'ApiClient', () => {
 		expect( queryData[ 0 ] ).toBe( thing1 );
 	} );
 
-	describe( '#selectComponentData', () => {
+	describe( '#setComponentData', () => {
 		it( 'should select data for component from last state set', () => {
 			const api = {
 				methods: {},
@@ -97,7 +97,7 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
-			apiClient.selectComponentData( component, ( selectors ) => {
+			apiClient.setComponentData( component, ( selectors ) => {
 				expect( selectors.getThing( {}, 1 ) ).toBe( thing1 );
 			} );
 		} );
@@ -113,7 +113,7 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
-			apiClient.selectComponentData( component, ( selectors ) => {
+			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			} );
 
