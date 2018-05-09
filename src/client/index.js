@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import getData from './get-data';
+import { default as getDataFromState } from './get-data';
 import requireData from './require-data';
 
 const debug = debugFactory( 'fresh-data:api-client' );
@@ -23,7 +23,7 @@ export default class ApiClient {
 	}
 
 	getData = ( endpointPath, params ) => {
-		return getData( this.state )( endpointPath, params );
+		return getDataFromState( this.state )( endpointPath, params );
 	};
 
 	setComponentData = ( component, selectorFunc ) => {
