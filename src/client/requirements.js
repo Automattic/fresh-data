@@ -11,14 +11,16 @@ export const DEFAULTS = {
  * @return {Object} New requirements endpoint tree.
  */
 export function combineComponentRequirements( requirementsByComponent ) {
-	const requirements = {};
+	const requirementsByEndpoint = {};
 
-	requirementsByComponent.forEach( ( requirement ) => {
-		const { endpoint, params, ...reqParams } = requirement;
-		addEndpointRequirement( requirements, reqParams, endpoint, params );
+	requirementsByComponent.forEach( ( requirements ) => {
+		requirements.forEach( ( requirement ) => {
+			const { endpoint, params, ...reqParams } = requirement;
+			addEndpointRequirement( requirementsByEndpoint, reqParams, endpoint, params );
+		} );
 	} );
 
-	return requirements;
+	return requirementsByEndpoint;
 }
 
 /**
