@@ -66,6 +66,23 @@ describe( 'addEndpointRequirement', () => {
 		} );
 	} );
 
+	it( 'should add a query requirement with params, a single level deep', () => {
+		const reqs = {};
+		const params = { page: 1, perPage: 10 };
+		addEndpointRequirement( reqs, { freshness: 90 * SECOND }, [ 'thing' ], params );
+		expect( reqs ).toEqual( {
+			thing: {
+				queries: [
+					{
+						params: { page: 1, perPage: 10 },
+						freshness: 90 * SECOND,
+						timeout: DEFAULTS.timeout
+					},
+				],
+			},
+		} );
+	} );
+
 	it( 'should add a requirement two levels deep', () => {
 		const reqs = {};
 		addEndpointRequirement(
