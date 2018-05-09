@@ -37,9 +37,9 @@ export default class ApiClient {
 
 		// TODO: Consider using a reducer style function for endpoint requirements so we don't
 		// have to do a deep equals check.
-		const endpointRequirements = combineComponentRequirements( this.requirementsByComponent );
-		if ( ! isEqual( this.endpointRequirements, endpointRequirements ) ) {
-			this.endpointRequirements = endpointRequirements;
+		const requirementsByEndpoint = combineComponentRequirements( this.requirementsByComponent );
+		if ( ! isEqual( this.requirementsByEndpoint, requirementsByEndpoint ) ) {
+			this.requirementsByEndpoint = requirementsByEndpoint;
 			this.updateRequirementsData();
 		}
 	};
