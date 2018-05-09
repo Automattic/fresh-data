@@ -1,4 +1,6 @@
 import debugFactory from 'debug';
+import { isEqual } from 'lodash';
+import { combineComponentRequirements } from './requirements';
 import { default as getDataFromState } from './get-data';
 import requireData from './require-data';
 
@@ -18,7 +20,7 @@ export default class ApiClient {
 	setState = ( state ) => {
 		if ( this.state !== state ) {
 			this.state = state;
-			// TODO: Check and update endpoint requirements.
+			this.updateRequirementsData();
 		}
 	}
 
@@ -32,8 +34,22 @@ export default class ApiClient {
 		selectorFunc( selectors );
 
 		this.requirementsByComponent.set( component, componentRequirements );
-		// TODO: Check if the endpoint requirements have changed and update if they have.
+
+		// TODO: Consider using a reducer style function for endpoint requirements so we don't
+		// have to do a deep equals check.
+		const endpointRequirements = combineComponentRequirements( this.requirementsByComponent );
+		if ( ! isEqual( this.endpointRequirements, endpointRequirements ) ) {
+			this.endpointRequirements = endpointRequirements;
+			this.updateRequirementsData();
+		}
 	};
+
+	updateRequirementsData = () => {
+		// TODO: Actually parse the list of requirements against the current state.
+		// TODO: Get a list of requirements that need to be fetched.
+		// TODO: Get the next update time.
+		// TODO: Set/Reset the timer to update.
+	}
 }
 
 function mapMethods( methods, clientKey ) {
