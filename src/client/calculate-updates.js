@@ -98,9 +98,10 @@ function appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirement
 		);
 	}
 
+	const isRequested = state.lastRequested > state.lastReceived;
 	const timeoutLeft = getTimeoutLeft( requirements, state, now );
 	const freshnessLeft = getFreshnessLeft( requirements, state, now );
-	const nextUpdate = Math.min( timeoutLeft, freshnessLeft );
+	const nextUpdate = isRequested && 0 >= freshnessLeft ? timeoutLeft : freshnessLeft;
 
 	updateInfo.nextUpdate = Math.min( updateInfo.nextUpdate, nextUpdate );
 	if ( nextUpdate < 0 ) {
@@ -118,8 +119,9 @@ function appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirement
 export function getTimeoutLeft( requirements, state, now ) {
 	const { timeout } = requirements;
 	const { lastRequested } = state;
+	const lastReceived = state.lastReceived || Number.MIN_SAFE_INTEGER;
 
-	if ( timeout && lastRequested ) {
+	if ( timeout && lastRequested && lastRequested > lastReceived ) {
 		return ( lastRequested + timeout ) - now;
 	}
 	return Number.MAX_SAFE_INTEGER;
