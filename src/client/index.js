@@ -14,6 +14,7 @@ export default class ApiClient {
 		this.requirementsByComponent = new Map();
 		this.requirementsByEndpoint = {};
 		this.methods = mapMethods( api.methods, key );
+		this.timeoutId = null;
 		this.setState( {} );
 		debug( 'New ApiClient "' + key + '" for api: ', api );
 	}
@@ -30,11 +31,15 @@ export default class ApiClient {
 	};
 
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
-		const componentRequirements = [];
-		const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
-		selectorFunc( selectors );
+		if ( selectorFunc ) {
+			const componentRequirements = [];
+			const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
+			selectorFunc( selectors );
 
-		this.requirementsByComponent.set( component, componentRequirements );
+			this.requirementsByComponent.set( component, componentRequirements );
+		} else {
+			this.requirementsByComponent.clear( component );
+		}
 
 		// TODO: Consider using a reducer style function for endpoint requirements so we don't
 		// have to do a deep equals check.
@@ -50,12 +55,27 @@ export default class ApiClient {
 		const endpointsState = state.endpoints;
 
 		if ( endpointsState && ! isEmpty( requirementsByEndpoint ) ) {
-			const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+			const { nextUpdate, updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
 			updates.forEach( ( update ) => {
 				const { endpointPath, params } = update;
 				this.fetchData( endpointPath, params );
 			} );
-			// TODO: Set/Reset the timer to update.
+			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
+			this.setNextUpdate( nextUpdate );
+		} else {
+			debug( 'Unscheduling future updates' );
+			this.setNextUpdate( null );
+		}
+	}
+
+	setNextUpdate = ( milliseconds ) => {
+		if ( this.timeoutId ) {
+			clearTimeout( this.timeoutId );
+			this.timeoutId = null;
+		}
+
+		if ( milliseconds ) {
+			this.timeoutId = setTimeout( this.updateRequirementsData, milliseconds );
 		}
 	}
 
