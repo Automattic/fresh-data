@@ -66,6 +66,41 @@ describe( 'addEndpointRequirement', () => {
 		} );
 	} );
 
+	it( 'should add a query requirement with params, a single level deep', () => {
+		const reqs = {};
+		const params = { page: 1, perPage: 10 };
+		addEndpointRequirement( reqs, { freshness: 90 * SECOND }, [ 'thing' ], params );
+		expect( reqs ).toEqual( {
+			thing: {
+				queries: [
+					{
+						params: { page: 1, perPage: 10 },
+						freshness: 90 * SECOND,
+						timeout: DEFAULTS.timeout
+					},
+				],
+			},
+		} );
+	} );
+
+	it( 'should combine a query requirement with an existing one', () => {
+		const reqs = {};
+		const params = { page: 1, perPage: 10 };
+		addEndpointRequirement( reqs, { freshness: 90 * SECOND }, [ 'thing' ], params );
+		addEndpointRequirement( reqs, { freshness: 60 * SECOND }, [ 'thing' ], params );
+		expect( reqs ).toEqual( {
+			thing: {
+				queries: [
+					{
+						params: { page: 1, perPage: 10 },
+						freshness: 60 * SECOND,
+						timeout: DEFAULTS.timeout
+					},
+				],
+			},
+		} );
+	} );
+
 	it( 'should add a requirement two levels deep', () => {
 		const reqs = {};
 		addEndpointRequirement(
@@ -164,7 +199,7 @@ describe( 'combineComponentRequirements', () => {
 	it( 'should return endpoint requirements for a single component.', () => {
 		const reqsByComponent = new Map();
 		const component = () => null;
-		reqsByComponent.set( component, { freshness: 180 * SECOND, endpoint: [ 'thing', 2 ] } );
+		reqsByComponent.set( component, [ { freshness: 180 * SECOND, endpoint: [ 'thing', 2 ] } ] );
 
 		const reqsByEndpoint = combineComponentRequirements( reqsByComponent );
 		expect( reqsByEndpoint ).toEqual( {
@@ -180,8 +215,8 @@ describe( 'combineComponentRequirements', () => {
 		const reqsByComponent = new Map();
 		const component1 = () => null;
 		const component2 = () => null;
-		reqsByComponent.set( component1, { freshness: 60 * SECOND, endpoint: [ 'thing', 1 ] } );
-		reqsByComponent.set( component2, { freshness: 90 * SECOND, endpoint: [ 'thing', 2 ] } );
+		reqsByComponent.set( component1, [ { freshness: 60 * SECOND, endpoint: [ 'thing', 1 ] } ] );
+		reqsByComponent.set( component2, [ { freshness: 90 * SECOND, endpoint: [ 'thing', 2 ] } ] );
 
 		const reqsByEndpoint = combineComponentRequirements( reqsByComponent );
 		expect( reqsByEndpoint ).toEqual( {
@@ -198,14 +233,51 @@ describe( 'combineComponentRequirements', () => {
 		const reqsByComponent = new Map();
 		const component1 = () => null;
 		const component2 = () => null;
-		reqsByComponent.set( component1, { freshness: 30 * SECOND, endpoint: [ 'thing', 2 ] } );
-		reqsByComponent.set( component2, { freshness: 60 * SECOND, timeout: 2 * SECOND, endpoint: [ 'thing', 2 ] } );
+		reqsByComponent.set( component1, [ { freshness: 30 * SECOND, endpoint: [ 'thing', 2 ] } ] );
+		reqsByComponent.set( component2, [ { freshness: 60 * SECOND, timeout: 2 * SECOND, endpoint: [ 'thing', 2 ] } ] );
 
 		const reqsByEndpoint = combineComponentRequirements( reqsByComponent );
 		expect( reqsByEndpoint ).toEqual( {
 			thing: {
 				endpoints: {
 					2: { freshness: 30 * SECOND, timeout: 2 * SECOND },
+				},
+			},
+		} );
+	} );
+
+	it( 'should utilize multiple requirements from one component.', () => {
+		const reqsByComponent = new Map();
+		const component1 = () => null;
+		reqsByComponent.set( component1, [
+			{ freshness: 60 * SECOND, endpoint: [ 'thing', 1 ] },
+			{ freshness: 30 * SECOND, endpoint: [ 'thing', 2 ] },
+		] );
+
+		const reqsByEndpoint = combineComponentRequirements( reqsByComponent );
+		expect( reqsByEndpoint ).toEqual( {
+			thing: {
+				endpoints: {
+					1: { freshness: 60 * SECOND, timeout: DEFAULTS.timeout },
+					2: { freshness: 30 * SECOND, timeout: DEFAULTS.timeout },
+				},
+			},
+		} );
+	} );
+
+	it( 'should collapse redundant requirements from one component.', () => {
+		const reqsByComponent = new Map();
+		const component1 = () => null;
+		reqsByComponent.set( component1, [
+			{ freshness: 60 * SECOND, endpoint: [ 'thing', 1 ] },
+			{ freshness: 30 * SECOND, endpoint: [ 'thing', 1 ] },
+		] );
+
+		const reqsByEndpoint = combineComponentRequirements( reqsByComponent );
+		expect( reqsByEndpoint ).toEqual( {
+			thing: {
+				endpoints: {
+					1: { freshness: 30 * SECOND, timeout: DEFAULTS.timeout },
 				},
 			},
 		} );

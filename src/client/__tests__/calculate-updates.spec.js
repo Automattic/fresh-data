@@ -105,6 +105,92 @@ describe( 'calculateUpdates', () => {
 		] );
 	} );
 
+	it( 'should not return an update if stale but requested and not yet timed out.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						freshness: 120 * SECOND,
+						timeout: 10 * SECOND,
+					},
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						lastReceived: now - ( 121 * SECOND ),
+						lastRequested: now - ( 5 * SECOND ),
+					},
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [] );
+	} );
+
+	it( 'should return an update if both stale, requested and timed out.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						freshness: 120 * SECOND,
+						timeout: 3 * SECOND,
+					},
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						lastReceived: now - ( 121 * SECOND ),
+						lastRequested: now - ( 5 * SECOND ),
+					},
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [
+			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
+		] );
+	} );
+
+	it( 'should not return an update if timed out, but no longer stale.', () => {
+		const requirementsByEndpoint = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						freshness: 120 * SECOND,
+						timeout: 3 * SECOND,
+					},
+				],
+			},
+		};
+		const endpointsState = {
+			things: {
+				queries: [
+					{
+						params: { page: 1, perPage: 3 },
+						lastReceived: now - ( 3 * SECOND ),
+						lastRequested: now - ( 5 * SECOND ),
+					},
+				],
+			},
+		};
+
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		expect( updates ).toEqual( [] );
+	} );
+
 	it( 'should return an empty set if nothing needs an update', () => {
 		const requirementsByEndpoint = {
 			things: {
@@ -229,3 +315,4 @@ describe( 'calculateUpdates', () => {
 		expect( nextUpdate / 1000 ).toBeCloseTo( -( 1 * SECOND ) / 1000, 1 );
 	} );
 } );
+
