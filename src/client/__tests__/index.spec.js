@@ -86,14 +86,15 @@ describe( 'ApiClient', () => {
 	} );
 
 	describe( '#setComponentData', () => {
-		it( 'should select data for component from last state set', () => {
-			const api = {
-				methods: {},
-				endpoints: {},
-				selectors: thingSelectors,
-			};
+		const api = {
+			methods: {},
+			endpoints: {},
+			selectors: thingSelectors,
+		};
 
-			const component = () => {};
+		const component = () => {};
+
+		it( 'should select data for component from last state set', () => {
 			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
@@ -103,13 +104,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should set requirements for component', () => {
-			const api = {
-				methods: {},
-				endpoints: {},
-				selectors: thingSelectors,
-			};
-
-			const component = () => {};
 			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
@@ -124,6 +118,90 @@ describe( 'ApiClient', () => {
 					endpoint: [ 'things', 1 ],
 				}
 			] );
+		} );
+	} );
+
+	describe( '#updateRequirementsData', () => {
+		const api = {
+			methods: {},
+			endpoints: {},
+			selectors: thingSelectors,
+		};
+
+		const component = () => {};
+
+		it( 'should trigger a requirements data update when component requirements change.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 30 * SECOND }, 1 );
+			} );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'should not trigger a requirements data update when component requirements are still the same.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
+		} );
+
+		it( 'should trigger a requirements data update when the client state is different.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+
+			const thing1new = { name: 'Thing 1 - new' };
+			const thing1ClientState2 = {
+				endpoints: {
+					things: {
+						endpoints: {
+							1: {
+								data: thing1new,
+							},
+						},
+						queries: [
+							{ params: { page: 1, perPage: 3 }, data: [ thing1new ] },
+						],
+					},
+				},
+			};
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setState( thing1ClientState2 );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'should not trigger a requirements data update when the client state is still the same.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+
+			apiClient.updateRequirementsData = jest.fn();
+			apiClient.setState( thing1ClientState );
+			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
 		} );
 	} );
 } );

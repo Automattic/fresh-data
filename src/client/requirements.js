@@ -1,3 +1,4 @@
+import { findIndex } from 'lodash';
 import { SECOND } from '../utils/constants';
 
 export const DEFAULTS = {
@@ -11,14 +12,16 @@ export const DEFAULTS = {
  * @return {Object} New requirements endpoint tree.
  */
 export function combineComponentRequirements( requirementsByComponent ) {
-	const requirements = {};
+	const requirementsByEndpoint = {};
 
-	requirementsByComponent.forEach( ( requirement ) => {
-		const { endpoint, params, ...reqParams } = requirement;
-		addEndpointRequirement( requirements, reqParams, endpoint, params );
+	requirementsByComponent.forEach( ( requirements ) => {
+		requirements.forEach( ( requirement ) => {
+			const { endpoint, params, ...reqParams } = requirement;
+			addEndpointRequirement( requirementsByEndpoint, reqParams, endpoint, params );
+		} );
 	} );
 
-	return requirements;
+	return requirementsByEndpoint;
 }
 
 /**
@@ -32,9 +35,11 @@ export function addEndpointRequirement( requirementsByEndpoint, reqParams, endpo
 	const [ endpoint, ...remainingPath ] = endpointPath;
 
 	if ( remainingPath.length === 0 ) {
-		const endpointRequirements = requirementsByEndpoint[ endpoint ] || { ...DEFAULTS };
-		addRequirementParams( endpointRequirements, reqParams );
-		requirementsByEndpoint[ endpoint ] = endpointRequirements;
+		if ( params ) {
+			addQueryEndpointRequirementParams( requirementsByEndpoint, reqParams, endpoint, params );
+		} else {
+			addEndpointRequirementParams( requirementsByEndpoint, reqParams, endpoint );
+		}
 	} else {
 		const endpointRequirements = requirementsByEndpoint[ endpoint ] || {};
 		const endpoints = endpointRequirements.endpoints || {};
@@ -43,6 +48,26 @@ export function addEndpointRequirement( requirementsByEndpoint, reqParams, endpo
 		endpointRequirements.endpoints = endpoints;
 		requirementsByEndpoint[ endpoint ] = endpointRequirements;
 	}
+}
+
+function addEndpointRequirementParams( requirementsByEndpoint, reqParams, endpoint ) {
+	const endpointRequirements = requirementsByEndpoint[ endpoint ] || { ...DEFAULTS };
+	addRequirementParams( endpointRequirements, reqParams );
+	requirementsByEndpoint[ endpoint ] = endpointRequirements;
+}
+
+function addQueryEndpointRequirementParams( requirementsByEndpoint, reqParams, endpoint, params ) {
+	const endpointRequirements = requirementsByEndpoint[ endpoint ] || {};
+	const queries = endpointRequirements.queries || [];
+	const queryIndex = findIndex( queries, { params } );
+	const queryRequirements = -1 === queryIndex ? { params, ...DEFAULTS } : queries[ queryIndex ];
+	const newIndex = -1 === queryIndex ? queries.length : queryIndex;
+
+	addRequirementParams( queryRequirements, reqParams );
+
+	queries[ newIndex ] = queryRequirements;
+	endpointRequirements.queries = queries;
+	requirementsByEndpoint[ endpoint ] = endpointRequirements;
 }
 
 /**
