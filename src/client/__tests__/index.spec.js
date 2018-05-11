@@ -2,9 +2,12 @@ import ApiClient from '../index';
 import { SECOND } from '../../utils/constants';
 
 describe( 'ApiClient', () => {
+	const now = new Date();
+
 	const emptyApi = {
 		methods: {},
-		endpoints: {},
+		endpoints: {
+		},
 		selectors: {},
 	};
 
@@ -13,7 +16,13 @@ describe( 'ApiClient', () => {
 			const path = [ 'things', id ];
 			requireData( requirement, path );
 			return getData( path );
-		}
+		},
+		getThingPage: ( getData, requireData ) => ( requirement, page, perPage ) => {
+			const path = [ 'things' ];
+			const params = { page, perPage };
+			requireData( requirement, path, params );
+			return getData( path, params );
+		},
 	};
 
 	const thing1 = { name: 'Thing 1' };
@@ -22,11 +31,18 @@ describe( 'ApiClient', () => {
 			things: {
 				endpoints: {
 					1: {
+						lastRequested: now - ( 99 * SECOND ),
+						lastReceived: now - ( 92 * SECOND ),
 						data: thing1,
 					},
 				},
 				queries: [
-					{ params: { page: 1, perPage: 3 }, data: [ thing1 ] },
+					{
+						params: { page: 1, perPage: 3 },
+						lastRequested: now - ( 80 * SECOND ),
+						lastReceived: now - ( 81 * SECOND ),
+						data: [ thing1 ]
+					},
 				],
 			},
 		},
@@ -88,7 +104,11 @@ describe( 'ApiClient', () => {
 	describe( '#setComponentData', () => {
 		const api = {
 			methods: {},
-			endpoints: {},
+			endpoints: {
+				things: {
+					read: () => {},
+				},
+			},
 			selectors: thingSelectors,
 		};
 
@@ -124,7 +144,11 @@ describe( 'ApiClient', () => {
 	describe( '#updateRequirementsData', () => {
 		const api = {
 			methods: {},
-			endpoints: {},
+			endpoints: {
+				things: {
+					read: () => {},
+				},
+			},
 			selectors: thingSelectors,
 		};
 
@@ -202,6 +226,136 @@ describe( 'ApiClient', () => {
 			apiClient.updateRequirementsData = jest.fn();
 			apiClient.setState( thing1ClientState );
 			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
+		} );
+
+		it( 'should fetch data when a new requirement is added for data that has never been fetched.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 3 );
+			}, now );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '3' ], undefined );
+		} );
+
+		it( 'should fetch data when a new requirement is added for data that is stale.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			}, now );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
+		} );
+
+		it( 'should not fetch data when a new requirement is added for data that is fresh enough.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 95 * SECOND }, 1 );
+			}, now );
+			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
+		} );
+
+		it( 'should fetch data when data for an existing requirement goes stale.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			}, now );
+
+			apiClient.updateRequirementsData( now + ( 20 * SECOND ) );
+
+			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
+		} );
+
+		it( 'should fetch data for a query when a new requirement is added.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 10 );
+			}, now );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things' ], { page: 1, perPage: 10 } );
+		} );
+
+		it( 'should not fetch data for a query when a new requirement is already satisfied.', () => {
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+
+			apiClient.fetchData = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
+			}, now );
+			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
+		} );
+	} );
+
+	describe( '#fetchData', () => {
+		it( 'should call the corresponding api endpoint read function.', () => {
+			const readFunc = jest.fn();
+			const dummyApi = {
+				methods: {},
+				endpoints: {
+					things: {
+						read: readFunc,
+					},
+				},
+			};
+			const apiClient = new ApiClient( dummyApi, '123' );
+
+			apiClient.fetchData( [ 'things', '1' ] );
+			expect( readFunc ).toHaveBeenCalledWith( dummyApi.methods, [ '1' ], undefined );
+		} );
+
+		it( 'should call a nested api endpoint if it exists.', () => {
+			const settingsReadFunc = jest.fn();
+			const currencyReadFunc = jest.fn();
+			const dummyApi = {
+				methods: {},
+				endpoints: {
+					settings: {
+						read: settingsReadFunc,
+						currency: {
+							read: currencyReadFunc,
+						},
+					},
+				},
+			};
+			const apiClient = new ApiClient( dummyApi, '123' );
+
+			apiClient.fetchData( [ 'settings', 'currency' ] );
+			expect( currencyReadFunc ).toHaveBeenCalledWith( dummyApi.methods, [], undefined );
+			expect( settingsReadFunc ).toHaveBeenCalledTimes( 0 );
+		} );
+
+		it( 'should throw error if no read function is found.', () => {
+			const dummyApi = {
+				methods: {},
+				endpoints: {
+					things: {},
+				},
+			};
+			const apiClient = new ApiClient( dummyApi, '123' );
+
+			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
+		} );
+
+		it( 'should throw error if no endpoint is found.', () => {
+			const dummyApi = {
+				methods: {},
+				endpoints: {},
+			};
+			const apiClient = new ApiClient( dummyApi, '123' );
+
+			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
 		} );
 	} );
 } );

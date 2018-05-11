@@ -1,8 +1,9 @@
 import debugFactory from 'debug';
-import { isEqual } from 'lodash';
+import { isEqual, isEmpty } from 'lodash';
 import { combineComponentRequirements } from './requirements';
 import { default as getDataFromState } from './get-data';
 import requireData from './require-data';
+import calculateUpdates from './calculate-updates';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
@@ -17,10 +18,10 @@ export default class ApiClient {
 		debug( 'New ApiClient "' + key + '" for api: ', api );
 	}
 
-	setState = ( state ) => {
+	setState = ( state, now = new Date() ) => {
 		if ( this.state !== state ) {
 			this.state = state;
-			this.updateRequirementsData();
+			this.updateRequirementsData( now );
 		}
 	}
 
@@ -28,7 +29,7 @@ export default class ApiClient {
 		return getDataFromState( this.state )( endpointPath, params );
 	};
 
-	setComponentData = ( component, selectorFunc ) => {
+	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		const componentRequirements = [];
 		const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
 		selectorFunc( selectors );
@@ -40,15 +41,42 @@ export default class ApiClient {
 		const requirementsByEndpoint = combineComponentRequirements( this.requirementsByComponent );
 		if ( ! isEqual( this.requirementsByEndpoint, requirementsByEndpoint ) ) {
 			this.requirementsByEndpoint = requirementsByEndpoint;
-			this.updateRequirementsData();
+			this.updateRequirementsData( now );
 		}
 	};
 
-	updateRequirementsData = () => {
-		// TODO: Actually parse the list of requirements against the current state.
-		// TODO: Get a list of requirements that need to be fetched.
-		// TODO: Get the next update time.
-		// TODO: Set/Reset the timer to update.
+	updateRequirementsData = ( now = new Date() ) => {
+		const { requirementsByEndpoint, state } = this;
+		const endpointsState = state.endpoints;
+
+		if ( endpointsState && ! isEmpty( requirementsByEndpoint ) ) {
+			const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+			updates.forEach( ( update ) => {
+				const { endpointPath, params } = update;
+				this.fetchData( endpointPath, params );
+			} );
+			// TODO: Set/Reset the timer to update.
+		}
+	}
+
+	fetchData = ( endpointPath, params, endpoints = this.api.endpoints ) => {
+		const [ endpointName, ...remainingPath ] = endpointPath;
+		const endpoint = endpoints[ endpointName ];
+
+		if ( ! endpoint ) {
+			throw new TypeError( `Failed to find required endpoint "${ endpointName }" in api.` );
+		}
+
+		if ( remainingPath.length > 0 && endpoint[ remainingPath[ 0 ] ] ) {
+			// Looks like we can go down a level in the path.
+			return this.fetchData( remainingPath, params, endpoint );
+		}
+
+		if ( ! endpoint.read ) {
+			throw new TypeError( `Endpoint "${ endpointName }" has no read method.` );
+		}
+
+		return endpoint.read( this.methods, remainingPath, params );
 	}
 }
 
