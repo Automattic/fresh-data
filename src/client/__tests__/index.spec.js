@@ -113,9 +113,30 @@ describe( 'ApiClient', () => {
 		};
 
 		const component = () => {};
+		let apiClient = null;
+
+		beforeEach( () => {
+			apiClient = new ApiClient( api, '123' );
+		} );
+
+		afterEach( () => {
+			apiClient.setComponentData( component, null );
+		} );
+
+		it( 'should set and clear component requirements', () => {
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 60 * SECOND }, 1 );
+			} );
+			expect( apiClient.requirementsByComponent.size ).toEqual( 1 );
+			expect( apiClient.requirementsByComponent.get( component ) ).toEqual( [
+				{ freshness: 60 * SECOND, endpoint: [ 'things', 1 ] },
+			] );
+
+			apiClient.setComponentData( component, null );
+			expect( apiClient.requirementsByComponent.size ).toEqual( 0 );
+		} );
 
 		it( 'should select data for component from last state set', () => {
-			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
 			apiClient.setComponentData( component, ( selectors ) => {
@@ -124,7 +145,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should set requirements for component', () => {
-			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( thing1ClientState );
 
 			apiClient.setComponentData( component, ( selectors ) => {
@@ -153,11 +173,18 @@ describe( 'ApiClient', () => {
 		};
 
 		const component = () => {};
+		let apiClient = null;
+
+		beforeEach( () => {
+			apiClient = new ApiClient( api, '123' );
+			apiClient.setState( thing1ClientState );
+		} );
+
+		afterEach( () => {
+			apiClient.setComponentData( component, null );
+		} );
 
 		it( 'should trigger a requirements data update when component requirements change.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.updateRequirementsData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
@@ -172,9 +199,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not trigger a requirements data update when component requirements are still the same.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.updateRequirementsData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
@@ -189,8 +213,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should trigger a requirements data update when the client state is different.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			} );
@@ -217,8 +239,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not trigger a requirements data update when the client state is still the same.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			} );
@@ -229,9 +249,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should fetch data when a new requirement is added for data that has never been fetched.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
@@ -240,9 +257,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should fetch data when a new requirement is added for data that is stale.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
@@ -251,9 +265,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not fetch data when a new requirement is added for data that is fresh enough.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 95 * SECOND }, 1 );
@@ -262,9 +273,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should fetch data when data for an existing requirement goes stale.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
@@ -276,9 +284,6 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should fetch data for a query when a new requirement is added.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 10 );
@@ -287,14 +292,26 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not fetch data for a query when a new requirement is already satisfied.', () => {
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.setState( thing1ClientState );
-
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
 			}, now );
 			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
+		} );
+
+		it( 'should set timer for next update.', () => {
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
+			}, now );
+			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
+		} );
+
+		it( 'should clear timer when there are no component requirements.', () => {
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
+			}, now );
+			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
+			apiClient.setComponentData( component, null );
 		} );
 	} );
 
@@ -356,6 +373,19 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( dummyApi, '123' );
 
 			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
+		} );
+	} );
+
+	describe( '#setNextUpdate', () => {
+		it( 'should set and clear timeoutId', () => {
+			const apiClient = new ApiClient( emptyApi, '123' );
+			expect( apiClient.timeoutId ).toBeNull();
+
+			apiClient.setNextUpdate( 5000 );
+			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
+
+			apiClient.setNextUpdate( null );
+			expect( apiClient.timeoutId ).toBeNull();
 		} );
 	} );
 } );
