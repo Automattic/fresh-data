@@ -1,6 +1,12 @@
 import { get } from 'lodash';
-import reducer, { reduceReceived } from '../apiclient-reducer';
-import { FRESH_DATA_CLIENT_RECEIVED } from '../../action-types';
+import reducer, {
+	reduceError,
+	reduceReceived
+} from '../apiclient-reducer';
+import {
+	FRESH_DATA_CLIENT_ERROR,
+	FRESH_DATA_CLIENT_RECEIVED,
+} from '../../action-types';
 
 describe( 'reducer', () => {
 	const now = new Date();
@@ -147,6 +153,126 @@ describe( 'reducer', () => {
 					{ id: 2, foot: 'red' },
 					{ id: 3, feet: 'many' },
 				],
+			} ] );
+		} );
+	} );
+
+	describe( '#reduceError', () => {
+		it( 'should set error state for a new endpoint', () => {
+			const thing1Action = {
+				type: FRESH_DATA_CLIENT_ERROR,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things', 1 ],
+				error: {
+					message: 'Bad, wicked, naughty request!',
+				},
+				time: now,
+			};
+
+			const state = reduceError( undefined, thing1Action );
+			const thing1State = get( state, [ 'endpoints', 'things', 'endpoints', 1 ] );
+			expect( thing1State ).toEqual( {
+				lastError: now,
+				error: { message: 'Bad, wicked, naughty request!' },
+			} );
+		} );
+
+		it( 'should overwrite error state for an existing endpoint', () => {
+			const state1 = {
+				endpoints: {
+					things: {
+						endpoints: {
+							1: {
+								lastReceived: ( now - 1000 ),
+								data: { foot: 'red' },
+								lastError: ( now - 2000 ),
+								error: { message: 'Do not.' },
+							},
+						},
+					},
+				},
+			};
+			const thing1Action = {
+				type: FRESH_DATA_CLIENT_ERROR,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things', 1 ],
+				error: { message: 'Bad, wicked, naughty request!' },
+				time: now,
+			};
+
+			const state2 = reduceError( state1, thing1Action );
+			const thing1State = get( state2, [ 'endpoints', 'things', 'endpoints', 1 ] );
+			expect( thing1State ).toEqual( {
+				lastReceived: ( now - 1000 ),
+				lastError: now,
+				data: { foot: 'red' },
+				error: { message: 'Bad, wicked, naughty request!' },
+			} );
+		} );
+
+		it( 'should set error state for a new query', () => {
+			const thingsPage1Action = {
+				type: FRESH_DATA_CLIENT_ERROR,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things' ],
+				params: { pge: 1, perPage: 3 },
+				error: { message: 'Query parameter "pge" invalid.' },
+				time: now,
+			};
+
+			const state = reduceError( undefined, thingsPage1Action );
+			const queriesState = get( state, [ 'endpoints', 'things', 'queries' ] );
+			expect( queriesState ).toEqual( [ {
+				params: { pge: 1, perPage: 3 },
+				lastError: now,
+				error: { message: 'Query parameter "pge" invalid.' },
+			} ] );
+		} );
+
+		it( 'should overwrite error state for an existing query', () => {
+			const state1 = {
+				endpoints: {
+					things: {
+						queries: [
+							{
+								params: { pge: 1, perPage: 3 },
+								lastReceived: ( now - 20000 ),
+								data: [
+									{ id: 1, foot: 'red' },
+									{ id: 2, foot: 'blue' },
+								],
+								lastError: ( now - 30000 ),
+								error: { message: 'Do not.' },
+							},
+						],
+					}
+				},
+			};
+			const thingsPage1Action = {
+				type: FRESH_DATA_CLIENT_ERROR,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things' ],
+				params: { pge: 1, perPage: 3 },
+				lastError: now,
+				error: { message: 'Query parameter "pge" is invalid.' },
+				time: now,
+			};
+
+			const state2 = reduceError( state1, thingsPage1Action );
+			const queriesState = get( state2, [ 'endpoints', 'things', 'queries' ] );
+			expect( queriesState ).toEqual( [ {
+				params: { pge: 1, perPage: 3 },
+				lastReceived: ( now - 20000 ),
+				data: [
+					{ id: 1, foot: 'red' },
+					{ id: 2, foot: 'blue' },
+				],
+				lastError: now,
+				error: { message: 'Query parameter "pge" is invalid.' },
 			} ] );
 		} );
 	} );
