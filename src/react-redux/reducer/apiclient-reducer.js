@@ -32,7 +32,7 @@ export default function reducer( state = defaultState, action, reducers = _reduc
  * 3. Otherwise store it on this endpoint state.
  * @param {Object} [state] Should contain endpoints property.
  * @param {Object} action { apiName, clientKey, endpointPath, params (optional), data }
- * @param {path} [path] The remaining path (used for recursion).
+ * @param {Array} [path] The remaining path (used for recursion).
  * @return {Object} The new state.
  */
 export function reduceReceived( state = defaultState, action, path = action.endpointPath ) {
@@ -89,7 +89,7 @@ export function reduceReceived( state = defaultState, action, path = action.endp
  * 3. Otherwise store it on this endpoint state.
  * @param {Object} [state] Should contain endpoints property.
  * @param {Object} action { apiName, clientKey, endpointPath, params (optional), data }
- * @param {path} [path] The remaining path (used for recursion).
+ * @param {Array} [path] The remaining path (used for recursion).
  * @return {Object} The new state.
  */
 export function reduceError( state = defaultState, action, path = action.endpointPath ) {
