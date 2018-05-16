@@ -27,163 +27,73 @@ export default function reducer( state = defaultState, action, reducers = _reduc
 	return reducerFunc ? reducerFunc( state, action ) : state;
 }
 
-// TODO: DRY this with received and error to share most of the code below.
-export function reduceRequested( state = defaultState, action, path = action.endpointPath ) {
-	const [ endpoint, ...remainingPath ] = path;
-	const endpointsState = state.endpoints || {};
-	const endpointState = endpointsState[ endpoint ] || {};
-
-	if ( remainingPath.length > 0 ) {
-		const subState = reduceRequested( endpointState, action, remainingPath );
-		const newEndpointState = { ...endpointState, ...subState };
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
-	}
-
-	const { params, data, time: lastRequested } = action;
-	if ( params ) {
-		const queriesState = endpointState.queries || [];
-		const queryIndex = findIndex( queriesState, { params } );
-		const queryState = -1 === queryIndex ? {} : queriesState[ queryIndex ];
-		const newIndex = -1 === queryIndex ? queriesState.length : queryIndex;
-		const newQueryState = {
-			...queryState,
-			params,
-			lastRequested,
-		};
-		const newQueriesState = [ ...queriesState ];
-		newQueriesState[ newIndex ] = newQueryState;
-		const newEndpointState = {
-			...endpointState,
-			queries: newQueriesState,
-		};
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
-	}
-
-	const newEndpointState = {
-		...endpointState,
-		lastRequested,
-		data,
-	};
-
-	const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-	const newState = { ...state, endpoints: newEndpointsState };
-	return newState;
-}
-
 /**
  * Recursively reduce client endpoint state.
  * 1. If it goes further down the path, recurse.
  * 2. Otherwise if this has params, store it in queries.
  * 3. Otherwise store it on this endpoint state.
+ * @param {Function} reducerFunc Reduces the endpoint state, takes ( state, action ).
  * @param {Object} [state] Should contain endpoints property.
  * @param {Object} action { apiName, clientKey, endpointPath, params (optional), data }
  * @param {Array} [path] The remaining path (used for recursion).
  * @return {Object} The new state.
  */
-export function reduceReceived( state = defaultState, action, path = action.endpointPath ) {
-	const [ endpoint, ...remainingPath ] = path;
-	const endpointsState = state.endpoints || {};
-	const endpointState = endpointsState[ endpoint ] || {};
+export function reduceEndpointState( reducerFunc ) {
+	return function reduceEndpointStateFunc( state, action, path ) {
+		const [ endpoint, ...remainingPath ] = path;
+		const endpointsState = state.endpoints || {};
+		const endpointState = endpointsState[ endpoint ] || {};
 
-	if ( remainingPath.length > 0 ) {
-		const subState = reduceReceived( endpointState, action, remainingPath );
-		const newEndpointState = { ...endpointState, ...subState };
+		if ( remainingPath.length > 0 ) {
+			const subState = reduceEndpointStateFunc( endpointState, action, remainingPath );
+			const newEndpointState = { ...endpointState, ...subState };
+			const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
+			const newState = { ...state, endpoints: newEndpointsState };
+			return newState;
+		}
+
+		const { params } = action;
+		if ( params ) {
+			const queriesState = endpointState.queries || [];
+			const queryIndex = findIndex( queriesState, { params } );
+			const queryState = -1 === queryIndex ? {} : queriesState[ queryIndex ];
+			const newIndex = -1 === queryIndex ? queriesState.length : queryIndex;
+			const newQueryState = reducerFunc( queryState, action );
+			const newQueriesState = [ ...queriesState ];
+			newQueriesState[ newIndex ] = newQueryState;
+			const newEndpointState = {
+				...endpointState,
+				queries: newQueriesState,
+			};
+			const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
+			const newState = { ...state, endpoints: newEndpointsState };
+			return newState;
+		}
+
+		const newEndpointState = reducerFunc( endpointState, action );
 		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
 		const newState = { ...state, endpoints: newEndpointsState };
 		return newState;
-	}
-
-	const { params, data, time: lastReceived } = action;
-	if ( params ) {
-		const queriesState = endpointState.queries || [];
-		const queryIndex = findIndex( queriesState, { params } );
-		const queryState = -1 === queryIndex ? {} : queriesState[ queryIndex ];
-		const newIndex = -1 === queryIndex ? queriesState.length : queryIndex;
-		const newQueryState = {
-			...queryState,
-			params,
-			lastReceived,
-			data,
-		};
-		const newQueriesState = [ ...queriesState ];
-		newQueriesState[ newIndex ] = newQueryState;
-		const newEndpointState = {
-			...endpointState,
-			queries: newQueriesState,
-		};
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
-	}
-
-	const newEndpointState = {
-		...endpointState,
-		lastReceived,
-		data,
 	};
-
-	const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-	const newState = { ...state, endpoints: newEndpointsState };
-	return newState;
 }
 
-/**
- * Recursively reduce client error endpoint state.
- * 1. If it goes further down the path, recurse.
- * 2. Otherwise if this has params, store it in queries.
- * 3. Otherwise store it on this endpoint state.
- * @param {Object} [state] Should contain endpoints property.
- * @param {Object} action { apiName, clientKey, endpointPath, params (optional), data }
- * @param {Array} [path] The remaining path (used for recursion).
- * @return {Object} The new state.
- */
-export function reduceError( state = defaultState, action, path = action.endpointPath ) {
-	const [ endpoint, ...remainingPath ] = path;
-	const endpointsState = state.endpoints || {};
-	const endpointState = endpointsState[ endpoint ] || {};
+export function reduceRequested( state = defaultState, action ) {
+	const reducerFunc = ( endpointState, { params, time: lastRequested } ) =>
+		( { ...endpointState, params, lastRequested } );
 
-	if ( remainingPath.length > 0 ) {
-		const subState = reduceError( endpointState, action, remainingPath );
-		const newEndpointState = { ...endpointState, ...subState };
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
-	}
+	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
+}
 
-	const { params, error, time: lastError } = action;
-	if ( params ) {
-		const queriesState = endpointState.queries || [];
-		const queryIndex = findIndex( queriesState, { params } );
-		const queryState = -1 === queryIndex ? {} : queriesState[ queryIndex ];
-		const newIndex = -1 === queryIndex ? queriesState.length : queryIndex;
-		const newQueryState = {
-			...queryState,
-			params,
-			lastError,
-			error,
-		};
-		const newQueriesState = [ ...queriesState ];
-		newQueriesState[ newIndex ] = newQueryState;
-		const newEndpointState = {
-			...endpointState,
-			queries: newQueriesState,
-		};
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
-	}
+export function reduceReceived( state = defaultState, action ) {
+	const reducerFunc = ( endpointState, { params, data, time: lastReceived } ) =>
+		( { ...endpointState, params, data, lastReceived } );
 
-	const newEndpointState = {
-		...endpointState,
-		lastError,
-		error,
-	};
+	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
+}
 
-	const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-	const newState = { ...state, endpoints: newEndpointsState };
-	return newState;
+export function reduceError( state = defaultState, action ) {
+	const reducerFunc = ( endpointState, { params, error, time: lastError } ) =>
+		( { ...endpointState, params, error, lastError } );
+
+	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
 }
