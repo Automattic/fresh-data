@@ -1,6 +1,8 @@
-export default ( state = 'World', action ) => {
-	switch ( action.type ) {
-		default:
-			return state;
-	}
+import { combineReducers } from 'redux';
+import { reducer as freshData } from 'fresh-data';
+
+const reducers = {
+	freshData,
 };
+
+export default combineReducers( reducers );
