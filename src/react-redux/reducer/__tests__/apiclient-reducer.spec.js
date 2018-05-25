@@ -1,11 +1,13 @@
 import { get } from 'lodash';
 import reducer, {
 	reduceError,
-	reduceReceived
+	reduceReceived,
+	reduceRequested,
 } from '../apiclient-reducer';
 import {
 	FRESH_DATA_CLIENT_ERROR,
 	FRESH_DATA_CLIENT_RECEIVED,
+	FRESH_DATA_CLIENT_REQUESTED,
 } from '../../action-types';
 
 describe( 'reducer', () => {
@@ -28,6 +30,99 @@ describe( 'reducer', () => {
 			expect( testReducer ).toHaveBeenCalledTimes( 1 );
 			expect( testReducer ).toHaveBeenCalledWith( state1, testAction );
 			expect( state2 ).toEqual( { answer: 42 } );
+		} );
+	} );
+
+	describe( '#reduceRequested', () => {
+		it( 'should set state for a new endpoint', () => {
+			const thing1Action = {
+				type: FRESH_DATA_CLIENT_REQUESTED,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things', 1 ],
+				time: now,
+			};
+
+			const state = reduceRequested( undefined, thing1Action );
+			const thing1State = get( state, [ 'endpoints', 'things', 'endpoints', 1 ] );
+			expect( thing1State ).toEqual( {
+				lastRequested: now,
+			} );
+		} );
+
+		it( 'should overwrite state for an existing endpoint', () => {
+			const state1 = {
+				endpoints: {
+					things: {
+						endpoints: {
+							1: {
+								lastRequested: ( now - 1000 ),
+							},
+						},
+					},
+				},
+			};
+			const thing1Action = {
+				type: FRESH_DATA_CLIENT_REQUESTED,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things', 1 ],
+				time: now,
+			};
+
+			const state2 = reduceRequested( state1, thing1Action );
+			const thing1State = get( state2, [ 'endpoints', 'things', 'endpoints', 1 ] );
+			expect( thing1State ).toEqual( {
+				lastRequested: now,
+			} );
+		} );
+
+		it( 'should set state for a new query', () => {
+			const thingsPage1Action = {
+				type: FRESH_DATA_CLIENT_REQUESTED,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things' ],
+				params: { page: 1, perPage: 3 },
+				time: now,
+			};
+
+			const state = reduceRequested( undefined, thingsPage1Action );
+			const queriesState = get( state, [ 'endpoints', 'things', 'queries' ] );
+			expect( queriesState ).toEqual( [ {
+				params: { page: 1, perPage: 3 },
+				lastRequested: now,
+			} ] );
+		} );
+
+		it( 'should overwrite state for an existing query', () => {
+			const state1 = {
+				endpoints: {
+					things: {
+						queries: [
+							{
+								params: { page: 1, perPage: 3 },
+								lastRequested: ( now - 20000 ),
+							},
+						],
+					}
+				},
+			};
+			const thingsPage1Action = {
+				type: FRESH_DATA_CLIENT_REQUESTED,
+				apiName: 'test-api',
+				clientKey: '123',
+				endpointPath: [ 'things' ],
+				params: { page: 1, perPage: 3 },
+				time: now,
+			};
+
+			const state2 = reduceRequested( state1, thingsPage1Action );
+			const queriesState = get( state2, [ 'endpoints', 'things', 'queries' ] );
+			expect( queriesState ).toEqual( [ {
+				params: { page: 1, perPage: 3 },
+				lastRequested: now,
+			} ] );
 		} );
 	} );
 
