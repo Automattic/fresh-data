@@ -58,32 +58,32 @@
 		"build": "webpack --mode production"
 	},
 	"devDependencies": {
-		"babel-eslint": "^8.2.2",
+		"babel-eslint": "^8.2.3",
 		"babel-loader": "^7.1.4",
 		"babel-plugin-add-module-exports": "^0.2.1",
-		"babel-preset-env": "^1.6.1",
+		"babel-preset-env": "^1.7.0",
 		"babel-preset-react": "^6.24.1",
 		"babel-preset-stage-2": "^6.24.1",
-		"cross-env": "^5.1.4",
+		"cross-env": "^5.1.6",
 		"eslint": "^4.19.1",
 		"eslint-config-wordpress": "^2.0.0",
-		"eslint-plugin-jest": "^21.15.0",
+		"eslint-plugin-jest": "^21.15.2",
 		"eslint-plugin-jsx-a11y": "^6.0.3",
-		"eslint-plugin-react": "^7.7.0",
+		"eslint-plugin-react": "^7.8.2",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
 		"identity-obj-proxy": "^3.0.0",
 		"react-redux": "^5.0.7",
 		"redux": "^3.7.2",
-		"webpack": "^4.1.1",
-		"webpack-cli": "^2.0.12",
-		"webpack-dev-server": "^3.1.1"
+		"webpack": "^4.8.3",
+		"webpack-cli": "^2.1.4",
+		"webpack-dev-server": "^3.1.4"
 	},
 	"dependencies": {
-		"codecov": "^3.0.0",
+		"codecov": "^3.0.2",
 		"debug": "^3.1.0",
 		"jest": "^22.4.3",
-		"lodash": "^4.17.5",
-		"react": "^16.3.2",
-		"react-dom": "^16.3.2"
+		"lodash": "^4.17.10",
+		"react": "^16.4.0",
+		"react-dom": "^16.4.0"
 	}
 }
