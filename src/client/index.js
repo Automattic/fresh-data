@@ -54,7 +54,7 @@ export default class ApiClient {
 		}
 	};
 
-	updateRequirementsData = ( now = new Date() ) => {
+	updateRequirementsData = ( now ) => {
 		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
 		const endpointsState = state.endpoints || {};
 

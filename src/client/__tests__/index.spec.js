@@ -324,8 +324,17 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
 			}, now );
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
+
 			apiClient.setComponentData( component, null );
+			apiClient.updateRequirementsData( now );
+			expect( apiClient.timeoutId ).toBeNull();
+		} );
+
+		it( 'should default endpointsState to empty object.', () => {
+			apiClient.state = {};
+			apiClient.updateRequirementsData( now );
 		} );
 	} );
 
