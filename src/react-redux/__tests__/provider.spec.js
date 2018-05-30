@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ApiClient from '../../client';
 import FreshDataApi from '../../api';
-import { FreshDataReduxProvider } from '../provider';
+import { FreshDataReduxProvider, mapStateToProps } from '../provider';
 import * as actions from '../actions';
 
 describe( 'FreshDataReduxProvider', () => {
@@ -179,7 +179,7 @@ describe( 'FreshDataReduxProvider', () => {
 			};
 
 			apis.test.updateState = jest.fn();
-			wrapper.setProps( { rootData: { test: { ...expectedApiState }, } } );
+			wrapper.setProps( { rootData: { test: expectedApiState, } } );
 
 			expect( apis.test.updateState ).toHaveBeenCalledTimes( 1 );
 			expect( apis.test.updateState ).toHaveBeenCalledWith( expectedApiState );
@@ -249,6 +249,27 @@ describe( 'FreshDataReduxProvider', () => {
 			apis.test.errorReceived( '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
 			expect( errorReceived ).toHaveBeenCalledTimes( 1 );
 			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
+		} );
+	} );
+
+	describe( '#mapStateToProps', () => {
+		const ownProps = { rootPath: 'freshData' };
+
+		it( 'should map rootData based on rootPath', () => {
+			const myState = { freshDataState: true };
+			const state = {
+				freshData: myState,
+			};
+
+			const derivedProps = mapStateToProps( state, ownProps );
+			expect( derivedProps.rootData ).toBe( myState );
+		} );
+
+		it( 'should default to empty object', () => {
+			const state = {};
+
+			const derivedProps = mapStateToProps( state, ownProps );
+			expect( derivedProps.rootData ).toEqual( {} );
 		} );
 	} );
 } );

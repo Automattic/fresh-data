@@ -122,7 +122,7 @@ export class FreshDataReduxProvider extends Component {
 	}
 }
 
-function mapStateToProps( state, ownProps ) {
+export function mapStateToProps( state, ownProps ) {
 	const { rootPath } = ownProps;
 	const rootData = get( state, rootPath, {} );
 	return { rootData };
