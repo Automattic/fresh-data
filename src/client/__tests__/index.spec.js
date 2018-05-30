@@ -1,5 +1,5 @@
 import FreshDataApi from '../../api';
-import ApiClient from '../index';
+import ApiClient, { DEFAULT_FETCH_TIMEOUT } from '../index';
 import { SECOND } from '../../utils/constants';
 import { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from '../calculate-updates';
 
@@ -182,11 +182,10 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should calculate nextUpdate when not given.', () => {
-			const api = {
-				methods: {},
-				endpoints: {},
-				selectors: thingSelectors,
-			};
+			class TestApi extends FreshDataApi {
+				static selectors = thingSelectors;
+			}
+			const api = new TestApi();
 			const setTimer = jest.fn();
 			setTimer.mockReturnValue( 5 ); // return a timeout id.
 			const clearTimer = jest.fn();
@@ -257,7 +256,9 @@ describe( 'ApiClient', () => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '3' ], undefined );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith(
+				[ 'things', '3' ], undefined, DEFAULT_FETCH_TIMEOUT
+			);
 		} );
 
 		it( 'should fetch data when a new requirement is added for data that is stale.', () => {
@@ -266,7 +267,9 @@ describe( 'ApiClient', () => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith(
+				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
+			);
 		} );
 
 		it( 'should not fetch data when a new requirement is added for data that is fresh enough.', () => {
@@ -289,7 +292,9 @@ describe( 'ApiClient', () => {
 
 			const future = now.getTime() + ( 40 * SECOND );
 			apiClient.updateRequirementsData( future );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith(
+				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
+			);
 		} );
 
 		it( 'should fetch data for a query when a new requirement is added.', () => {
@@ -299,7 +304,9 @@ describe( 'ApiClient', () => {
 			}, now );
 
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things' ], { page: 1, perPage: 10 } );
+			expect( apiClient.fetchData ).toHaveBeenCalledWith(
+				[ 'things' ], { page: 1, perPage: 10 }, DEFAULT_FETCH_TIMEOUT
+			);
 		} );
 
 		it( 'should not fetch data for a query when a new requirement is already satisfied.', () => {
@@ -332,6 +339,22 @@ describe( 'ApiClient', () => {
 			expect( apiClient.timeoutId ).toBeNull();
 		} );
 
+		it( 'should not clear timer if it has been already cleared.', () => {
+			apiClient.updateRequirementsData( now );
+
+			apiClient.setTimer = jest.fn();
+			apiClient.setTimer.mockReturnValue( 12 );
+			apiClient.clearTimer = jest.fn();
+
+			apiClient.setTimer = jest.fn();
+			apiClient.clearTimer = jest.fn();
+			apiClient.updateTimer = jest.fn();
+			apiClient.updateRequirementsData( now );
+			expect( apiClient.updateTimer ).not.toHaveBeenCalled();
+			expect( apiClient.setTimer ).not.toHaveBeenCalled();
+			expect( apiClient.clearTimer ).not.toHaveBeenCalled();
+		} );
+
 		it( 'should default endpointsState to empty object.', () => {
 			apiClient.state = {};
 			apiClient.updateRequirementsData( now );
@@ -352,7 +375,7 @@ describe( 'ApiClient', () => {
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			apiClient.fetchData( [ 'things', '1' ] );
+			apiClient.fetchData( [ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT );
 			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ '1' ], undefined );
 		} );
 
@@ -373,7 +396,7 @@ describe( 'ApiClient', () => {
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			apiClient.fetchData( [ 'settings', 'currency' ] );
+			apiClient.fetchData( [ 'settings', 'currency' ], undefined, DEFAULT_FETCH_TIMEOUT );
 			expect( currencyReadFunc ).toHaveBeenCalledWith( api.methods, [], undefined );
 			expect( settingsReadFunc ).toHaveBeenCalledTimes( 0 );
 		} );
@@ -388,7 +411,9 @@ describe( 'ApiClient', () => {
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
+			expect( () => apiClient.fetchData(
+				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
+			) ).toThrowError();
 		} );
 
 		it( 'should throw error if no endpoint is found.', () => {
@@ -399,7 +424,124 @@ describe( 'ApiClient', () => {
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
+			expect( () => apiClient.fetchData(
+				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
+			) ).toThrowError();
+		} );
+	} );
+
+	describe( '#waitForData', () => {
+		it( 'should take a normal value and return it as a promise.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			const errorReceived = jest.fn();
+			const dummyApi = new FreshDataApi();
+			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const value = { foot: 'red' };
+
+			const result = apiClient.waitForData( [ 'things', '1' ], undefined, value, 1500 );
+			expect( result ).toBeInstanceOf( Promise );
+			result.then( ( resultValue ) => {
+				expect( resultValue ).toEqual(
+					{ endpointPath: [ 'things', '1' ], params: undefined, data: value }
+				);
+			} );
+		} );
+
+		it( 'should take a promise as a value and wrap it in another promise.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			const errorReceived = jest.fn();
+			const dummyApi = new FreshDataApi();
+			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			dummyApi.dataHandlers.dataReceived = dataReceived;
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const endpointPath = [ 'things', '1' ];
+			const value = { foot: 'red' };
+			const valuePromise = Promise.resolve().then( () => value );
+
+			const result = apiClient.waitForData( endpointPath, undefined, valuePromise, 1500 );
+			expect( result ).toBeInstanceOf( Promise );
+
+			return result.then( ( resultValue ) => {
+				expect( resultValue ).toEqual(
+					{ endpointPath: [ 'things', '1' ], params: undefined, data: value }
+				);
+
+				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
+				expect( dataReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, value );
+				expect( errorReceived ).not.toHaveBeenCalled();
+			} );
+		} );
+
+		it( 'should reject if value promise rejects.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			const errorReceived = jest.fn();
+			const dummyApi = new FreshDataApi();
+			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const endpointPath = [ 'things', '1' ];
+			const message = 'I am misbehaving';
+			const value = new Promise( ( resolve, reject ) => reject( { message } ) );
+
+			const result = apiClient.waitForData( endpointPath, undefined, value, DEFAULT_FETCH_TIMEOUT );
+			expect( result ).toBeInstanceOf( Promise );
+
+			return result.then( ( resultValue ) => {
+				expect( resultValue.endpointPath ).toEqual( endpointPath );
+				expect( resultValue.params ).toBeUndefined();
+				expect( resultValue.data ).toBeUndefined();
+				expect( resultValue.error ).toBeInstanceOf( Object );
+				expect( resultValue.error.message ).toEqual( message );
+			} ).catch( ( error ) => {
+				expect( error.endpointPath ).toEqual( endpointPath );
+				expect( error.params ).toBeUndefined();
+				expect( error.data ).toBeUndefined();
+				expect( error.error ).toBeInstanceOf( Object );
+				expect( error.error.message ).toEqual( message );
+
+				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataReceived ).not.toHaveBeenCalled();
+				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
+				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, { message } );
+			} );
+		} );
+
+		it( 'should reject if timeout is reached.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			const errorReceived = jest.fn();
+			const dummyApi = new FreshDataApi();
+			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const endpointPath = [ 'things', '1' ];
+			const value = new Promise( () => {} ); // This will intentionally never resolve.
+			const message = 'Timeout of 10 reached.';
+
+			const result = apiClient.waitForData( endpointPath, undefined, value, 10 );
+			expect( result ).toBeInstanceOf( Promise );
+
+			return result.then( ( resultValue ) => {
+				expect( resultValue.endpointPath ).toEqual( endpointPath );
+				expect( resultValue.params ).toBeUndefined();
+				expect( resultValue.data ).toBeUndefined();
+				expect( resultValue.error ).toBeInstanceOf( Object );
+				expect( resultValue.error.message ).toEqual( message );
+			} ).catch( ( error ) => {
+				expect( error.endpointPath ).toEqual( endpointPath );
+				expect( error.params ).toBeUndefined();
+				expect( error.data ).toBeUndefined();
+				expect( error.error ).toBeInstanceOf( Object );
+				expect( error.error.message ).toEqual( message );
+
+				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataReceived ).not.toHaveBeenCalled();
+				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
+				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, { message } );
+			} );
 		} );
 	} );
 } );
