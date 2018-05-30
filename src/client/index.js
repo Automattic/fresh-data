@@ -120,7 +120,8 @@ export default class ApiClient {
 			throw new TypeError( `Endpoint "${ endpointName }" has no read method.` );
 		}
 
-		return endpoint.read( this.methods, remainingPath, params );
+		const value = endpoint.read( this.methods, remainingPath, params );
+		return this.waitForData( endpointPath, params, value );
 	}
 
 	/**
