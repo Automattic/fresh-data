@@ -1,32 +1,121 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
+import debugFactory from 'debug';
 import PropTypes from 'prop-types';
 import { get } from 'lodash';
+import * as actions from './actions';
 
-class FreshDataReduxProvider extends Component {
+const debug = debugFactory( 'fresh-data:provider' );
+
+export class FreshDataReduxProvider extends Component {
 	static propTypes = {
 		children: PropTypes.node.isRequired,
+		apis: PropTypes.object.isRequired,
 		rootPath: PropTypes.oneOfType( [
 			PropTypes.arrayOf( PropTypes.oneOfType( [ PropTypes.string, PropTypes.number ] ) ),
 			PropTypes.string,
 		] ),
-		update: PropTypes.func,
+		rootData: PropTypes.object.isRequired,
+		dataRequested: PropTypes.func.isRequired,
+		dataReceived: PropTypes.func.isRequired,
+		errorReceived: PropTypes.func.isRequired,
 	};
 
 	static defaultProps = {
 		rootPath: [ 'freshData' ],
-		update: () => {}, // TODO: Hook in to registry module by default.
 	};
 
+	static childContextTypes = {
+		getApiClient: PropTypes.func.isRequired,
+	};
+
+	constructor( props ) {
+		super( ...arguments );
+		this.apisByName = new Map();
+		this.namesByApi = new Map();
+		this.updateNeeded = false;
+		this.update( props );
+	}
+
+	getChildContext() {
+		return { getApiClient: this.getApiClient };
+	}
+
 	componentDidMount() {
-		const { rootData, update } = this.props;
-		update( rootData );
+		this.update( this.props );
 	}
 
 	componentDidUpdate() {
-		const { rootData, update } = this.props;
-		update( rootData );
+		this.update( this.props );
 	}
+
+	shouldComponentUpdate() {
+		return this.updateNeeded;
+	}
+
+	update( props ) {
+		const { apis, rootData } = props;
+
+		if ( this.lastApis !== apis ) {
+			this.updateApis( apis );
+			this.updateNeeded = true;
+		}
+
+		if ( this.lastState !== rootData || this.lastApis !== apis ) {
+			this.updateState( rootData );
+			this.updateNeeded = true;
+		}
+
+		this.lastApis = apis;
+		this.lastState = rootData;
+	}
+
+	updateApis = ( apis ) => {
+		const { dataRequested, dataReceived, errorReceived } = this;
+		debug( 'Setting apis: ', apis );
+		this.apisByName.clear();
+		this.namesByApi.clear();
+		Object.keys( apis ).forEach(
+			( apiName ) => {
+				const api = apis[ apiName ];
+				api.setDataHandlers( dataRequested, dataReceived, errorReceived );
+				this.apisByName.set( apiName, api );
+				this.namesByApi.set( api, apiName );
+			}
+		);
+	}
+
+	updateState = ( state ) => {
+		debug( 'Updating api state: ', state );
+		this.apisByName.forEach( ( api, name ) => {
+			const apiState = state[ name ] || {};
+			api.updateState( apiState );
+		} );
+	}
+
+	getApiClient = ( apiName, clientKey ) => {
+		const api = this.apisByName.get( apiName );
+		if ( ! api ) {
+			debug( 'Failed to find api by name: ', apiName );
+			return null;
+		}
+		return api.getClient( clientKey );
+	}
+
+	dataRequested = ( api, clientKey, endpointPath, params ) => {
+		const apiName = this.namesByApi.get( api );
+		this.props.dataRequested( apiName, clientKey, endpointPath, params );
+	};
+
+	dataReceived = ( api, clientKey, endpointPath, params, data ) => {
+		const apiName = this.namesByApi.get( api );
+		this.props.dataReceived( apiName, clientKey, endpointPath, params, data );
+	};
+
+	errorReceived = ( api, clientKey, endpointPath, params, error ) => {
+		const apiName = this.namesByApi.get( api );
+		this.props.errorReceived( apiName, clientKey, endpointPath, params, error );
+	};
 
 	render() {
 		return this.props.children;
@@ -35,8 +124,13 @@ class FreshDataReduxProvider extends Component {
 
 function mapStateToProps( state, ownProps ) {
 	const { rootPath } = ownProps;
-	const rootData = get( state, rootPath );
+	const rootData = get( state, rootPath, {} );
 	return { rootData };
 }
 
-export default connect( mapStateToProps )( FreshDataReduxProvider );
+const ConnectedFreshDataReduxProvider = connect( mapStateToProps, actions )( FreshDataReduxProvider );
+
+// Ensure the defaults props are assigned the first time mapStateToProps() is run.
+ConnectedFreshDataReduxProvider.defaultProps = FreshDataReduxProvider.defaultProps;
+
+export default ConnectedFreshDataReduxProvider;
