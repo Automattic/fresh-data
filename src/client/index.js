@@ -13,6 +13,7 @@ export default class ApiClient {
 	constructor( api, key, setTimer = setTimeout, clearTimer = clearTimeout ) {
 		this.api = api;
 		this.key = key;
+		this.subscriptionCallbacks = new Set();
 		this.requirementsByComponent = new Map();
 		this.requirementsByEndpoint = {};
 		this.methods = mapMethods( api.methods, key );
@@ -29,7 +30,28 @@ export default class ApiClient {
 		if ( this.state !== state ) {
 			this.state = state;
 			this.updateTimer( now );
+			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
 		}
+	}
+
+	// TODO: See if setComponentData can be the subscription.
+	// Then this wouldn't be needed and each subscription could be more fine-grained.
+	subscribe = ( callback ) => {
+		if ( this.subscriptionCallbacks.has( callback ) ) {
+			debug( 'Attempting to add a subscription callback twice:', callback );
+			return false;
+		}
+		this.subscriptionCallbacks.add( callback );
+		return callback;
+	}
+
+	unsubscribe = ( callback ) => {
+		if ( ! this.subscriptionCallbacks.has( callback ) ) {
+			debug( 'Attempting to remove a callback that is not subscribed:', callback );
+			return false;
+		}
+		this.subscriptionCallbacks.delete( callback );
+		return callback;
 	}
 
 	getData = ( endpointPath, params ) => {
