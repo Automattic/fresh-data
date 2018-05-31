@@ -1,6 +1,7 @@
 import { SECOND } from '../../utils/constants';
 import calculateUpdates, {
-	DEFAULT_NEXT_UPDATE,
+	DEFAULT_MIN_UPDATE,
+	DEFAULT_MAX_UPDATE,
 	getFreshnessLeft,
 	getTimeoutLeft,
 } from '../calculate-updates';
@@ -77,7 +78,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [
 			{ endpointPath: [ 'things', '1' ] },
 		] );
@@ -99,7 +100,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [
 			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
 		] );
@@ -129,7 +130,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [] );
 	} );
 
@@ -157,7 +158,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [
 			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
 		] );
@@ -187,7 +188,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [] );
 	} );
 
@@ -213,7 +214,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [] );
 	} );
 
@@ -229,7 +230,7 @@ describe( 'calculateUpdates', () => {
 			},
 		};
 
-		const { updates } = calculateUpdates( requirementsByEndpoint, {}, now );
+		const { updates } = calculateUpdates( requirementsByEndpoint, {}, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
 		expect( updates ).toEqual( [
 			{ endpointPath: [ 'things', '1' ] },
 			{ endpointPath: [ 'things' ], params: { page: 1, perPage: 3 } },
@@ -237,17 +238,17 @@ describe( 'calculateUpdates', () => {
 	} );
 
 	it( 'should give a default nextUpdate value in the absence of any needed updates', () => {
-		expect( calculateUpdates( {}, {} ).nextUpdate ).toEqual( DEFAULT_NEXT_UPDATE );
+		expect( calculateUpdates( {}, {} ).nextUpdate ).toEqual( DEFAULT_MAX_UPDATE );
 	} );
 
 	it( 'should return default value if nothing is required earlier.', () => {
 		const requirementsByEndpoint = {
 			things: {
 				endpoints: {
-					1: { freshness: DEFAULT_NEXT_UPDATE + SECOND },
+					1: { freshness: DEFAULT_MIN_UPDATE + SECOND },
 				},
 				queries: [
-					{ params: { page: 1, perPage: 3 }, freshness: DEFAULT_NEXT_UPDATE + SECOND },
+					{ params: { page: 1, perPage: 3 }, freshness: DEFAULT_MIN_UPDATE + SECOND },
 				],
 			},
 		};
@@ -261,8 +262,8 @@ describe( 'calculateUpdates', () => {
 				],
 			},
 		};
-		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
-		expect( nextUpdate / 1000 ).toBeCloseTo( DEFAULT_NEXT_UPDATE / 1000, 1 );
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
+		expect( nextUpdate ).toEqual( DEFAULT_MIN_UPDATE );
 	} );
 
 	it( 'should return time difference for earliest required endpoint.', () => {
@@ -286,11 +287,11 @@ describe( 'calculateUpdates', () => {
 				],
 			},
 		};
-		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
-		expect( nextUpdate / 1000 ).toBeCloseTo( ( 20 * SECOND ) / 1000, 1 );
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
+		expect( nextUpdate ).toEqual( ( 20 * SECOND ) );
 	} );
 
-	it( 'should return negative value for overdue endpoint.', () => {
+	it( 'should never return a smaller value than minimum.', () => {
 		const requirementsByEndpoint = {
 			things: {
 				endpoints: {
@@ -304,15 +305,15 @@ describe( 'calculateUpdates', () => {
 		const endpointsState = {
 			things: {
 				endpoints: {
-					1: { lastReceived: now - ( 61 * SECOND ) },
+					1: { lastReceived: now - ( 62 * SECOND ) },
 				},
 				queries: [
 					{ params: { page: 1, perPage: 3 }, lastReceived: now - ( 40 * SECOND ) },
 				],
 			},
 		};
-		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState );
-		expect( nextUpdate / 1000 ).toBeCloseTo( -( 1 * SECOND ) / 1000, 1 );
+		const { nextUpdate } = calculateUpdates( requirementsByEndpoint, endpointsState, DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE, now );
+		expect( nextUpdate ).toEqual( DEFAULT_MIN_UPDATE );
 	} );
 } );
 

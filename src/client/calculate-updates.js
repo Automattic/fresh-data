@@ -1,7 +1,7 @@
 import { find } from 'lodash';
-import { HOUR } from '../utils/constants';
 
-export const DEFAULT_NEXT_UPDATE = 1 * HOUR;
+export const DEFAULT_MAX_UPDATE = 30000;
+export const DEFAULT_MIN_UPDATE = 500;
 
 /**
  * Compares requirements against current state for update information.
@@ -11,6 +11,8 @@ export const DEFAULT_NEXT_UPDATE = 1 * HOUR;
  * next update cycle should run, in milleseconds.
  * @param {Object} requirementsByEndpoint Tree with endpoint names for top-level keys.
  * @param {Object} endpointsState State indexed by enpoint names containing API data.
+ * @param {number} [minUpdate] Minimum nextUpdate value.
+ * @param {number} [maxUpdate] Maximum nextUpdate value.
  * @param {Date} [now] Current time (used for tests).
  * @return {Object} updateInfo: { nextUpdate, updates }
  * @see combineComponentRequirements
@@ -18,10 +20,13 @@ export const DEFAULT_NEXT_UPDATE = 1 * HOUR;
 export default function calculateUpdates(
 	requirementsByEndpoint,
 	endpointsState,
+	minUpdate = DEFAULT_MIN_UPDATE,
+	maxUpdate = DEFAULT_MAX_UPDATE,
 	now = new Date()
 ) {
-	const updateInfo = { updates: [], nextUpdate: DEFAULT_NEXT_UPDATE };
+	const updateInfo = { updates: [], nextUpdate: maxUpdate };
 	appendUpdatesForEndpoints( updateInfo, [], requirementsByEndpoint, endpointsState, now );
+	updateInfo.nextUpdate = Math.max( updateInfo.nextUpdate, minUpdate );
 	return updateInfo;
 }
 
@@ -98,7 +103,8 @@ function appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirement
 		);
 	}
 
-	const isRequested = state.lastRequested > state.lastReceived;
+	const { lastRequested, lastReceived } = state;
+	const isRequested = lastRequested && ( ! lastReceived || lastRequested > lastReceived );
 	const timeoutLeft = getTimeoutLeft( requirements, state, now );
 	const freshnessLeft = getFreshnessLeft( requirements, state, now );
 	const nextUpdate = isRequested && 0 >= freshnessLeft ? timeoutLeft : freshnessLeft;
@@ -118,11 +124,11 @@ function appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirement
  */
 export function getTimeoutLeft( requirements, state, now ) {
 	const { timeout } = requirements;
-	const { lastRequested } = state;
+	const lastRequested = state.lastRequested || Number.MIN_SAFE_INTEGER;
 	const lastReceived = state.lastReceived || Number.MIN_SAFE_INTEGER;
 
 	if ( timeout && lastRequested && lastRequested > lastReceived ) {
-		return ( lastRequested + timeout ) - now;
+		return timeout - ( now - lastRequested );
 	}
 	return Number.MAX_SAFE_INTEGER;
 }
@@ -139,7 +145,7 @@ export function getFreshnessLeft( requirements, state, now ) {
 	const { lastReceived } = state;
 
 	if ( freshness && lastReceived ) {
-		return ( lastReceived + freshness ) - now;
+		return freshness - ( now - lastReceived );
 	}
 	return freshness ? Number.MIN_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
 }

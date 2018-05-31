@@ -3,7 +3,7 @@ import { isEqual, isEmpty } from 'lodash';
 import { combineComponentRequirements } from './requirements';
 import { default as getDataFromState } from './get-data';
 import requireData from './require-data';
-import calculateUpdates from './calculate-updates';
+import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
@@ -14,6 +14,8 @@ export default class ApiClient {
 		this.requirementsByComponent = new Map();
 		this.requirementsByEndpoint = {};
 		this.methods = mapMethods( api.methods, key );
+		this.minUpdate = DEFAULT_MIN_UPDATE;
+		this.maxUpdate = DEFAULT_MAX_UPDATE;
 		this.timeoutId = null;
 		this.setState( {} );
 		debug( 'New ApiClient "' + key + '" for api: ', api );
@@ -51,11 +53,12 @@ export default class ApiClient {
 	};
 
 	updateRequirementsData = ( now = new Date() ) => {
-		const { requirementsByEndpoint, state } = this;
-		const endpointsState = state.endpoints;
+		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
+		const endpointsState = state.endpoints || {};
 
-		if ( endpointsState && ! isEmpty( requirementsByEndpoint ) ) {
-			const { nextUpdate, updates } = calculateUpdates( requirementsByEndpoint, endpointsState, now );
+		if ( ! isEmpty( requirementsByEndpoint ) ) {
+			const { nextUpdate, updates } =
+				calculateUpdates( requirementsByEndpoint, endpointsState, minUpdate, maxUpdate, now );
 			updates.forEach( ( update ) => {
 				const { endpointPath, params } = update;
 				this.fetchData( endpointPath, params );
