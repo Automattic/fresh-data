@@ -11,9 +11,10 @@ export default function withApiClient( apiName, mapApiToProps, getClientKey ) {
 				'Expected component for function returned by withApiClient',
 				'Instead received ', WrappedComponent
 			);
+			return null;
 		}
 
-		const displayName = WrappedComponent.displayName || WrappedComponent.name || 'component';
+		const displayName = WrappedComponent.displayName || WrappedComponent.name;
 
 		class ApiClientConnect extends Component {
 			static displayName = `ApiClientConnect( ${ displayName } )`;
@@ -57,9 +58,10 @@ export default function withApiClient( apiName, mapApiToProps, getClientKey ) {
 					}
 
 					const client = getApiClient( apiName, clientKey );
+					const clientState = client.state;
 					client.subscribe( this.handleSubscriptionChange );
 					this.setState( () => {
-						return { clientKey, client };
+						return { clientKey, client, clientState };
 					} );
 				}
 			}

@@ -7,51 +7,196 @@ describe( 'withApiClient', () => {
 	class TestApi extends FreshDataApi {
 	}
 
-	const api = new TestApi();
+	let api;
+	let Component;
+	let mapApiToProps;
+	let getClientKey;
+	let getApiClient;
 
-	const Component = () => {
-		return (
-			<span className="test-span">Testing</span>
-		);
-	};
-	const mapApiToProps = () => ( {} );
-	const getClientKey = () => '123';
+	beforeEach( () => {
+		api = new TestApi();
 
-	const getApiClient = ( apiName, clientKey ) => {
-		if ( 'test' === apiName ) {
-			return api.getClient( clientKey );
-		}
-	};
+		Component = () => {
+			return (
+				<span className="test-span">Testing</span>
+			);
+		};
+
+		mapApiToProps = () => ( {} );
+		getClientKey = ( { clientKey } ) => clientKey;
+
+		getApiClient = ( apiName, clientKey ) => {
+			if ( 'test' === apiName ) {
+				return api.getClient( clientKey );
+			}
+		};
+	} );
 
 	it( 'should render wrapped component.', () => {
 		const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
-		const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
+		const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
 		expect( wrapper.find( '.test-span' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'should set displayName for wrapped component with displayName.', () => {
+		Component.displayName = 'TestDisplayName';
+		const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+		expect( ComponentWithApiClient.displayName ).toBe( 'ApiClientConnect( TestDisplayName )' );
+	} );
+
+	it( 'should set displayName for wrapped component without displayName.', () => {
+		Component.displayName = null;
+		const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+		expect( ComponentWithApiClient.displayName ).toBe( 'ApiClientConnect( ' + Component.name + ' )' );
 	} );
 
 	it( 'should render wrapped component even without getApiClient in context.', () => {
 		const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
-		const wrapper = mount( <ComponentWithApiClient /> );
+		const wrapper = mount( <ComponentWithApiClient clientKey="123" /> );
 		expect( wrapper.find( '.test-span' ) ).toHaveLength( 1 );
 	} );
 
-	it( 'should call getApiClient on mount.', () => {
-		const mockGetApiClient = jest.fn();
-		mockGetApiClient.mockReturnValue( getApiClient( 'test', '123' ) );
-		const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
-		mount( <ComponentWithApiClient />, { context: { getApiClient: mockGetApiClient } } );
-
-		expect( mockGetApiClient ).toHaveBeenCalledTimes( 1 );
-		expect( mockGetApiClient ).toHaveBeenCalledWith( 'test', '123' );
+	it( 'should return null if wrapped component is not valid.', () => {
+		const result = withApiClient( 'test', mapApiToProps, getClientKey )( '' );
+		expect( result ).toBeNull();
 	} );
 
-	describe( '#subscribe', () => {
-	} );
+	describe( '#updateClient', () => {
+		it( 'should call getClientKey with given props.', () => {
+			getClientKey = jest.fn();
+			getClientKey.mockReturnValue( '123' );
 
-	describe( '#unsubscribe', () => {
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			expect( getClientKey ).toHaveBeenLastCalledWith( { clientKey: '123' } );
+		} );
+
+		it( 'should call getApiClient on mount.', () => {
+			const mockGetApiClient = jest.fn();
+			mockGetApiClient.mockReturnValue( getApiClient( 'test', '123' ) );
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			mount(
+				<ComponentWithApiClient clientKey="123" />,
+				{ context: { getApiClient: mockGetApiClient } }
+			);
+
+			expect( mockGetApiClient ).toHaveBeenCalledTimes( 1 );
+			expect( mockGetApiClient ).toHaveBeenCalledWith( 'test', '123' );
+		} );
+
+		it( 'should call getApiClient on update.', () => {
+			const mockGetApiClient = jest.fn();
+			mockGetApiClient.mockReturnValueOnce( getApiClient( 'test', '123' ) );
+			mockGetApiClient.mockReturnValueOnce( getApiClient( 'test', '456' ) );
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount(
+				<ComponentWithApiClient clientKey="123" />,
+				{ context: { getApiClient: mockGetApiClient } }
+			);
+
+			expect( mockGetApiClient ).toHaveBeenCalledTimes( 1 );
+			expect( mockGetApiClient ).toHaveBeenLastCalledWith( 'test', '123' );
+
+			wrapper.setProps( { clientKey: '456' } );
+
+			expect( mockGetApiClient ).toHaveBeenCalledTimes( 2 );
+			expect( mockGetApiClient ).toHaveBeenLastCalledWith( 'test', '456' );
+		} );
+
+		it( 'should set clientKey and client in state.', () => {
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			wrapper.instance().updateClient( {}, {} );
+
+			const state = wrapper.instance().state;
+			expect( state.clientKey ).toBe( '123' );
+			expect( state.client ).toBe( getApiClient( 'test', '123' ) );
+		} );
+
+		it( 'should subscribe to the ApiClient on mount.', () => {
+			const apiClient = getApiClient( 'test', '123' );
+			apiClient.subscribe = jest.fn();
+
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+			const handleSubscriptionChange = wrapper.instance().handleSubscriptionChange;
+			const state = wrapper.instance().state;
+
+			expect( apiClient.subscribe ).toHaveBeenCalledTimes( 1 );
+			expect( apiClient.subscribe ).toHaveBeenCalledWith( handleSubscriptionChange );
+			expect( state.clientKey ).toBe( '123' );
+			expect( state.client ).toBe( apiClient );
+		} );
+
+		it( 'should unsubscribe from the ApiClient on unmount.', () => {
+			const apiClient = getApiClient( 'test', '123' );
+			apiClient.unsubscribe = jest.fn();
+
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			const handleSubscriptionChange = wrapper.instance().handleSubscriptionChange;
+			wrapper.unmount();
+
+			expect( apiClient.unsubscribe ).toHaveBeenCalledTimes( 1 );
+			expect( apiClient.unsubscribe ).toHaveBeenCalledWith( handleSubscriptionChange );
+		} );
 	} );
 
 	describe( '#handleSubscriptionChange', () => {
+		it( 'should update when ApiClient state changes.', () => {
+			const apiClient = getApiClient( 'test', '123' );
+
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			const clientState = {
+				123: { endpoints: {}, },
+			};
+			apiClient.setState( clientState );
+
+			expect( wrapper.instance().state.clientState ).toBe( clientState );
+		} );
+
+		it( 'should not update when ApiClient state is identical.', () => {
+			const apiClient = getApiClient( 'test', '123' );
+
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			const clientState = {
+				123: { endpoints: {}, },
+			};
+			apiClient.setState( clientState );
+
+			wrapper.instance().setState = jest.fn();
+			apiClient.setState( clientState );
+
+			expect( wrapper.instance().setState ).not.toHaveBeenCalled();
+		} );
+
+		it( 'should not update when set with wrong ApiClient.', () => {
+			const apiClient1 = getApiClient( 'test', '123' );
+			const apiClient2 = getApiClient( 'test', '456' );
+
+			const ComponentWithApiClient = withApiClient( 'test', mapApiToProps, getClientKey )( Component );
+			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+			expect( wrapper.instance().state.clientState ).toBe( apiClient1.state );
+
+			apiClient1.unsubscribe = jest.fn(); // subvert the unsubscribe.
+			wrapper.setProps( { clientKey: '456' } );
+			expect( apiClient1.unsubscribe ).toHaveBeenCalled();
+			expect( wrapper.instance().state.clientState ).toBe( apiClient2.state );
+
+			const clientState = {
+				123: { endpoints: {}, },
+			};
+			apiClient1.setState( clientState );
+
+			expect( wrapper.instance().state.clientState ).toBe( apiClient2.state );
+		} );
 	} );
 
 	describe( '#mapApiToProps', () => {

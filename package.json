@@ -49,7 +49,12 @@
 			"\\.(css)$": "identity-obj-proxy"
 		},
 		"setupTestFrameworkScriptFile": "jest-enzyme",
-		"testEnvironment": "enzyme"
+		"testEnvironment": "enzyme",
+		"testPathIgnorePatterns": [
+			"/node_modules/",
+			"/dist/",
+			"/examples/"
+		]
 	},
 	"scripts": {
 		"lint": "eslint .",
