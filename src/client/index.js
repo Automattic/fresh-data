@@ -7,6 +7,8 @@ import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calc
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
+export const DEFAULT_FETCH_TIMEOUT = 60000; // TODO: Remove this after we get it from requirements below.
+
 export default class ApiClient {
 	constructor( api, key, setTimer = setTimeout, clearTimer = clearTimeout ) {
 		this.api = api;
@@ -64,7 +66,9 @@ export default class ApiClient {
 
 			updates.forEach( ( update ) => {
 				const { endpointPath, params } = update;
-				this.fetchData( endpointPath, params );
+				// TODO: Get timeout allowed from requirement and use it here.
+				this.fetchData( endpointPath, params, DEFAULT_FETCH_TIMEOUT );
+				this.api.dataRequested( this.key, endpointPath, params );
 			} );
 
 			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
@@ -99,7 +103,7 @@ export default class ApiClient {
 		}
 	}
 
-	fetchData = ( endpointPath, params, endpoints = this.api.endpoints ) => {
+	fetchData = ( endpointPath, params, timeout, endpoints = this.api.endpoints ) => {
 		const [ endpointName, ...remainingPath ] = endpointPath;
 		const endpoint = endpoints[ endpointName ];
 
@@ -109,14 +113,54 @@ export default class ApiClient {
 
 		if ( remainingPath.length > 0 && endpoint[ remainingPath[ 0 ] ] ) {
 			// Looks like we can go down a level in the path.
-			return this.fetchData( remainingPath, params, endpoint );
+			return this.fetchData( remainingPath, params, timeout, endpoint );
 		}
 
 		if ( ! endpoint.read ) {
 			throw new TypeError( `Endpoint "${ endpointName }" has no read method.` );
 		}
 
-		return endpoint.read( this.methods, remainingPath, params );
+		const value = endpoint.read( this.methods, remainingPath, params );
+		return this.waitForData( endpointPath, params, value );
+	}
+
+	/**
+	 * Return a promise that takes value as another promise or just data.
+	 * @param {Array} endpointPath The endpoint path of the data we're waiting for.
+	 * @param {Object} params The params of the data we want (or undefined if none).
+	 * @param {Promise | any } value Either the data itself, or a promise that resolves to it.
+	 * @param {number} timeout Timeout (in milliseconds allowed until promise is automatically rejected.
+	 * @return {Object} A promise that resolves to an object: { endpointPath, params, data|error }.
+	 */
+	waitForData = ( endpointPath, params, value, timeout ) => {
+		let response = null;
+
+		const success = ( data ) => {
+			this.api.dataReceived( this.key, endpointPath, params, data );
+			response = { endpointPath, params, data };
+			return response;
+		};
+
+		const failure = ( error ) => {
+			this.api.errorReceived( this.key, endpointPath, params, error );
+			response = { endpointPath, params, error };
+			return response;
+		};
+
+		const fetchPromise = Promise.resolve().then( () => value ).then( success ).catch( failure );
+
+		const timeoutPromise = new Promise( ( resolve, reject ) => {
+			const timeoutId = this.setTimer( () => {
+				this.clearTimer( timeoutId );
+				if ( ! response ) {
+					const error = { message: `Timeout of ${ timeout } reached.` };
+					this.api.errorReceived( this.key, endpointPath, params, error );
+					reject( { endpointPath, params, error } );
+				}
+			}, timeout );
+		} );
+
+		return Promise.race( [ fetchPromise, timeoutPromise ] );
 	}
 }
 
