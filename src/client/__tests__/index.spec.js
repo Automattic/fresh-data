@@ -1,6 +1,7 @@
 import FreshDataApi from '../../api';
 import ApiClient from '../index';
 import { SECOND } from '../../utils/constants';
+import { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from '../calculate-updates';
 
 describe( 'ApiClient', () => {
 	const now = new Date();
@@ -101,6 +102,11 @@ describe( 'ApiClient', () => {
 		expect( queryData[ 0 ] ).toBe( thing1 );
 	} );
 
+	it( 'should start with no timeoutId', () => {
+		const apiClient = new ApiClient( emptyApi, '123' );
+		expect( apiClient.timeoutId ).toBeNull();
+	} );
+
 	describe( '#setComponentData', () => {
 		class TestApi extends FreshDataApi {
 			static endpoints = {
@@ -161,6 +167,60 @@ describe( 'ApiClient', () => {
 		} );
 	} );
 
+	describe( '#updateTimer', () => {
+		it( 'should accept and use nextUpdate when given.', () => {
+			const setTimer = jest.fn();
+			setTimer.mockReturnValue( 5 ); // return a timeout id.
+			const clearTimer = jest.fn();
+			const apiClient = new ApiClient( emptyApi, '123', setTimer, clearTimer );
+			apiClient.updateTimer( now, 5000 );
+
+			expect( apiClient.timeoutId ).toBe( 5 );
+			expect( setTimer ).toHaveBeenCalledTimes( 1 );
+			expect( setTimer ).toHaveBeenCalledWith( apiClient.updateRequirementsData, 5000 );
+			expect( clearTimer ).not.toHaveBeenCalled();
+		} );
+
+		it( 'should calculate nextUpdate when not given.', () => {
+			const api = {
+				methods: {},
+				endpoints: {},
+				selectors: thingSelectors,
+			};
+			const setTimer = jest.fn();
+			setTimer.mockReturnValue( 5 ); // return a timeout id.
+			const clearTimer = jest.fn();
+			const apiClient = new ApiClient( api, '123', setTimer, clearTimer );
+
+			const component = () => {};
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 60 * SECOND }, 1 );
+			}, now );
+
+			apiClient.updateTimer( now, 5000 );
+
+			expect( apiClient.timeoutId ).toBe( 5 );
+			expect( setTimer ).toHaveBeenCalledTimes( 2 );
+			expect( setTimer ).toHaveBeenCalledWith( apiClient.updateRequirementsData, DEFAULT_MIN_UPDATE );
+			expect( setTimer ).toHaveBeenCalledWith( apiClient.updateRequirementsData, 5000 );
+			expect( clearTimer ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'should set timeout to maximum by default.', () => {
+			const setTimer = jest.fn();
+			setTimer.mockReturnValue( 5 ); // return a timeout id.
+			const clearTimer = jest.fn();
+			const apiClient = new ApiClient( emptyApi, '123', setTimer, clearTimer );
+
+			apiClient.updateTimer( now );
+
+			expect( apiClient.timeoutId ).toBe( 5 );
+			expect( setTimer ).toHaveBeenCalledTimes( 1 );
+			expect( setTimer ).toHaveBeenCalledWith( apiClient.updateRequirementsData, DEFAULT_MAX_UPDATE );
+			expect( clearTimer ).not.toHaveBeenCalled();
+		} );
+	} );
+
 	describe( '#updateRequirementsData', () => {
 		class TestApi extends FreshDataApi {
 			static endpoints = {
@@ -183,67 +243,11 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, null );
 		} );
 
-		it( 'should trigger a requirements data update when component requirements change.', () => {
+		it( 'should not immediately trigger a requirements update when component requirements change.', () => {
 			apiClient.updateRequirementsData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			} );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
-
-			apiClient.updateRequirementsData = jest.fn();
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 30 * SECOND }, 1 );
-			} );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
-		} );
-
-		it( 'should not trigger a requirements data update when component requirements are still the same.', () => {
-			apiClient.updateRequirementsData = jest.fn();
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 90 * SECOND }, 1 );
-			} );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
-
-			apiClient.updateRequirementsData = jest.fn();
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 90 * SECOND }, 1 );
-			} );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
-		} );
-
-		it( 'should trigger a requirements data update when the client state is different.', () => {
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 90 * SECOND }, 1 );
-			} );
-
-			const thing1new = { name: 'Thing 1 - new' };
-			const thing1ClientState2 = {
-				endpoints: {
-					things: {
-						endpoints: {
-							1: {
-								data: thing1new,
-							},
-						},
-						queries: [
-							{ params: { page: 1, perPage: 3 }, data: [ thing1new ] },
-						],
-					},
-				},
-			};
-
-			apiClient.updateRequirementsData = jest.fn();
-			apiClient.setState( thing1ClientState2 );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 1 );
-		} );
-
-		it( 'should not trigger a requirements data update when the client state is still the same.', () => {
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 90 * SECOND }, 1 );
-			} );
-
-			apiClient.updateRequirementsData = jest.fn();
-			apiClient.setState( thing1ClientState );
 			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
 		} );
 
@@ -252,6 +256,7 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
 			}, now );
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '3' ], undefined );
 		} );
 
@@ -260,6 +265,7 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			}, now );
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
 		} );
 
@@ -268,17 +274,21 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 95 * SECOND }, 1 );
 			}, now );
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
 		} );
 
 		it( 'should fetch data when data for an existing requirement goes stale.', () => {
 			apiClient.fetchData = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+				selectors.getThing( { freshness: 100 * SECOND }, 1 );
 			}, now );
 
-			apiClient.updateRequirementsData( now + ( 20 * SECOND ) );
+			apiClient.updateRequirementsData( now );
+			expect( apiClient.fetchData ).not.toHaveBeenCalled();
 
+			const future = now.getTime() + ( 40 * SECOND );
+			apiClient.updateRequirementsData( future );
 			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things', '1' ], undefined );
 		} );
 
@@ -287,6 +297,8 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 10 );
 			}, now );
+
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.fetchData ).toHaveBeenCalledWith( [ 'things' ], { page: 1, perPage: 10 } );
 		} );
 
@@ -295,6 +307,8 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
 			}, now );
+
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
 		} );
 
@@ -302,6 +316,7 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
 			}, now );
+
 			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
 		} );
 
@@ -309,8 +324,17 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
 			}, now );
+			apiClient.updateRequirementsData( now );
 			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
+
 			apiClient.setComponentData( component, null );
+			apiClient.updateRequirementsData( now );
+			expect( apiClient.timeoutId ).toBeNull();
+		} );
+
+		it( 'should default endpointsState to empty object.', () => {
+			apiClient.state = {};
+			apiClient.updateRequirementsData( now );
 		} );
 	} );
 
@@ -376,19 +400,6 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( api, '123' );
 
 			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
-		} );
-	} );
-
-	describe( '#setNextUpdate', () => {
-		it( 'should set and clear timeoutId', () => {
-			const apiClient = new ApiClient( emptyApi, '123' );
-			expect( apiClient.timeoutId ).toBeNull();
-
-			apiClient.setNextUpdate( 5000 );
-			expect( apiClient.timeoutId ).toBeGreaterThan( 0 );
-
-			apiClient.setNextUpdate( null );
-			expect( apiClient.timeoutId ).toBeNull();
 		} );
 	} );
 } );

@@ -8,7 +8,7 @@ import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calc
 const debug = debugFactory( 'fresh-data:api-client' );
 
 export default class ApiClient {
-	constructor( api, key ) {
+	constructor( api, key, setTimer = setTimeout, clearTimer = clearTimeout ) {
 		this.api = api;
 		this.key = key;
 		this.requirementsByComponent = new Map();
@@ -16,15 +16,17 @@ export default class ApiClient {
 		this.methods = mapMethods( api.methods, key );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
+		this.setTimer = setTimer;
+		this.clearTimer = clearTimer;
 		this.timeoutId = null;
-		this.setState( {} );
+		this.state = {};
 		debug( 'New ApiClient "' + key + '" for api: ', api );
 	}
 
 	setState = ( state, now = new Date() ) => {
 		if ( this.state !== state ) {
 			this.state = state;
-			this.updateRequirementsData( now );
+			this.updateTimer( now );
 		}
 	}
 
@@ -48,11 +50,11 @@ export default class ApiClient {
 		const requirementsByEndpoint = combineComponentRequirements( this.requirementsByComponent );
 		if ( ! isEqual( this.requirementsByEndpoint, requirementsByEndpoint ) ) {
 			this.requirementsByEndpoint = requirementsByEndpoint;
-			this.updateRequirementsData( now );
+			this.updateTimer( now );
 		}
 	};
 
-	updateRequirementsData = ( now = new Date() ) => {
+	updateRequirementsData = ( now ) => {
 		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
 		const endpointsState = state.endpoints || {};
 
@@ -66,21 +68,34 @@ export default class ApiClient {
 			} );
 
 			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
-			this.setNextUpdate( nextUpdate );
-		} else {
+			this.updateTimer( now, nextUpdate );
+		} else if ( this.timeoutId ) {
 			debug( 'Unscheduling future updates' );
-			this.setNextUpdate( null );
+			this.updateTimer( now, null );
 		}
 	}
 
-	setNextUpdate = ( milliseconds ) => {
+	updateTimer = ( now, nextUpdate = undefined ) => {
+		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
+		const endpointsState = state.endpoints || {};
+
+		if ( undefined === nextUpdate ) {
+			nextUpdate = calculateUpdates(
+				requirementsByEndpoint,
+				endpointsState,
+				minUpdate,
+				maxUpdate,
+				now
+			).nextUpdate;
+		}
+
 		if ( this.timeoutId ) {
-			clearTimeout( this.timeoutId );
+			this.clearTimer( this.timeoutId );
 			this.timeoutId = null;
 		}
 
-		if ( milliseconds ) {
-			this.timeoutId = setTimeout( this.updateRequirementsData, milliseconds );
+		if ( nextUpdate ) {
+			this.timeoutId = this.setTimer( this.updateRequirementsData, nextUpdate );
 		}
 	}
 
