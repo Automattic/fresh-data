@@ -544,4 +544,69 @@ describe( 'ApiClient', () => {
 			} );
 		} );
 	} );
+
+	describe( '#subscribe', () => {
+		it( 'should add a callback to the subscription list.', () => {
+			const dummyApi = new FreshDataApi();
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const callback = jest.fn();
+
+			expect( apiClient.subscriptionCallbacks.size ).toBe( 0 );
+
+			apiClient.subscribe( callback );
+
+			expect( apiClient.subscriptionCallbacks.size ).toBe( 1 );
+			expect( apiClient.subscriptionCallbacks.has( callback ) ).toBeTruthy();
+			expect( callback ).not.toHaveBeenCalled();
+		} );
+
+		it( 'should not add a callback multiple times.', () => {
+			const dummyApi = new FreshDataApi();
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const callback = jest.fn();
+
+			expect( apiClient.subscribe( callback ) ).toBe( callback );
+			expect( apiClient.subscribe( callback ) ).toBeFalsy();
+
+			expect( apiClient.subscriptionCallbacks.size ).toBe( 1 );
+			expect( apiClient.subscriptionCallbacks.has( callback ) ).toBeTruthy();
+		} );
+
+		it( 'should remove a callback to the subscription list.', () => {
+			const dummyApi = new FreshDataApi();
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const callback = jest.fn();
+
+			apiClient.subscribe( callback );
+			apiClient.unsubscribe( callback );
+
+			expect( apiClient.subscriptionCallbacks.size ).toBe( 0 );
+			expect( apiClient.subscriptionCallbacks.has( callback ) ).toBeFalsy();
+		} );
+
+		it( 'should not attempt remove a callback twice.', () => {
+			const dummyApi = new FreshDataApi();
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const callback = jest.fn();
+
+			apiClient.subscribe( callback );
+			expect( apiClient.unsubscribe( callback ) ).toBe( callback );
+			expect( apiClient.unsubscribe( callback ) ).toBeFalsy();
+
+			expect( apiClient.subscriptionCallbacks.size ).toBe( 0 );
+		} );
+
+		it( 'should call the callback whenever state is set on the client.', () => {
+			const dummyApi = new FreshDataApi();
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const callback = jest.fn();
+			const state = {};
+
+			apiClient.subscribe( callback );
+			apiClient.setState( state );
+
+			expect( callback ).toHaveBeenCalledTimes( 1 );
+			expect( callback ).toHaveBeenCalledWith( apiClient );
+		} );
+	} );
 } );
