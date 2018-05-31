@@ -41,7 +41,9 @@ export default function withApiClient( apiName, mapApiToProps, getClientKey ) {
 			}
 
 			componentWillUnmount() {
-				this.state.client.unsubscribe( this.handleSubscriptionChange );
+				if ( this.state.client ) {
+					this.state.client.unsubscribe( this.handleSubscriptionChange );
+				}
 			}
 
 			updateClient = ( nextProps, prevState ) => {
