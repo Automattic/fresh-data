@@ -1,15 +1,11 @@
+import FreshDataApi from '../../api';
 import ApiClient from '../index';
 import { SECOND } from '../../utils/constants';
 
 describe( 'ApiClient', () => {
 	const now = new Date();
 
-	const emptyApi = {
-		methods: {},
-		endpoints: {
-		},
-		selectors: {},
-	};
+	const emptyApi = new FreshDataApi();
 
 	const thingSelectors = {
 		getThing: ( getData, requireData ) => ( requirement, id ) => {
@@ -62,16 +58,21 @@ describe( 'ApiClient', () => {
 
 	it( 'should map api methods to client key', () => {
 		const checkMethod = jest.fn();
-		const api = {
-			methods: {
+		class TestApi extends FreshDataApi {
+			static methods = {
 				get: ( clientKey ) => ( endpointPath ) => ( params ) => {
 					checkMethod( 'get', clientKey, endpointPath, params );
 				},
 				post: ( clientKey ) => ( endpointPath ) => ( params ) => {
 					checkMethod( 'post', clientKey, endpointPath, params );
 				},
-			},
-		};
+			};
+		}
+		const api = new TestApi();
+		const dataRequested = jest.fn();
+		const dataReceived = jest.fn();
+		const errorReceived = jest.fn();
+		api.setDataHandlers( dataRequested, dataReceived, errorReceived );
 		const apiClient = new ApiClient( api, '123' );
 
 		const thingsPath = [ 'things' ];
@@ -85,11 +86,10 @@ describe( 'ApiClient', () => {
 	} );
 
 	it( 'should map getData to current state', () => {
-		const api = {
-			methods: {},
-			endpoints: {},
-			selectors: thingSelectors,
-		};
+		class TestApi extends FreshDataApi {
+			static selectors = thingSelectors;
+		}
+		const api = new TestApi();
 		const apiClient = new ApiClient( api, '123' );
 		apiClient.setState( thing1ClientState );
 
@@ -102,15 +102,15 @@ describe( 'ApiClient', () => {
 	} );
 
 	describe( '#setComponentData', () => {
-		const api = {
-			methods: {},
-			endpoints: {
+		class TestApi extends FreshDataApi {
+			static endpoints = {
 				things: {
 					read: () => {},
 				},
-			},
-			selectors: thingSelectors,
-		};
+			};
+			static selectors = thingSelectors;
+		}
+		const api = new TestApi();
 
 		const component = () => {};
 		let apiClient = null;
@@ -162,16 +162,15 @@ describe( 'ApiClient', () => {
 	} );
 
 	describe( '#updateRequirementsData', () => {
-		const api = {
-			methods: {},
-			endpoints: {
+		class TestApi extends FreshDataApi {
+			static endpoints = {
 				things: {
 					read: () => {},
 				},
-			},
-			selectors: thingSelectors,
-		};
-
+			};
+			static selectors = thingSelectors;
+		}
+		const api = new TestApi();
 		const component = () => {};
 		let apiClient = null;
 
@@ -318,59 +317,63 @@ describe( 'ApiClient', () => {
 	describe( '#fetchData', () => {
 		it( 'should call the corresponding api endpoint read function.', () => {
 			const readFunc = jest.fn();
-			const dummyApi = {
-				methods: {},
-				endpoints: {
+			class TestApi extends FreshDataApi {
+				static endpoints = {
 					things: {
 						read: readFunc,
 					},
-				},
-			};
-			const apiClient = new ApiClient( dummyApi, '123' );
+				};
+				static methods = {};
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
 
 			apiClient.fetchData( [ 'things', '1' ] );
-			expect( readFunc ).toHaveBeenCalledWith( dummyApi.methods, [ '1' ], undefined );
+			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ '1' ], undefined );
 		} );
 
 		it( 'should call a nested api endpoint if it exists.', () => {
 			const settingsReadFunc = jest.fn();
 			const currencyReadFunc = jest.fn();
-			const dummyApi = {
-				methods: {},
-				endpoints: {
+			class TestApi extends FreshDataApi {
+				static endpoints = {
 					settings: {
 						read: settingsReadFunc,
 						currency: {
 							read: currencyReadFunc,
 						},
 					},
-				},
-			};
-			const apiClient = new ApiClient( dummyApi, '123' );
+				};
+				static methods = {};
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
 
 			apiClient.fetchData( [ 'settings', 'currency' ] );
-			expect( currencyReadFunc ).toHaveBeenCalledWith( dummyApi.methods, [], undefined );
+			expect( currencyReadFunc ).toHaveBeenCalledWith( api.methods, [], undefined );
 			expect( settingsReadFunc ).toHaveBeenCalledTimes( 0 );
 		} );
 
 		it( 'should throw error if no read function is found.', () => {
-			const dummyApi = {
-				methods: {},
-				endpoints: {
+			class TestApi extends FreshDataApi {
+				static endpoints = {
 					things: {},
-				},
-			};
-			const apiClient = new ApiClient( dummyApi, '123' );
+				};
+				static methods = {};
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
 
 			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
 		} );
 
 		it( 'should throw error if no endpoint is found.', () => {
-			const dummyApi = {
-				methods: {},
-				endpoints: {},
-			};
-			const apiClient = new ApiClient( dummyApi, '123' );
+			class TestApi extends FreshDataApi {
+				static methods = {};
+				static endpoints = {};
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
 
 			expect( () => apiClient.fetchData( [ 'things', '1' ] ) ).toThrowError();
 		} );

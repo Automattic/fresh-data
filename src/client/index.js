@@ -59,10 +59,12 @@ export default class ApiClient {
 		if ( ! isEmpty( requirementsByEndpoint ) ) {
 			const { nextUpdate, updates } =
 				calculateUpdates( requirementsByEndpoint, endpointsState, minUpdate, maxUpdate, now );
+
 			updates.forEach( ( update ) => {
 				const { endpointPath, params } = update;
 				this.fetchData( endpointPath, params );
 			} );
+
 			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
 			this.setNextUpdate( nextUpdate );
 		} else {
