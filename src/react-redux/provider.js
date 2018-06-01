@@ -29,12 +29,11 @@ export class FreshDataReduxProvider extends Component {
 		getApiClient: PropTypes.func.isRequired,
 	};
 
-	constructor( props ) {
+	constructor() {
 		super( ...arguments );
 		this.apisByName = new Map();
 		this.namesByApi = new Map();
-		this.updateNeeded = false;
-		this.update( props );
+		this.update();
 	}
 
 	getChildContext() {
@@ -42,32 +41,32 @@ export class FreshDataReduxProvider extends Component {
 	}
 
 	componentDidMount() {
-		this.update( this.props );
+		this.update();
 	}
 
 	componentDidUpdate() {
-		this.update( this.props );
+		this.update();
 	}
 
-	shouldComponentUpdate() {
-		return this.updateNeeded;
+	shouldComponentUpdate( nextProps ) {
+		const { apis, rootData } = nextProps;
+		return ( this.lastApis !== apis || this.lastState !== rootData );
 	}
 
-	update( props ) {
-		const { apis, rootData } = props;
+	update() {
+		const { apis, rootData } = this.props;
+		const apisChanged = this.lastApis !== apis;
+		const stateChanged = this.lastState !== rootData;
 
-		if ( this.lastApis !== apis ) {
+		if ( apisChanged ) {
 			this.updateApis( apis );
-			this.updateNeeded = true;
+			this.lastApis = apis;
 		}
 
-		if ( this.lastState !== rootData || this.lastApis !== apis ) {
+		if ( stateChanged || apisChanged ) {
 			this.updateState( rootData );
-			this.updateNeeded = true;
+			this.lastState = rootData;
 		}
-
-		this.lastApis = apis;
-		this.lastState = rootData;
 	}
 
 	updateApis = ( apis ) => {
