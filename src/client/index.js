@@ -9,8 +9,16 @@ const debug = debugFactory( 'fresh-data:api-client' );
 
 export const DEFAULT_FETCH_TIMEOUT = 60000; // TODO: Remove this after we get it from requirements below.
 
+function _setTimer( callback, delay ) {
+	return window.setTimeout( callback, delay );
+}
+
+function _clearTimer( id ) {
+	return window.clearTimeout( id );
+}
+
 export default class ApiClient {
-	constructor( api, key, setTimer = setTimeout, clearTimer = clearTimeout ) {
+	constructor( api, key, setTimer = _setTimer, clearTimer = _clearTimer ) {
 		this.api = api;
 		this.key = key;
 		this.subscriptionCallbacks = new Set();
