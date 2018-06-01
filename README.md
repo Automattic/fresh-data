@@ -1,95 +1,123 @@
-# fresh-data
+# Fresh Data
 
-`fresh-data` works with [React Redux](https://github.com/reactjs/react-redux) to provide
-an exceptionally easy way for [React](https://github.com/facebook/react) components to declare
-which data they need from any API with a `fresh-data` implementation.
+Fresh Data is a declarative data API framework for JavaScript apps.
 
-## Using `fresh-data` from a component
+It offers a single integration point between APIs and your application.
+The application simply declares the data it needs and the Fresh APIs ensure that the data it receives stays fresh.
 
-The first goal of `fresh-data` is to make using data from APIs super easy to use from React.
-Here's how API data can be used from a React component:
+## Benefits
+
+* Keep data in your web application current, without writing any application code to do it.
+* Avoid fetching data that you already have in browser state.
+* Works with any way data can be fetched (REST, GraphQL, WebSockets, Offline, etc.)
+* Automatically clear out old data that hasn't been used for a while (coming soon)
+
+## How it works
+
+1. Applications declare the data they need and how they need it.
+2. APIs define the way data is stored and accessed.
+3. Environments can offer differing methods of network access.
+
+As of now, Fresh Data is geared toward [React](https://github.com/facebook/react) applications and it uses [Redux](https://github.com/reduxjs/redux) to hold state.
+
+## Application Component
+
+Here's how you define the API data you need for a React Component.
 
 ```js
-function mapApiToProps( apiClient, ownProps, state ) {
-	const { stuffId } = ownProps;
+function mapApiToProps( selectors, ownProps, state ) {
+	const { getThing } = selectors;
+	const { thingId } = ownProps;
 
-	const stuff = apiClient.selectors.getStuffById( stuffId, { freshness: 30 * SECOND } );
+	const thing = getThing( thingId, { freshness: 90 * SECOND } );
 
 	return {
-		data,
+		thing,
 	};
 }
 
-export default withApiClient( mapApiToProps )( MyReactComponent );
-```
-
-The `withApiClient` Higher Order Component works much like `react-redux` connect.
-The difference is that it maps API data to props directly using special API selectors,
-which takes an additional `requirements` parameter. This allows the component developer
-to decide how fresh the data is needed to be. (other requirements still to come!)
-
-## Creating a `fresh-data` API
-
-The second objective of `fresh-data` is to make it extremely easy to add a new API to
-a React app to be used. This is also created in the most declarative way possible:
-
-```js
-// Create API endpoints that use named methods and provide parameters to them.
-// Data returned from these endpoints is kept in the corresponding apiClientState.
-const endpoints = {
-	stuff: {
-		fetchByIds: { method: 'get', params: { include: 'ids' } },
-	},
-};
-
-// Selectors first apply requirements to endpoint data, then return state.
-const selectors = {
-	getDataById( apiClientState, requireData ) => ( stuffId, requirements ) => {
-		requireData( 'stuff', { ids: [ stuffId ] }, requirements );
-
-		const stuff = apiClientState.stuff[ stuffId ];
-		return stuff ? stuff.data : null;
-	}
-};
-
-// Take methods from the application to create the api to be registered.
-export default createStuffApi( methods ) {
-	return {
-		methods,
-		endpoints,
-		selectors,
-	};
+function getClientKey( props ) {
+	return props.myApiUri
 }
+
+export default withApiClient( 'MyApi', mapApiToProps, getClientKey )( MyReactComponent );
 ```
 
-## Registering `fresh-data` APIs in an application
+The `withApiClient` Higher Order Component works much like `connect` from [React Redux](https://github.com/reduxjs/react-redux).
+The above code will handle the initial fetching of your data and will re-fetch every time the freshness time is exceeded.
 
-This is the part that ties it all together. It connects APIs to the methods they need,
-registers them, and provides them to `withApiData` connected components.
+## Creating a Fresh Data API Module
+
+Modules for each API can be kept in your application or a separate module.
 
 ```js
-import { Provider } from 'react-redux';
-import { ReduxFreshDataProvider, registerApi } from 'fresh-data';
-import stuffApi from 'stuff-api';
+export default class MyApi extends FreshDataApi {
+	static methods = {
+		get: ( clientKey ) => ( endpointPath ) => ( params ) => {
+			const uri = clientKey + endpointPath.join( '/' );
+			const queryString = qs.stringify( params );
+			return fetch( `${ uri }?${ query }` );
+		}
+	}
 
-// API methods (e.g. get/post/put/patch/delete ) are provided by your own app
-import apiMethods from './api-methods';
-import store from './store';
+	static endpoints = {
+		things: {
+			read: ( methods, endpointPath, params ) => {
+				const { get } = methods;
+				const fullEndpointPath = [ 'things', ...endpointPath ];
+				return get( fullEndpointPath )( params );
+			}
+		}
+	}
 
-// Add the stuff api to the fresh-data registry.
-registerApi( stuffApi( apiMethods ) );
-
-class App extends Component {
-	render() {
-		const { children } = this.props;
-
-		return (
-			<Provider store={ store }>
-				<ReduxFreshDataProvider>
-					{ children }
-				</ReduxFreshDataProvider>
-			</Provider>
-		);
+	static selectors = {
+		getThing: ( getData, requireData ) => ( thingId, requirement ) => {
+			const path = [ 'thing', thingId ];
+			requireData( requirement, path );
+			return getData( path ) || {};
+		}
 	}
 }
 ```
+
+Your own API depends on the methods, endpoints, and selectors you define.
+- Methods: The way you access your API.
+- Endpoints: Object context of your API, uses methods for data.
+- Selectors: Set requirements and return data from endpoints.
+
+## Integrating Fresh Data APIs into your React application.
+
+The FreshDataProvider holds the list of APIs available to your application and provides it to your connected data components:
+
+```js
+const apis = { MyApi: new MyApi() };
+
+export default MyApp = () => {
+	return (
+		<ReduxProvider store={ store }>
+			<FreshDataProvider apis={ apis }>
+				<div classname="App">
+					<DataForm myApiUri="https://example.com" />
+				</div>
+			</FreshDataProvider>
+		</ReduxProvider>
+	);
+};
+```
+
+## Still to be completed
+
+Fresh Data is functional, but still a work in progress. Here's what's next on the list:
+- More examples:
+  - GitHub API
+  - WordPress REST API
+  - GraphQL
+  - WebSockets
+  - Mutating data example (create, update, delete endpoints)
+- Feature: Fetch on first mount (regardless of freshness)
+- Feature: Clearing out old data
+  - Detecting when data was last rendered
+  - Unlinking data over a threshold
+
+## License
+GPL v2
