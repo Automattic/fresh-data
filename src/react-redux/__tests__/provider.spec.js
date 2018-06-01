@@ -1,80 +1,275 @@
+import { mount } from 'enzyme';
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { createStore } from 'redux';
-import { Provider as ReduxProvider } from 'react-redux';
-import FreshDataReduxProvider from '../provider';
+import PropTypes from 'prop-types';
+import ApiClient from '../../client';
+import FreshDataApi from '../../api';
+import { FreshDataReduxProvider, mapStateToProps } from '../provider';
+import * as actions from '../actions';
 
 describe( 'FreshDataReduxProvider', () => {
-	it( 'should render without crashing', () => {
-		const reducer = ( state ) => state;
-		const store = createStore( reducer );
-		const div = document.createElement( 'div' );
-		const testApp = (
-			<ReduxProvider store={ store }>
-				<FreshDataReduxProvider>
-					<span>Testing</span>
-				</FreshDataReduxProvider>
-			</ReduxProvider>
-		);
-		ReactDOM.render( testApp, div );
-		ReactDOM.unmountComponentAtNode( div );
+	class TestApi extends FreshDataApi {
+	}
+
+	let apis;
+
+	beforeEach( () => {
+		apis = { test: new TestApi() };
 	} );
 
-	it( 'should update api clients with initial state', () => {
-		const state = { testRoot: {} };
-		const reducer = () => state;
-		const store = createStore( reducer );
-		const update = jest.fn();
-		const div = document.createElement( 'div' );
-		const testApp = (
-			<ReduxProvider store={ store }>
-				<FreshDataReduxProvider rootPath={ [ 'testRoot' ] } update={ update }>
-					<span>Testing</span>
-				</FreshDataReduxProvider>
-			</ReduxProvider>
+	it( 'should render without crashing.', () => {
+		mount(
+			<FreshDataReduxProvider
+				apis={ apis }
+				rootData={ {} }
+				dataRequested={ actions.dataRequested }
+				dataReceived={ actions.dataReceived }
+				errorReceived={ actions.errorReceived }
+			>
+				<span>Testing</span>
+			</FreshDataReduxProvider>
 		);
-		ReactDOM.render( testApp, div );
-		ReactDOM.unmountComponentAtNode( div );
-
-		expect( update ).toHaveBeenCalledTimes( 1 );
-		expect( update ).toHaveBeenCalledWith( state.testRoot );
 	} );
 
-	it( 'should update api clients when state changes', () => {
-		const a = { a: true };
-		const b = { b: true };
-		const states = [
-			{ testRoot: a },
-			{ testRoot: a },
-			{ testRoot: b },
-		];
-		const reducer = ( state, action ) => {
-			if ( 'TEST_ACTION' === action.type ) {
-				return states[ action.index ];
-			}
-			return state;
-		};
+	describe( '#getApiClient', () => {
+		it( 'should pass down getApiClient to children via context.', () => {
+			let childContext = null;
 
-		const store = createStore( reducer );
-		const update = jest.fn();
-		const div = document.createElement( 'div' );
-		const testApp = (
-			<ReduxProvider store={ store }>
-				<FreshDataReduxProvider rootPath={ [ 'testRoot' ] } update={ update }>
+			const ChildComponent = ( props, context ) => {
+				childContext = context;
+				return (
+					<span>Child Test</span>
+				);
+			};
+			ChildComponent.contextTypes = { getApiClient: PropTypes.func };
+
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<ChildComponent />
+				</FreshDataReduxProvider>
+			);
+
+			expect( childContext ).toBeInstanceOf( Object );
+			expect( childContext.getApiClient ).toBe( wrapper.instance().getApiClient );
+		} );
+
+		it( 'should return newly created api client.', () => {
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
-			</ReduxProvider>
-		);
-		ReactDOM.render( testApp, div );
+			);
+			expect( wrapper.instance().getApiClient( 'test', '123' ) ).toBeInstanceOf( ApiClient );
+		} );
 
-		store.dispatch( { type: 'TEST_ACTION', index: 0 } );
-		store.dispatch( { type: 'TEST_ACTION', index: 1 } );
-		store.dispatch( { type: 'TEST_ACTION', index: 2 } );
-		ReactDOM.unmountComponentAtNode( div );
+		it( 'should return already created api client.', () => {
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+			const apiClient = wrapper.instance().getApiClient( 'test', '123' );
+			expect( wrapper.instance().getApiClient( 'test', '123' ) ).toBe( apiClient );
+		} );
 
-		expect( update ).toHaveBeenCalledTimes( 3 );
-		expect( update ).toHaveBeenCalledWith( undefined );
-		expect( update ).toHaveBeenCalledWith( states[ 0 ].testRoot );
-		expect( update ).toHaveBeenCalledWith( states[ 1 ].testRoot );
+		it( 'should return null if incorrect api name is given.', () => {
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+			expect( wrapper.instance().getApiClient( 'tst', '123' ) ).toBeNull();
+		} );
+	} );
+
+	describe( '#updateApis', () => {
+		it( 'should set api data handlers initially.', () => {
+			apis.test.setDataHandlers = jest.fn();
+
+			mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'should set api data handlers when the apis prop is updated.', () => {
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ {} }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			apis.test.setDataHandlers = jest.fn();
+			wrapper.setProps( { apis } );
+			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+		} );
+	} );
+
+	describe( '#updateState', () => {
+		it( 'should update the states of the apis', () => {
+			apis.test.updateState = jest.fn();
+
+			const now = new Date();
+			const wrapper = mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			expect( apis.test.updateState ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.updateState ).toHaveBeenCalledWith( {} );
+
+			const expectedApiState = {
+				123: {
+					endpoints: {
+						things: {
+							endpoints: {
+								1: {
+									data: { testData: true },
+									lastReceived: now,
+								},
+							},
+						},
+					},
+				},
+			};
+
+			apis.test.updateState = jest.fn();
+			wrapper.setProps( { rootData: { test: expectedApiState, } } );
+
+			expect( apis.test.updateState ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.updateState ).toHaveBeenCalledWith( expectedApiState );
+		} );
+	} );
+
+	describe( '#dataRequested', () => {
+		it( 'should dispatch when called from an api.', () => {
+			const dataRequested = jest.fn();
+
+			mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			apis.test.dataRequested( '123', [ 'thing', '1' ], { param: 1 } );
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 } );
+		} );
+	} );
+
+	describe( '#dataReceived', () => {
+		it( 'should dispatch when called from an api.', () => {
+			const dataReceived = jest.fn();
+
+			mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ dataReceived }
+					errorReceived={ actions.errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			apis.test.dataReceived( '123', [ 'thing', '1' ], { param: 1 }, { data: true } );
+			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
+			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 }, { data: true } );
+		} );
+	} );
+
+	describe( '#errorReceived', () => {
+		it( 'should dispatch when called from an api.', () => {
+			const errorReceived = jest.fn();
+
+			mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ actions.dataRequested }
+					dataReceived={ actions.dataReceived }
+					errorReceived={ errorReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			apis.test.errorReceived( '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
+			expect( errorReceived ).toHaveBeenCalledTimes( 1 );
+			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
+		} );
+	} );
+
+	describe( '#mapStateToProps', () => {
+		const ownProps = { rootPath: 'freshData' };
+
+		it( 'should map rootData based on rootPath', () => {
+			const myState = { freshDataState: true };
+			const state = {
+				freshData: myState,
+			};
+
+			const derivedProps = mapStateToProps( state, ownProps );
+			expect( derivedProps.rootData ).toBe( myState );
+		} );
+
+		it( 'should default to empty object', () => {
+			const state = {};
+
+			const derivedProps = mapStateToProps( state, ownProps );
+			expect( derivedProps.rootData ).toEqual( {} );
+		} );
 	} );
 } );
