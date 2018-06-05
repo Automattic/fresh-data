@@ -92,7 +92,12 @@
 	},
 	"babel": {
 		"presets": [
-			[ "env", { "modules": false } ],
+			[
+				"env",
+				{
+					"modules": false
+				}
+			],
 			"react",
 			"stage-2"
 		],
