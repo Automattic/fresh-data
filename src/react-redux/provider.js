@@ -1,8 +1,8 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
 import debugFactory from 'debug';
-import PropTypes from 'prop-types';
 import { get } from 'lodash';
+import PropTypes from 'prop-types';
 import * as actions from './actions';
 
 const debug = debugFactory( 'fresh-data:provider' );

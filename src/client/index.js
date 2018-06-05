@@ -1,9 +1,9 @@
 import debugFactory from 'debug';
 import { isEqual, isEmpty } from 'lodash';
+import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
 import { combineComponentRequirements } from './requirements';
 import { default as getDataFromState } from './get-data';
 import requireData from './require-data';
-import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
 
 const debug = debugFactory( 'fresh-data:api-client' );
 
