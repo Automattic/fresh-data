@@ -25,7 +25,16 @@ const config = {
 	plugins: [
 		nodeResolve(),
 		babel( {
+			babelrc: false,
 			exclude: '**/node_modules/**',
+			presets: [
+				[ 'env', { modules: false } ],
+				'react',
+				'stage-2',
+			],
+			plugins: [
+				'external-helpers',
+			],
 		} ),
 		replace( {
 			'process.env.NODE_ENV': JSON.stringify( env ),
