@@ -1,5 +1,5 @@
-import ApiClient from '../client';
 import debugFactory from 'debug';
+import ApiClient from '../client/index';
 
 const debug = debugFactory( 'fresh-data:api' );
 
