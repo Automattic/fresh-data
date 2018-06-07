@@ -9,22 +9,23 @@ function renderPostLine( post ) {
 	const date = new Date( post.date_gmt + 'Z' );
 
 	return (
-		<div className="post_line" key={ post.id }>
-			<a href={ post.link }>{ title }</a>
-			&nbsp;
-			<span className="post_date">({ date.toLocaleString() })</span>
-		</div>
+		<tr className="post-line" key={ post.id }>
+			<td className="post-date">{ date.toLocaleString() }</td>
+			<td className="post-title"><a href={ post.link }>{ title }</a></td>
+		</tr>
 	);
 }
 
 function PostList( { posts, siteUrl } ) {
 	return (
-		<div>
+		<div className="post-list">
 			<h3>Recent Posts for</h3>
 			<h4><pre>{ siteUrl }</pre></h4>
-			<div>
-				{ posts && posts.map( renderPostLine ) }
-			</div>
+			<table>
+				<tbody>
+					{ posts && posts.map( renderPostLine ) }
+				</tbody>
+			</table>
 		</div>
 	);
 }
