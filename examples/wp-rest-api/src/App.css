@@ -1,0 +1,28 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: rgb(57, 184, 99);
+  padding: 20px;
+  color: white;
+}
+
+.App-title {
+  font-size: 1.75rem;
+}
+
+.WP-header {
+  background-color: rgb(15,116,168);
+  padding: 5px;
+  color: white;
+}
+
+.WP-title {
+	font-size: 1.25rem;
+	color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
