@@ -17,7 +17,7 @@ function renderPostLine( post ) {
 	);
 }
 
-function RecentPosts( { posts, siteUrl } ) {
+function PostList( { posts, siteUrl } ) {
 	return (
 		<div>
 			<h3>Recent Posts for</h3>
@@ -29,14 +29,14 @@ function RecentPosts( { posts, siteUrl } ) {
 	);
 }
 
-RecentPosts.propTypes = {
+PostList.propTypes = {
 	siteUrl: PropTypes.string,
 	posts: PropTypes.array,
 };
 
 function mapApiToProps( selectors ) {
-	const { getRecentPosts } = selectors;
-	const posts = getRecentPosts( { freshness: 1 * MINUTE, timeout: 3 * SECOND } );
+	const { getPosts } = selectors;
+	const posts = getPosts( { freshness: 5 * MINUTE, timeout: 3 * SECOND } );
 	return {
 		posts,
 	};
@@ -46,4 +46,4 @@ function getClientKey( ownProps ) {
 	return ownProps.siteUrl;
 }
 
-export default withApiClient( 'wp-rest-api', mapApiToProps, getClientKey )( RecentPosts );
+export default withApiClient( 'wp-rest-api', mapApiToProps, getClientKey )( PostList );

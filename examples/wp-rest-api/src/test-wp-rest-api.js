@@ -1,4 +1,5 @@
 import { FreshDataApi } from 'fresh-data';
+import qs from 'qs';
 
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
@@ -7,14 +8,15 @@ export function createApi( fetch = window.fetch ) {
 	class TestWPRestApi extends FreshDataApi {
 		static methods = {
 			get: ( clientKey ) => ( endpointPath ) => ( params ) => { // eslint-disable-line no-unused-vars
-				const baseUrl = `${ clientKey }/${ API_URL_PREFIX }/`;
+				const baseUrl = `${ clientKey }/${ API_URL_PREFIX }`;
 				const path = endpointPath.join( '/' );
-				const url = baseUrl + path;
+				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
+				const url = `${ baseUrl }/${ path }${ httpParams ? '?' + qs.stringify( httpParams ) : '' }`;
+
 				return fetch( url ).then( ( response ) => {
 					if ( ! response.ok ) {
 						throw new Error( `HTTP Error for ${ response.url }: ${ response.status }` );
 					}
-
 					return response.json().then( ( data ) => {
 						return data;
 					} );
@@ -34,10 +36,11 @@ export function createApi( fetch = window.fetch ) {
 		}
 
 		static selectors = {
-			getRecentPosts: ( getData, requireData ) => ( requirement ) => {
+			getPosts: ( getData, requireData ) => ( requirement, page = 1, perPage = 10 ) => {
 				const path = [ 'posts' ];
-				requireData( requirement, path );
-				return getData( path ) || [];
+				const params = { page, perPage };
+				requireData( requirement, path, params );
+				return getData( path, params ) || [];
 			}
 		}
 	}

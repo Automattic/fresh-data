@@ -1,7 +1,7 @@
 import React from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { FreshDataProvider } from 'fresh-data';
-import RecentPosts from './RecentPosts';
+import PostList from './PostList';
 import SiteSelect from './SiteSelect';
 import WpRestApi from './test-wp-rest-api';
 import './App.css';
@@ -22,7 +22,7 @@ const App = ( { store } ) => {
 						<h2><a className="WP-title" href="http://wp-api.org">WordPress REST API</a></h2>
 					</header>
 					<SiteSelect>
-						<RecentPosts />
+						<PostList />
 					</SiteSelect>
 				</div>
 			</FreshDataProvider>
