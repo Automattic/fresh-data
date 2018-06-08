@@ -428,6 +428,24 @@ describe( 'ApiClient', () => {
 				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
 			) ).toThrowError();
 		} );
+
+		it( 'should call waitForData', () => {
+			const readValue = {};
+			class TestApi extends FreshDataApi {
+				static endpoints = {
+					things: {
+						read: () => ( readValue ),
+					},
+				};
+				static methods = {};
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+
+			apiClient.waitForData = jest.fn();
+			apiClient.fetchData( [ 'things', '1' ], { param: true }, DEFAULT_FETCH_TIMEOUT );
+			expect( apiClient.waitForData ).toHaveBeenCalledWith( [ 'things', '1' ], { param: true }, readValue, DEFAULT_FETCH_TIMEOUT );
+		} );
 	} );
 
 	describe( '#waitForData', () => {
