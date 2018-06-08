@@ -151,7 +151,7 @@ export default class ApiClient {
 		}
 
 		const value = endpoint.read( this.methods, remainingPath, params );
-		return this.waitForData( endpointPath, params, value );
+		return this.waitForData( endpointPath, params, value, timeout );
 	}
 
 	/**
