@@ -1,9 +1,13 @@
 import React from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { FreshDataProvider } from 'fresh-data';
+import PostList from './PostList';
+import SiteSelect from './SiteSelect';
+import WpRestApi from './test-wp-rest-api';
 import './App.css';
 
 const apis = {
+	'wp-rest-api': new WpRestApi(),
 };
 
 const App = ( { store } ) => {
@@ -17,9 +21,9 @@ const App = ( { store } ) => {
 					<header className="WP-header">
 						<h2><a className="WP-title" href="http://wp-api.org">WordPress REST API</a></h2>
 					</header>
-					<p className="App-intro">
-						TODO: Add components here.
-					</p>
+					<SiteSelect>
+						<PostList />
+					</SiteSelect>
 				</div>
 			</FreshDataProvider>
 		</ReduxProvider>

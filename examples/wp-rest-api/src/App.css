@@ -23,6 +23,34 @@
 	color: white;
 }
 
-.App-intro {
-  font-size: large;
+.site-select {
+	font-size: large;
+	padding: 20px;
+}
+
+.site-select input {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
+
+.site-select button {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
+
+.post-list {
+	margin-left: 20%;
+	margin-right: 20%;
+}
+
+.post-date {
+	padding: 5px;
+	text-align: right;
+}
+
+.post-title {
+	padding: 5px;
+	text-align: left;
 }
