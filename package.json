@@ -35,7 +35,8 @@
 		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data.js",
 		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data.min.js",
 		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
-		"prepack": "npm run clean && npm run lint && npm test && npm run build"
+		"postinstall": "npm run clean && npm run build",
+		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
 		"debug": "^3.1.0",
