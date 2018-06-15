@@ -46,7 +46,7 @@ class Message extends React.Component {
 	}
 }
 
-function mapApiToProps( selectors ) {
+function mapSelectorsToProps( selectors ) {
 	const { getGreetings } = selectors;
 
 	const greetings = getGreetings( { freshness: 10 * SECOND } );
@@ -60,4 +60,4 @@ function getClientKey( ownProps ) {
 	return ownProps.clientKey;
 }
 
-export default withApiClient( 'test', mapApiToProps, getClientKey )( Message );
+export default withApiClient( 'test', mapSelectorsToProps, getClientKey )( Message );

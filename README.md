@@ -25,7 +25,7 @@ As of now, Fresh Data is geared toward [React](https://github.com/facebook/react
 Here's how you define the API data you need for a React Component.
 
 ```js
-function mapApiToProps( selectors, ownProps, state ) {
+function mapSelectorsToProps( selectors, ownProps, state ) {
 	const { getThing } = selectors;
 	const { thingId } = ownProps;
 
@@ -40,7 +40,7 @@ function getClientKey( props ) {
 	return props.myApiUri
 }
 
-export default withApiClient( 'MyApi', mapApiToProps, getClientKey )( MyReactComponent );
+export default withApiClient( 'MyApi', mapSelectorsToProps, getClientKey )( MyReactComponent );
 ```
 
 The `withApiClient` Higher Order Component works much like `connect` from [React Redux](https://github.com/reduxjs/react-redux).

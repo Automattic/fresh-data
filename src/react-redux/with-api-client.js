@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 const debug = debugFactory( 'fresh-data:with-api-client' );
 
-export default function withApiClient( apiName, mapApiToProps, getClientKey ) {
+export default function withApiClient( apiName, mapSelectorsToProps, getClientKey ) {
 	return function connectWithApiClient( WrappedComponent ) {
 		if ( typeof WrappedComponent !== 'function' ) {
 			debug(
@@ -87,7 +87,7 @@ export default function withApiClient( apiName, mapApiToProps, getClientKey ) {
 					client.setComponentData(
 						this,
 						( selectors ) => {
-							apiProps = mapApiToProps( selectors, this.props );
+							apiProps = mapSelectorsToProps( selectors, this.props );
 						}
 					);
 				}
