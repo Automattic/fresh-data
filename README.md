@@ -57,6 +57,11 @@ export default class MyApi extends FreshDataApi {
 			const uri = clientKey + endpointPath.join( '/' );
 			const queryString = qs.stringify( params );
 			return fetch( `${ uri }?${ query }` );
+		},
+		put: ( clientKey ) => ( endpointPath ) => ( params ) => {
+			const uri = clientKey + endpointPath.join( '/' );
+			const { data } = params;
+			return fetch( uri, { method: 'PUT', body: JSON.stringify( data ) } );
 		}
 	}
 
@@ -66,15 +71,27 @@ export default class MyApi extends FreshDataApi {
 				const { get } = methods;
 				const fullEndpointPath = [ 'things', ...endpointPath ];
 				return get( fullEndpointPath )( params );
+			},
+			update: ( methods, endpointPath, params ) => {
+				const { put } = methods;
+				const fullEndpointPath = [ 'things', ...endpointPath ];
+				return put( fullEndpointPath )( params );
 			}
 		}
 	}
 
 	static selectors = {
 		getThing: ( getData, requireData ) => ( thingId, requirement ) => {
-			const path = [ 'thing', thingId ];
+			const path = [ 'things', thingId ];
 			requireData( requirement, path );
 			return getData( path ) || {};
+		}
+	}
+
+	static mutations = {
+		updateThing: ( methods, endpoints ) => ( thingId, data ) => {
+			const { update } = endpoints.things;
+			return update( methods, [ thingId ], { data } );
 		}
 	}
 }
@@ -110,10 +127,8 @@ export default MyApp = () => {
 Fresh Data is functional, but still a work in progress. Here's what's next on the list:
 - More examples:
   - GitHub API
-  - WordPress REST API
   - GraphQL
   - WebSockets
-  - Mutating data example (create, update, delete endpoints)
 - Feature: Fetch on first mount (regardless of freshness)
 - Feature: Clearing out old data
   - Detecting when data was last rendered

@@ -86,6 +86,22 @@ describe( 'ApiClient', () => {
 		expect( checkMethod ).toHaveBeenCalledWith( 'post', '123', thing2Path, undefined );
 	} );
 
+	it( 'should map mutations to endpoints', () => {
+		const createThing = jest.fn();
+
+		class TestApi extends FreshDataApi {
+			static mutations = {
+				createThing,
+			};
+		}
+
+		const api = new TestApi();
+		const apiClient = new ApiClient( api, '123' );
+
+		expect( createThing ).toHaveBeenCalledTimes( 1 );
+		expect( createThing ).toHaveBeenCalledWith( apiClient.methods, api.endpoints );
+	} );
+
 	it( 'should map getData to current state', () => {
 		class TestApi extends FreshDataApi {
 			static selectors = thingSelectors;

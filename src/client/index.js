@@ -25,6 +25,7 @@ export default class ApiClient {
 		this.requirementsByComponent = new Map();
 		this.requirementsByEndpoint = {};
 		this.methods = mapMethods( api.methods, key );
+		this.mutations = mapMutations( api.mutations, this.methods, api.endpoints );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
 		this.setTimer = setTimer;
@@ -65,6 +66,10 @@ export default class ApiClient {
 	getData = ( endpointPath, params ) => {
 		return getDataFromState( this.state )( endpointPath, params );
 	};
+
+	getMutations = () => {
+		return this.mutations;
+	}
 
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
@@ -201,9 +206,16 @@ function mapMethods( methods, clientKey ) {
 	}, {} );
 }
 
+function mapMutations( mutations, methods, endpoints ) {
+	return Object.keys( mutations ).reduce( ( mappedMutations, mutationName ) => {
+		mappedMutations[ mutationName ] = mutations[ mutationName ]( methods, endpoints );
+		return mappedMutations;
+	}, {} );
+}
+
 function mapSelectors( selectors, clientGetData, clientRequireData ) {
 	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
 		mappedSelectors[ selectorName ] = selectors[ selectorName ]( clientGetData, clientRequireData );
 		return mappedSelectors;
-	}, [] );
+	}, {} );
 }

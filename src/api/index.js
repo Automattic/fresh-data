@@ -4,9 +4,12 @@ import ApiClient from '../client/index';
 const debug = debugFactory( 'fresh-data:api' );
 
 export default class FreshDataApi {
+	// TODO: Consider making these part of the instance instead of the class.
+	// It would allow the use of `this` to retrieve things like methods and endpoints.
 	static methods = {}
 	static endpoints = {}
 	static selectors = {}
+	static mutations = {}
 
 	constructor() {
 		this.clients = new Map();
@@ -17,6 +20,7 @@ export default class FreshDataApi {
 		this.methods = this.constructor.methods;
 		this.endpoints = this.constructor.endpoints;
 		this.selectors = this.constructor.selectors;
+		this.mutations = this.constructor.mutations;
 	}
 
 	setDataHandlers = ( dataRequested, dataReceived, errorReceived ) => {

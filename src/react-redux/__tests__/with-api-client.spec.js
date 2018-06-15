@@ -15,6 +15,7 @@ describe( 'withApiClient', () => {
 	let api;
 	let Component;
 	let mapSelectorsToProps;
+	let mapMutationsToProps;
 	let getClientKey;
 	let getApiClient;
 
@@ -205,6 +206,15 @@ describe( 'withApiClient', () => {
 	} );
 
 	describe( '#mapSelectorsToProps', () => {
+		it( 'should call mapSelectorsToProps if present.', () => {
+			mapSelectorsToProps = jest.fn();
+
+			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps, getClientKey } )( Component );
+			mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			expect( mapSelectorsToProps ).toHaveBeenCalledTimes( 1 );
+		} );
+
 		it( 'should provide api selectors to mapSelectorsToProps', () => {
 			const thing = { id: 1, color: 'red' };
 			let expectedProps = { clientKey: '123' };
@@ -226,6 +236,96 @@ describe( 'withApiClient', () => {
 
 			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps, getClientKey } )( Component );
 			mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+		} );
+
+		it( 'should render without mapSelectorsToProps', () => {
+			const ComponentWithApiClient = withApiClient( 'test', { getClientKey } )( Component );
+
+			const doRender = () => {
+				mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+			};
+
+			expect( doRender ).not.toThrow();
+		} );
+	} );
+
+	describe( '#mapMutationsToProps', () => {
+		it( 'should call mapMutationsToProps if present.', () => {
+			mapMutationsToProps = jest.fn();
+
+			const ComponentWithApiClient = withApiClient( 'test', { mapMutationsToProps, getClientKey } )( Component );
+			mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			expect( mapMutationsToProps ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		// TODO: This test runs code a bit deep, split it up into an ApiClient test and this one.
+		it( 'should provide working mutation functions to derived props.', () => {
+			const putFunc = jest.fn();
+			const updateFunc = jest.fn();
+
+			class MutationsTestApi extends FreshDataApi {
+				static methods = {
+					put: ( clientKey ) => ( endpointPath ) => ( params ) => {
+						putFunc( clientKey, endpointPath, params );
+					}
+				};
+				static endpoints = {
+					things: {
+						update: ( methods, endpointPath, params ) => {
+							const { put } = methods;
+							put( endpointPath )( params );
+						},
+					},
+				};
+				static mutations = {
+					updateThing: ( methods, endpoints ) => ( id, data ) => {
+						const { update } = endpoints.things;
+						updateFunc( id, data );
+						update( methods, [ 'things', id ], { testParam: true } );
+					}
+				};
+			}
+
+			api = new MutationsTestApi();
+			let expectedProps = { clientKey: '123' };
+			let mutationProps = null;
+
+			mapMutationsToProps = ( mutations, ownProps ) => {
+				const { createThing, updateThing } = mutations;
+				expect( updateThing ).toBeInstanceOf( Function );
+				expect( ownProps ).toEqual( expectedProps );
+
+				mutationProps = { createThing, updateThing };
+				expectedProps = { ...ownProps, ...mutationProps };
+				return mutationProps;
+			};
+
+			Component = ( props ) => {
+				expect( props ).toEqual( expectedProps );
+				return <span className="test-span">Testing</span>;
+			};
+
+			const ComponentWithApiClient = withApiClient( 'test', { mapMutationsToProps, getClientKey } )( Component );
+			mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+
+			expect( updateFunc ).not.toHaveBeenCalled();
+
+			mutationProps.updateThing( 1, { id: 1, color: 'red' } );
+			expect( updateFunc ).toHaveBeenCalledTimes( 1 );
+			expect( updateFunc ).toHaveBeenCalledWith( 1, { id: 1, color: 'red' } );
+			expect( putFunc ).toHaveBeenCalledTimes( 1 );
+			expect( putFunc ).toHaveBeenCalledWith( '123', [ 'things', 1 ], { testParam: true } );
+		} );
+
+		it( 'should render without mapMutationsToProps.', () => {
+			const ComponentWithApiClient = withApiClient( 'test', { getClientKey } )( Component );
+
+			const doRender = () => {
+				mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
+			};
+
+			expect( doRender ).not.toThrow();
 		} );
 	} );
 } );
