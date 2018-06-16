@@ -274,15 +274,15 @@ describe( 'withApiClient', () => {
 					things: {
 						update: ( methods, endpointPath, params ) => {
 							const { put } = methods;
-							put( endpointPath )( params );
+							const fullEndpointPath = [ 'things', ...endpointPath ];
+							put( fullEndpointPath )( params );
 						},
 					},
 				};
 				static mutations = {
-					updateThing: ( methods, endpoints ) => ( id, data ) => {
-						const { update } = endpoints.things;
+					updateThing: ( operations ) => ( id, data ) => {
 						updateFunc( id, data );
-						update( methods, [ 'things', id ], { testParam: true } );
+						operations.update( [ 'things', id ], { data } );
 					}
 				};
 			}
@@ -292,11 +292,11 @@ describe( 'withApiClient', () => {
 			let mutationProps = null;
 
 			mapMutationsToProps = ( mutations, ownProps ) => {
-				const { createThing, updateThing } = mutations;
+				const { updateThing } = mutations;
 				expect( updateThing ).toBeInstanceOf( Function );
 				expect( ownProps ).toEqual( expectedProps );
 
-				mutationProps = { createThing, updateThing };
+				mutationProps = { updateThing };
 				expectedProps = { ...ownProps, ...mutationProps };
 				return mutationProps;
 			};
@@ -315,7 +315,7 @@ describe( 'withApiClient', () => {
 			expect( updateFunc ).toHaveBeenCalledTimes( 1 );
 			expect( updateFunc ).toHaveBeenCalledWith( 1, { id: 1, color: 'red' } );
 			expect( putFunc ).toHaveBeenCalledTimes( 1 );
-			expect( putFunc ).toHaveBeenCalledWith( '123', [ 'things', 1 ], { testParam: true } );
+			expect( putFunc ).toHaveBeenCalledWith( '123', [ 'things', 1 ], { data: { id: 1, color: 'red' } } );
 		} );
 
 		it( 'should render without mapMutationsToProps.', () => {

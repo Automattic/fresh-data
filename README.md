@@ -89,9 +89,9 @@ export default class MyApi extends FreshDataApi {
 	}
 
 	static mutations = {
-		updateThing: ( methods, endpoints ) => ( thingId, data ) => {
+		updateThing: ( operations ) => ( thingId, data ) => {
 			const { update } = endpoints.things;
-			return update( methods, [ thingId ], { data } );
+			return operations.update( methods, [ thingId ], { data } );
 		}
 	}
 }
