@@ -5,6 +5,9 @@ Fresh Data is a declarative data API framework for JavaScript apps.
 It offers a single integration point between APIs and your application.
 The application simply declares the data it needs and the Fresh APIs ensure that the data it receives stays fresh.
 
+[![Build Status](https://travis-ci.org/coderkevin/fresh-data.svg?branch=master)](https://travis-ci.org/coderkevin/fresh-data)
+[![Test Coverage](https://img.shields.io/codecov/c/github/coderkevin/fresh-data.svg)](https://travis-ci.org/coderkevin/fresh-data)
+
 ## Benefits
 
 * Keep data in your web application current, without writing any application code to do it.
