@@ -44,6 +44,15 @@ describe( 'api', () => {
 			const api = new MyApi();
 			expect( api.selectors ).toBe( selectors );
 		} );
+
+		it( 'should use mutation methods defined in subclass', () => {
+			const mutations = { getThings: () => () => {} };
+			class MyApi extends FreshDataApi {
+				static mutations = mutations;
+			}
+			const api = new MyApi();
+			expect( api.mutations ).toBe( mutations );
+		} );
 	} );
 
 	describe( '#setDataHandlers', () => {

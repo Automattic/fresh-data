@@ -25,6 +25,8 @@ export default class ApiClient {
 		this.requirementsByComponent = new Map();
 		this.requirementsByEndpoint = {};
 		this.methods = mapMethods( api.methods, key );
+		this.endpointOperations = this.createEndpointOperations( api.endpoints );
+		this.mutations = mapMutations( api.mutations, this.endpointOperations );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
 		this.setTimer = setTimer;
@@ -65,6 +67,26 @@ export default class ApiClient {
 	getData = ( endpointPath, params ) => {
 		return getDataFromState( this.state )( endpointPath, params );
 	};
+
+	getMutations = () => {
+		return this.mutations;
+	}
+
+	createEndpointOperations = ( endpoints ) => {
+		// TODO: Use requirement timeout if it exists?
+		const timeout = DEFAULT_FETCH_TIMEOUT;
+		return {
+			create: ( endpointPath, params ) => {
+				return this.request( 'create', endpointPath, params, timeout, endpoints );
+			},
+			update: ( endpointPath, params ) => {
+				return this.request( 'update', endpointPath, params, timeout, endpoints );
+			},
+			delete: ( endpointPath, params ) => {
+				return this.request( 'delete', endpointPath, params, timeout, endpoints );
+			}
+		};
+	}
 
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
@@ -134,6 +156,10 @@ export default class ApiClient {
 	}
 
 	fetchData = ( endpointPath, params, timeout, endpoints = this.api.endpoints ) => {
+		return this.request( 'read', endpointPath, params, timeout, endpoints );
+	}
+
+	request = ( operation, endpointPath, params, timeout, endpoints ) => {
 		const [ endpointName, ...remainingPath ] = endpointPath;
 		const endpoint = endpoints[ endpointName ];
 
@@ -146,11 +172,12 @@ export default class ApiClient {
 			return this.fetchData( remainingPath, params, timeout, endpoint );
 		}
 
-		if ( ! endpoint.read ) {
-			throw new TypeError( `Endpoint "${ endpointName }" has no read method.` );
+		const operationFunc = endpoint[ operation ];
+		if ( ! operationFunc ) {
+			throw new TypeError( `Endpoint "${ endpointName }" has no ${ operation } method.` );
 		}
 
-		const value = endpoint.read( this.methods, remainingPath, params );
+		const value = operationFunc( this.methods, remainingPath, params );
 		return this.waitForData( endpointPath, params, value, timeout );
 	}
 
@@ -194,6 +221,7 @@ export default class ApiClient {
 	}
 }
 
+// TODO: See if the three methods below could be more DRY.
 function mapMethods( methods, clientKey ) {
 	return Object.keys( methods ).reduce( ( mappedMethods, methodName ) => {
 		mappedMethods[ methodName ] = methods[ methodName ]( clientKey );
@@ -201,9 +229,16 @@ function mapMethods( methods, clientKey ) {
 	}, {} );
 }
 
+function mapMutations( mutations, operations ) {
+	return Object.keys( mutations ).reduce( ( mappedMutations, mutationName ) => {
+		mappedMutations[ mutationName ] = mutations[ mutationName ]( operations );
+		return mappedMutations;
+	}, {} );
+}
+
 function mapSelectors( selectors, clientGetData, clientRequireData ) {
 	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
 		mappedSelectors[ selectorName ] = selectors[ selectorName ]( clientGetData, clientRequireData );
 		return mappedSelectors;
-	}, [] );
+	}, {} );
 }

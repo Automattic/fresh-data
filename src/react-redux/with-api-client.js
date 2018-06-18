@@ -5,7 +5,8 @@ import PropTypes from 'prop-types';
 const debug = debugFactory( 'fresh-data:with-api-client' );
 
 export default function withApiClient( apiName, options ) {
-	const { mapSelectorsToProps, getClientKey } = options;
+	const { getClientKey, mapSelectorsToProps, mapMutationsToProps } = options;
+
 	return function connectWithApiClient( WrappedComponent ) {
 		if ( typeof WrappedComponent !== 'function' ) {
 			debug(
@@ -80,24 +81,36 @@ export default function withApiClient( apiName, options ) {
 				} );
 			}
 
-			render() {
+			calculateDerivedProps = () => {
 				const { client } = this.state;
-				let apiProps = {};
+				let selectorProps = {};
+				let mutationProps = {};
 
 				if ( client ) {
-					client.setComponentData(
-						this,
-						( selectors ) => {
-							apiProps = mapSelectorsToProps( selectors, this.props );
-						}
-					);
+					if ( mapSelectorsToProps ) {
+						client.setComponentData(
+							this,
+							( selectors ) => {
+								selectorProps = mapSelectorsToProps( selectors, this.props );
+							}
+						);
+					}
+
+					if ( mapMutationsToProps ) {
+						const mutations = client.getMutations();
+						mutationProps = mapMutationsToProps( mutations, this.props );
+					}
 				}
 
-				const wrappedProps = {
-					...this.props,
-					...apiProps,
+				return {
+					...selectorProps,
+					...mutationProps,
 				};
-				return createElement( WrappedComponent, wrappedProps );
+			}
+
+			render() {
+				const derivedProps = this.calculateDerivedProps();
+				return createElement( WrappedComponent, { ...this.props, ...derivedProps } );
 			}
 		}
 
