@@ -47,4 +47,4 @@ function getClientKey( ownProps ) {
 	return ownProps.siteUrl;
 }
 
-export default withApiClient( 'wp-rest-api', mapSelectorsToProps, getClientKey )( PostList );
+export default withApiClient( 'wp-rest-api', { mapSelectorsToProps, getClientKey } )( PostList );

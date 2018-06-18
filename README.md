@@ -40,7 +40,7 @@ function getClientKey( props ) {
 	return props.myApiUri
 }
 
-export default withApiClient( 'MyApi', mapSelectorsToProps, getClientKey )( MyReactComponent );
+export default withApiClient( 'MyApi', { mapSelectorsToProps, getClientKey } )( MyReactComponent );
 ```
 
 The `withApiClient` Higher Order Component works much like `connect` from [React Redux](https://github.com/reduxjs/react-redux).
