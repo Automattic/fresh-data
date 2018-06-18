@@ -35,7 +35,7 @@ PostList.propTypes = {
 	posts: PropTypes.array,
 };
 
-function mapApiToProps( selectors ) {
+function mapSelectorsToProps( selectors ) {
 	const { getPosts } = selectors;
 	const posts = getPosts( { freshness: 5 * MINUTE, timeout: 3 * SECOND } );
 	return {
@@ -47,4 +47,4 @@ function getClientKey( ownProps ) {
 	return ownProps.siteUrl;
 }
 
-export default withApiClient( 'wp-rest-api', mapApiToProps, getClientKey )( PostList );
+export default withApiClient( 'wp-rest-api', mapSelectorsToProps, getClientKey )( PostList );
