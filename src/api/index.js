@@ -15,6 +15,7 @@ export default class FreshDataApi {
 		this.clients = new Map();
 		this.state = {};
 		this.dataHandlers = {};
+		this.readOperationName = 'read';
 
 		// TODO: Validate methods, resources, selectors here.
 		this.methods = this.constructor.methods;
