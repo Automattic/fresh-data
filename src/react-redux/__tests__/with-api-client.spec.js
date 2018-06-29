@@ -1,5 +1,6 @@
 import { mount } from 'enzyme';
 import React from 'react';
+import { startsWith } from 'lodash';
 import FreshDataApi from '../../api';
 import withApiClient from '../with-api-client';
 
@@ -159,7 +160,7 @@ describe( 'withApiClient', () => {
 			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
 
 			const clientState = {
-				123: { endpoints: {}, },
+				123: { resources: {}, },
 			};
 			apiClient.setState( clientState );
 
@@ -173,7 +174,7 @@ describe( 'withApiClient', () => {
 			const wrapper = mount( <ComponentWithApiClient clientKey="123" />, { context: { getApiClient } } );
 
 			const clientState = {
-				123: { endpoints: {}, },
+				123: { resources: {}, },
 			};
 			apiClient.setState( clientState );
 
@@ -197,7 +198,7 @@ describe( 'withApiClient', () => {
 			expect( wrapper.instance().state.clientState ).toBe( apiClient2.state );
 
 			const clientState = {
-				123: { endpoints: {}, },
+				123: { resources: {}, },
 			};
 			apiClient1.setState( clientState );
 
@@ -266,23 +267,26 @@ describe( 'withApiClient', () => {
 
 			class MutationsTestApi extends FreshDataApi {
 				static methods = {
-					put: ( clientKey ) => ( endpointPath ) => ( params ) => {
-						putFunc( clientKey, endpointPath, params );
+					put: ( clientKey ) => ( path, data ) => {
+						putFunc( clientKey, path, data );
 					}
 				};
-				static endpoints = {
-					things: {
-						update: ( methods, endpointPath, params ) => {
-							const { put } = methods;
-							const fullEndpointPath = [ 'things', ...endpointPath ];
-							put( fullEndpointPath )( params );
-						},
+				static operations = {
+					update: ( { put } ) => ( resourceNames, resourceData ) => {
+						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
+						return filteredNames.reduce( ( requests, name ) => {
+							const id = name.substr( name.indexOf( ':' ) + 1 );
+							const data = resourceData[ name ];
+							requests[ name ] = put( [ 'things', id ], { data } );
+							return requests;
+						}, {} );
 					},
 				};
 				static mutations = {
 					updateThing: ( operations ) => ( id, data ) => {
 						updateFunc( id, data );
-						operations.update( [ 'things', id ], { data } );
+						const resourceName = `thing:${ id }`;
+						operations.update( [ resourceName ], { [ resourceName ]: data } );
 					}
 				};
 			}
@@ -315,7 +319,7 @@ describe( 'withApiClient', () => {
 			expect( updateFunc ).toHaveBeenCalledTimes( 1 );
 			expect( updateFunc ).toHaveBeenCalledWith( 1, { id: 1, color: 'red' } );
 			expect( putFunc ).toHaveBeenCalledTimes( 1 );
-			expect( putFunc ).toHaveBeenCalledWith( '123', [ 'things', 1 ], { data: { id: 1, color: 'red' } } );
+			expect( putFunc ).toHaveBeenCalledWith( '123', [ 'things', '1' ], { data: { id: 1, color: 'red' } } );
 		} );
 
 		it( 'should render without mapMutationsToProps.', () => {
