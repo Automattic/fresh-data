@@ -49,7 +49,6 @@ describe( 'addResourceRequirement', () => {
 
 	it( 'should combine a requirement with an existing one', () => {
 		const reqs = {};
-		const params = { page: 1, perPage: 10 };
 		addResourceRequirement( reqs, { freshness: 90 * SECOND }, 'thing:1' );
 		addResourceRequirement( reqs, { freshness: 60 * SECOND }, 'thing:1' );
 		expect( reqs ).toEqual( {
