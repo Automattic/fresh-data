@@ -45,22 +45,22 @@ export default class TestApi extends FreshDataApi {
 		},
 	}
 
-	static endpoints = {
-		greetings: {
-			read: ( methods, endpointPath, params ) => {
-				const { get } = methods;
-				const fullEndpointPath = [ 'greetings', ...endpointPath ];
-				const value = get( fullEndpointPath )( params );
-				return value;
-			},
-		},
+	static operations = {
+		read: ( { get } ) => ( resourceNames ) => {
+			return resourceNames.reduce( ( requests, name ) => {
+				if ( 'greetings' === name ) {
+					requests[ name ] = get( [ name ] )();
+				}
+				return requests;
+			}, {} );
+		}
 	}
 
 	static selectors = {
 		getGreetings: ( getData, requireData ) => ( requirement ) => {
-			const path = [ 'greetings' ];
-			requireData( requirement, path );
-			return getData( path ) || [];
+			const resourceName = 'greetings';
+			requireData( requirement, resourceName );
+			return getData( resourceName ) || [];
 		}
 	}
 }

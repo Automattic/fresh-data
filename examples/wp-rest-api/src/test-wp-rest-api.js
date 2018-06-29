@@ -1,3 +1,4 @@
+import { startsWith } from 'lodash';
 import { FreshDataApi } from 'fresh-data';
 import qs from 'qs';
 
@@ -24,23 +25,23 @@ export function createApi( fetch = window.fetch ) {
 			},
 		}
 
-		static endpoints = {
-			posts: {
-				read: ( methods, endpointPath, params ) => {
-					const { get } = methods;
-					const fullEndpointPath = [ 'posts', ...endpointPath ];
-					const value = get( fullEndpointPath )( params );
-					return value;
-				},
+		static operations = {
+			read: ( { get } ) => ( resourceNames ) => {
+				const postPages = resourceNames.filter( name => startsWith( name, 'posts-page:' ) );
+
+				return postPages.reduce( ( requests, name ) => {
+					const params = JSON.parse( name.substr( name.indexOf( ':' ) + 1 ) );
+					requests[ name ] = get( [ 'posts' ] )( params );
+					return requests;
+				}, {} );
 			},
 		}
 
 		static selectors = {
 			getPosts: ( getData, requireData ) => ( requirement, page = 1, perPage = 10 ) => {
-				const path = [ 'posts' ];
-				const params = { page, perPage };
-				requireData( requirement, path, params );
-				return getData( path, params ) || [];
+				const resourceName = `posts-page:{"page":${ page },"perPage":${ perPage }}`;
+				requireData( requirement, resourceName );
+				return getData( resourceName ) || [];
 			}
 		}
 	}
