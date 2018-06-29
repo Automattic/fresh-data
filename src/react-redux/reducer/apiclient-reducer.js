@@ -1,4 +1,3 @@
-import { findIndex } from 'lodash';
 import {
 	FRESH_DATA_CLIENT_ERROR,
 	FRESH_DATA_CLIENT_RECEIVED,
@@ -6,7 +5,7 @@ import {
 } from '../action-types';
 
 const defaultState = {
-	endpoints: {},
+	resources: {},
 };
 
 const _reducers = {
@@ -27,73 +26,27 @@ export default function reducer( state = defaultState, action, reducers = _reduc
 	return reducerFunc ? reducerFunc( state, action ) : state;
 }
 
-/**
- * Recursively reduce client endpoint state.
- * 1. If it goes further down the path, recurse.
- * 2. Otherwise if this has params, store it in queries.
- * 3. Otherwise store it on this endpoint state.
- * @param {Function} reducerFunc Reduces the endpoint state, takes ( state, action ).
- * @param {Object} [state] Should contain endpoints property.
- * @param {Object} action { apiName, clientKey, endpointPath, params (optional), data }
- * @param {Array} [path] The remaining path (used for recursion).
- * @return {Object} The new state.
- */
-export function reduceEndpointState( reducerFunc ) {
-	return function reduceEndpointStateFunc( state, action, path ) {
-		const [ endpoint, ...remainingPath ] = path;
-		const endpointsState = state.endpoints || {};
-		const endpointState = endpointsState[ endpoint ] || {};
-
-		if ( remainingPath.length > 0 ) {
-			const subState = reduceEndpointStateFunc( endpointState, action, remainingPath );
-			const newEndpointState = { ...endpointState, ...subState };
-			const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-			const newState = { ...state, endpoints: newEndpointsState };
-			return newState;
-		}
-
-		const { params } = action;
-		if ( params ) {
-			const queriesState = endpointState.queries || [];
-			const queryIndex = findIndex( queriesState, { params } );
-			const queryState = -1 === queryIndex ? {} : queriesState[ queryIndex ];
-			const newIndex = -1 === queryIndex ? queriesState.length : queryIndex;
-			const newQueryState = reducerFunc( queryState, action );
-			const newQueriesState = [ ...queriesState ];
-			newQueriesState[ newIndex ] = newQueryState;
-			const newEndpointState = {
-				...endpointState,
-				queries: newQueriesState,
-			};
-			const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-			const newState = { ...state, endpoints: newEndpointsState };
-			return newState;
-		}
-
-		const newEndpointState = reducerFunc( endpointState, action );
-		const newEndpointsState = { ...endpointsState, [ endpoint ]: newEndpointState };
-		const newState = { ...state, endpoints: newEndpointsState };
-		return newState;
+function reduceResource( state = defaultState, resourceName, data ) {
+	const { resources } = state;
+	const resource = resources[ resourceName ] || {};
+	const newResource = { ...resource, ...data };
+	return {
+		...state,
+		resources: { ...resources, [ resourceName ]: newResource },
 	};
 }
 
 export function reduceRequested( state = defaultState, action ) {
-	const reducerFunc = ( endpointState, { params, time: lastRequested } ) =>
-		( { ...endpointState, params, lastRequested } );
-
-	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
+	const { resourceName, time: lastRequested } = action;
+	return reduceResource( state, resourceName, { lastRequested } );
 }
 
 export function reduceReceived( state = defaultState, action ) {
-	const reducerFunc = ( endpointState, { params, data, time: lastReceived } ) =>
-		( { ...endpointState, params, data, lastReceived } );
-
-	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
+	const { resourceName, time: lastReceived, data } = action;
+	return reduceResource( state, resourceName, { lastReceived, data } );
 }
 
 export function reduceError( state = defaultState, action ) {
-	const reducerFunc = ( endpointState, { params, error, time: lastError } ) =>
-		( { ...endpointState, params, error, lastError } );
-
-	return reduceEndpointState( reducerFunc )( state, action, action.endpointPath );
+	const { resourceName, time: lastError, error } = action;
+	return reduceResource( state, resourceName, { lastError, error } );
 }
