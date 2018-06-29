@@ -99,17 +99,15 @@ describe( 'ApiClient', () => {
 		class TestApi extends FreshDataApi {
 			static methods = { get: () => () => {} };
 			static operations = {
-				read: [
-					( methods ) => ( resourceNames, data ) => {
-						checkOperation( methods, resourceNames, data );
-					},
-				],
+				read: ( methods ) => ( resourceNames, data ) => {
+					checkOperation( methods, resourceNames, data );
+				},
 			}
 		}
 		const api = new TestApi();
 		const apiClient = new ApiClient( api, '123' );
 
-		apiClient.operations.read[ 0 ]( [ 'thing:1' ], { color: 'red' } );
+		apiClient.operations.read( [ 'thing:1' ], { color: 'red' } );
 		expect( checkOperation ).toHaveBeenCalledWith( apiClient.methods, [ 'thing:1' ], { color: 'red' } );
 	} );
 
@@ -121,7 +119,7 @@ describe( 'ApiClient', () => {
 		class TestApi extends FreshDataApi {
 			static mutations = {
 				createThing,
-			};
+			}
 		}
 
 		const api = new TestApi();
@@ -405,12 +403,10 @@ describe( 'ApiClient', () => {
 			const readFunc = jest.fn();
 			class TestApi extends FreshDataApi {
 				static operations = {
-					read: [
-						( methods ) => ( resourceNames, data ) => {
-							return readFunc( methods, resourceNames, data );
-						},
-					],
-				};
+					read: ( methods ) => ( resourceNames, data ) => {
+						return readFunc( methods, resourceNames, data );
+					},
+				}
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
@@ -421,8 +417,7 @@ describe( 'ApiClient', () => {
 
 		it( 'should throw error if no read function is found.', () => {
 			class TestApi extends FreshDataApi {
-				static operations = {
-				};
+				static operations = {};
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
@@ -433,12 +428,10 @@ describe( 'ApiClient', () => {
 		it( 'should not crash if a resource is not handled (but it will debug log it).', () => {
 			class TestApi extends FreshDataApi {
 				static operations = {
-					read: [
-						() => () => {
-							return { 'thing:5': {} };
-						},
-					],
-				};
+					read: () => () => {
+						return { 'thing:5': {} };
+					},
+				}
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
@@ -450,11 +443,9 @@ describe( 'ApiClient', () => {
 			const readValue = {};
 			class TestApi extends FreshDataApi {
 				static operations = {
-					read: [
-						() => () => {
-							return { 'thing:8': readValue };
-						},
-					]
+					read: () => () => {
+						return { 'thing:8': readValue };
+					},
 				};
 				static methods = {};
 			}

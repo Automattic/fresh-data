@@ -147,13 +147,8 @@ export default class ApiClient {
 	 * @return {Object} Resource request promises keyed by resourceName.
 	 */
 	applyOperation = ( operationName, resourceNames, data ) => {
-		const handlers = this.operations[ operationName ];
-		let resourceRequests = {};
-
-		handlers.forEach( handlerFunc => {
-			const handled = handlerFunc( resourceNames, data );
-			resourceRequests = { ...resourceRequests, ...handled };
-		} );
+		const handler = this.operations[ operationName ];
+		const resourceRequests = handler( resourceNames, data ) || {};
 
 		return resourceNames.reduce( ( requests, resourceName ) => {
 			const requirement = this.requirementsByResource[ resourceName ] || {};
@@ -209,7 +204,7 @@ export default class ApiClient {
 	}
 }
 
-// TODO: See if the three methods below could be more DRY.
+// TODO: Combine the four methods below to be more DRY.
 function mapMethods( methods, clientKey ) {
 	return Object.keys( methods ).reduce( ( mappedMethods, methodName ) => {
 		mappedMethods[ methodName ] = methods[ methodName ]( clientKey );
@@ -232,9 +227,8 @@ function mapSelectors( selectors, clientGetData, clientRequireData ) {
 }
 
 function mapOperations( operations, methods ) {
-	return Object.keys( operations ).reduce( ( mappedOperations, name ) => {
-		const handlers = operations[ name ];
-		mappedOperations[ name ] = handlers.map( handler => handler( methods ) );
+	return Object.keys( operations ).reduce( ( mappedOperations, operationName ) => {
+		mappedOperations[ operationName ] = operations[ operationName ]( methods );
 		return mappedOperations;
 	}, {} );
 }
