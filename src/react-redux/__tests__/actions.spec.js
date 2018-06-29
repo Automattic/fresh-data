@@ -12,6 +12,7 @@ import {
 describe( 'actions', () => {
 	const apiName = 'myApiName';
 	const clientKey = 'myClientKey';
+	const resourceName = 'one-two-three:{ param1: "one", param2: "two" }';
 	const endpointPath = [ 'one', 'two', 3 ];
 	const params = { param1: 'one', param2: 2 };
 	const data = { attributes: { attr1: '1', attr2: '2', attr3: 3 } };
@@ -20,11 +21,12 @@ describe( 'actions', () => {
 
 	describe( 'dataRequested', () => {
 		it( 'should create a simple action object with expected fields.', () => {
-			const action = dataRequested( apiName, clientKey, endpointPath, params, time );
+			const action = dataRequested( apiName, clientKey, resourceName, endpointPath, params, time );
 			expect( action ).toEqual( {
 				type: FRESH_DATA_CLIENT_REQUESTED,
 				apiName,
 				clientKey,
+				resourceName,
 				endpointPath,
 				params,
 				time,
@@ -32,18 +34,19 @@ describe( 'actions', () => {
 		} );
 
 		it( 'should set a default time if none given.', () => {
-			const action = dataRequested( apiName, clientKey, endpointPath, params );
+			const action = dataRequested( apiName, clientKey, resourceName, endpointPath, params );
 			expect( action.time ).toBeInstanceOf( Date );
 		} );
 	} );
 
 	describe( 'dataReceived', () => {
 		it( 'should create a simple action object with expected fields.', () => {
-			const action = dataReceived( apiName, clientKey, endpointPath, params, data, time );
+			const action = dataReceived( apiName, clientKey, resourceName, endpointPath, params, data, time );
 			expect( action ).toEqual( {
 				type: FRESH_DATA_CLIENT_RECEIVED,
 				apiName,
 				clientKey,
+				resourceName,
 				endpointPath,
 				params,
 				data,
@@ -52,18 +55,19 @@ describe( 'actions', () => {
 		} );
 
 		it( 'should set a default time if none given.', () => {
-			const action = dataReceived( apiName, clientKey, endpointPath, params, data );
+			const action = dataReceived( apiName, clientKey, resourceName, endpointPath, params, data );
 			expect( action.time ).toBeInstanceOf( Date );
 		} );
 	} );
 
 	describe( 'errorReceived', () => {
 		it( 'should create a simple action object with expected fields.', () => {
-			const action = errorReceived( apiName, clientKey, endpointPath, params, error, time );
+			const action = errorReceived( apiName, clientKey, resourceName, endpointPath, params, error, time );
 			expect( action ).toEqual( {
 				type: FRESH_DATA_CLIENT_ERROR,
 				apiName,
 				clientKey,
+				resourceName,
 				endpointPath,
 				params,
 				error,
@@ -72,7 +76,7 @@ describe( 'actions', () => {
 		} );
 
 		it( 'should set a default time if none given.', () => {
-			const action = errorReceived( apiName, clientKey, endpointPath, params, error );
+			const action = errorReceived( apiName, clientKey, resourceName, endpointPath, params, error );
 			expect( action.time ).toBeInstanceOf( Date );
 		} );
 	} );
