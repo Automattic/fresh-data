@@ -24,8 +24,8 @@ export default class FreshDataApi {
 		this.mutations = this.constructor.mutations;
 	}
 
-	setDataHandlers = ( dataRequested, dataReceived, errorReceived ) => {
-		this.dataHandlers = { dataRequested, dataReceived, errorReceived };
+	setDataHandlers = ( dataRequested, dataReceived ) => {
+		this.dataHandlers = { dataRequested, dataReceived };
 	}
 
 	getClient( clientKey ) {
@@ -55,27 +55,29 @@ export default class FreshDataApi {
 		}
 	}
 
-	dataRequested( clientKey, resourceName ) {
+	/**
+	 * Sets requested timestamps resources.
+	 * @param {string} clientKey The clientKey for the api instance.
+	 * @param {Array} resourceNames The names of resources requested.
+	 */
+	dataRequested( clientKey, resourceNames ) {
 		if ( ! this.dataHandlers.dataRequested ) {
 			debug( 'Data requested before dataHandlers were set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataRequested( this, clientKey, resourceName );
+		this.dataHandlers.dataRequested( this, clientKey, resourceNames );
 	}
 
-	dataReceived( clientKey, resourceName, data ) {
+	/**
+	 * Sets received data states for resources.
+	 * @param {string} clientKey The clientKey for the api instance.
+	 * @param {Object} resources Data keyed by resourceName.
+	 */
+	dataReceived( clientKey, resources ) {
 		if ( ! this.dataHandlers.dataReceived ) {
-			debug( 'Data requested before dataHandlers were set. Disregarding.' );
+			debug( 'Data received before dataHandlers were set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataReceived( this, clientKey, resourceName, data );
-	}
-
-	errorReceived( clientKey, resourceName, error ) {
-		if ( ! this.dataHandlers.errorReceived ) {
-			debug( 'Data requested before dataHandlers were set. Disregarding.' );
-			return;
-		}
-		this.dataHandlers.errorReceived( this, clientKey, resourceName, error );
+		this.dataHandlers.dataReceived( this, clientKey, resources );
 	}
 }

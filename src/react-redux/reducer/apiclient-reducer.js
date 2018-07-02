@@ -1,5 +1,4 @@
 import {
-	FRESH_DATA_CLIENT_ERROR,
 	FRESH_DATA_CLIENT_RECEIVED,
 	FRESH_DATA_CLIENT_REQUESTED,
 } from '../action-types';
@@ -9,7 +8,6 @@ const defaultState = {
 };
 
 const _reducers = {
-	[ FRESH_DATA_CLIENT_ERROR ]: reduceError,
 	[ FRESH_DATA_CLIENT_RECEIVED ]: reduceReceived,
 	[ FRESH_DATA_CLIENT_REQUESTED ]: reduceRequested,
 };
@@ -26,27 +24,27 @@ export default function reducer( state = defaultState, action, reducers = _reduc
 	return reducerFunc ? reducerFunc( state, action ) : state;
 }
 
-function reduceResource( state = defaultState, resourceName, data ) {
-	const { resources } = state;
-	const resource = resources[ resourceName ] || {};
-	const newResource = { ...resource, ...data };
-	return {
-		...state,
-		resources: { ...resources, [ resourceName ]: newResource },
-	};
-}
-
 export function reduceRequested( state = defaultState, action ) {
-	const { resourceName, time: lastRequested } = action;
-	return reduceResource( state, resourceName, { lastRequested } );
+	const { resourceNames, time: lastRequested } = action;
+
+	const updatedResources = resourceNames.reduce( ( resources, resourceName ) => {
+		const resource = resources[ resourceName ];
+		resources[ resourceName ] = { ...resource, lastRequested };
+		return resources;
+	}, { ...state.resources } );
+
+	return { ...state, resources: updatedResources };
 }
 
 export function reduceReceived( state = defaultState, action ) {
-	const { resourceName, time: lastReceived, data } = action;
-	return reduceResource( state, resourceName, { lastReceived, data } );
-}
+	const { resources: newResources, time: lastReceived } = action;
 
-export function reduceError( state = defaultState, action ) {
-	const { resourceName, time: lastError, error } = action;
-	return reduceResource( state, resourceName, { lastError, error } );
+	const updatedResources = Object.keys( newResources ).reduce( ( resources, resourceName ) => {
+		const resource = resources[ resourceName ];
+		const newResource = newResources[ resourceName ];
+		resources[ resourceName ] = { ...resource, ...newResource, lastReceived };
+		return resources;
+	}, { ...state.resources } );
+
+	return { ...state, resources: updatedResources };
 }

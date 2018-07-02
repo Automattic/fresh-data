@@ -23,7 +23,6 @@ describe( 'FreshDataReduxProvider', () => {
 				rootData={ {} }
 				dataRequested={ actions.dataRequested }
 				dataReceived={ actions.dataReceived }
-				errorReceived={ actions.errorReceived }
 			>
 				<span>Testing</span>
 			</FreshDataReduxProvider>
@@ -48,7 +47,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<ChildComponent />
 				</FreshDataReduxProvider>
@@ -65,7 +63,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -80,7 +77,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -96,7 +92,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -115,7 +110,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -131,7 +125,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -154,7 +147,6 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -196,15 +188,14 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.dataRequested( '123', 'thing-1:{ param: 1 }' );
+			apis.test.dataRequested( '123', [ 'thing:1', 'thing:2' ] );
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }' );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', [ 'thing:1', 'thing:2' ] );
 		} );
 	} );
 
@@ -218,37 +209,20 @@ describe( 'FreshDataReduxProvider', () => {
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.dataReceived( '123', 'thing-1:{ param: 1 }', { data: true } );
+			apis.test.dataReceived( '123', {
+				'thing:1': { data: { color: 'blue' } },
+				'thing:2': { error: { message: 'oops!' } },
+			} );
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { data: true } );
-		} );
-	} );
-
-	describe( '#errorReceived', () => {
-		it( 'should dispatch when called from an api.', () => {
-			const errorReceived = jest.fn();
-
-			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
-					rootData={ {} }
-					dataRequested={ actions.dataRequested }
-					dataReceived={ actions.dataReceived }
-					errorReceived={ errorReceived }
-				>
-					<span>Testing</span>
-				</FreshDataReduxProvider>
-			);
-
-			apis.test.errorReceived( '123', 'thing-1:{ param: 1 }', { message: '😦' } );
-			expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { message: '😦' } );
+			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', {
+				'thing:1': { data: { color: 'blue' } },
+				'thing:2': { error: { message: 'oops!' } },
+			} );
 		} );
 	} );
 

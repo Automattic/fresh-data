@@ -147,60 +147,20 @@ export default class ApiClient {
 	 * @return {Object} Resource request promises keyed by resourceName.
 	 */
 	applyOperation = ( operationName, resourceNames, data ) => {
-		const handler = this.operations[ operationName ];
-		const resourceRequests = handler( resourceNames, data ) || {};
+		this.api.dataRequested( this.key, resourceNames );
 
-		return resourceNames.reduce( ( requests, resourceName ) => {
-			const requirement = this.requirementsByResource[ resourceName ] || {};
-			const timeout = requirement.timeout;
-			const value = resourceRequests[ resourceName ];
-			if ( value ) {
-				requests[ resourceName ] = this.waitForData( resourceName, value, timeout );
-			} else {
-				debug( `Unhandled resource "${ resourceName }" for "${ operationName }" operation.` );
-			}
-			return requests;
-		}, {} );
-	}
+		const operation = this.operations[ operationName ];
+		const values = operation( resourceNames, data ) || [];
 
-	/**
-	 * Return a promise that takes value as another promise or just data.
-	 * @param {string} resourceName The resourceName for this operation. (e.g. 'thing:1')
-	 * @param {Promise | any } value Either the data itself, or a promise that resolves to it.
-	 * @param {number} timeout Timeout (in milliseconds allowed until promise is automatically rejected.
-	 * @return {Object} A promise that resolves to an object: { resourceName, data|error }.
-	 */
-	waitForData = ( resourceName, value, timeout = 60000 ) => {
-		let response = null;
+		const requests = values.map( value => {
+			// This takes any value (including a promise) and wraps it in a promise.
+			const promise = Promise.resolve().then( () => value );
 
-		this.api.dataRequested( this.key, resourceName );
-
-		const success = ( data ) => {
-			this.api.dataReceived( this.key, resourceName, data );
-			response = { resourceName, data };
-			return response;
-		};
-
-		const failure = ( error ) => {
-			this.api.errorReceived( this.key, resourceName, error );
-			response = { resourceName, error };
-			return response;
-		};
-
-		const fetchPromise = Promise.resolve().then( () => value ).then( success ).catch( failure );
-
-		const timeoutPromise = new Promise( ( resolve, reject ) => {
-			const timeoutId = this.setTimer( () => {
-				this.clearTimer( timeoutId );
-				if ( ! response ) {
-					const error = { message: `Timeout of ${ timeout } reached.` };
-					this.api.errorReceived( this.key, resourceName, error );
-					reject( { resourceName, error } );
-				}
-			}, timeout );
+			return promise
+				.then( resources => this.api.dataReceived( this.key, resources ) )
+				.catch( resources => this.api.dataReceived( this.key, resources ) );
 		} );
-
-		return Promise.race( [ fetchPromise, timeoutPromise ] );
+		return requests;
 	}
 }
 

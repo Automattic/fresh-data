@@ -1,5 +1,5 @@
 import FreshDataApi from '../../api';
-import ApiClient, { DEFAULT_FETCH_TIMEOUT } from '../index';
+import ApiClient from '../index';
 import { SECOND } from '../../utils/constants';
 import { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from '../calculate-updates';
 
@@ -101,6 +101,7 @@ describe( 'ApiClient', () => {
 			static operations = {
 				read: ( methods ) => ( resourceNames, data ) => {
 					checkOperation( methods, resourceNames, data );
+					return [];
 				},
 			}
 		}
@@ -399,17 +400,42 @@ describe( 'ApiClient', () => {
 	} );
 
 	describe( '#applyOperation', () => {
+		let api;
+		let apiClient;
+
+		beforeEach( () => {
+			class TestApi extends FreshDataApi {
+				static operations = {
+					read: () => () => {
+						const returnObject = {
+							'type:1': { data: { attribute: 'some' } },
+						};
+						const returnPromise = new Promise( ( resolve ) => {
+							resolve( {
+								'thing:2': { data: { color: 'blue' } },
+								'thing:3': { data: { color: 'green' } },
+							} );
+						} );
+						return [ returnObject, returnPromise ];
+					},
+				}
+			}
+			api = new TestApi();
+			apiClient = new ApiClient( api, '123' );
+		} );
+
 		it( 'should call the corresponding api operation handlers.', () => {
 			const readFunc = jest.fn();
 			class TestApi extends FreshDataApi {
 				static operations = {
 					read: ( methods ) => ( resourceNames, data ) => {
-						return readFunc( methods, resourceNames, data );
+						readFunc( methods, resourceNames, data );
+						return [];
 					},
 				}
 			}
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			api = new TestApi();
+			apiClient = new ApiClient( api, '123' );
 
 			apiClient.applyOperation( 'read', [ 'thing:1' ], { data: true } );
 			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ 'thing:1' ], { data: true } );
@@ -419,170 +445,74 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 				static operations = {};
 			}
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			api = new TestApi();
+			apiClient = new ApiClient( api, '123' );
 
 			expect( () => apiClient.applyOperation( 'read', [ 'thing:1' ] ) ).toThrowError();
 		} );
 
-		it( 'should not crash if a resource is not handled (but it will debug log it).', () => {
-			class TestApi extends FreshDataApi {
-				static operations = {
-					read: () => () => {
-						return { 'thing:5': {} };
-					},
-				}
-			}
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-
+		it( 'should not crash if a resource is not handled.', () => {
 			apiClient.applyOperation( 'read', [ 'thing:12' ], { data: true } );
 		} );
 
-		it( 'should call waitForData', () => {
-			const readValue = {};
+		it( 'should call dataRequested for all resourceNames.', () => {
+			const resourceNames = [ 'thing:1', 'thing:2', 'thing:3', 'type:1' ];
+			const data = { data: true };
+			const dataRequested = jest.fn();
+
+			api.dataRequested = dataRequested;
+			apiClient.applyOperation( 'read', resourceNames, data );
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( '123', resourceNames );
+		} );
+
+		it( 'should call dataReceived for each resource received from either an object or promise.', () => {
+			const resourceNames = [ 'thing:2', 'thing:3', 'type:1' ];
+			const dataReceived = jest.fn();
+
+			api.dataReceived = dataReceived;
+			const requests = apiClient.applyOperation( 'read', resourceNames );
+
+			Promise.all( requests ).then( () => {
+				expect( dataReceived ).toHaveBeenCalledTimes( 2 );
+				expect( dataReceived ).toHaveBeenCalledWith( '123', {
+					'type:1': { data: { attribute: 'some' } },
+				} );
+				expect( dataReceived ).toHaveBeenCalledWith( '123', {
+					'thing:2': { data: { color: 'blue' } },
+					'thing:3': { data: { color: 'green' } },
+				} );
+			} );
+		} );
+
+		it( 'should call dataReceived for a promise that rejects.', () => {
 			class TestApi extends FreshDataApi {
 				static operations = {
 					read: () => () => {
-						return { 'thing:8': readValue };
+						const rejectPromise = new Promise( ( resolve, reject ) => {
+							reject( {
+								'thing:2': { error: { message: '😦' } },
+								'thing:3': { error: { message: '😝' } },
+							} );
+						} );
+						return [ rejectPromise ];
 					},
-				};
-				static methods = {};
+				}
 			}
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-			apiClient.requirementsByResource[ 'thing:8' ] = { timeout: 5 };
-
-			apiClient.waitForData = jest.fn();
-			apiClient.applyOperation( 'read', [ 'thing:8' ] );
-			expect( apiClient.waitForData ).toHaveBeenCalledWith( 'thing:8', readValue, 5 );
-		} );
-	} );
-
-	describe( '#waitForData', () => {
-		it( 'should take a normal value and return it as a promise.', () => {
-			const dataRequested = jest.fn();
+			api = new TestApi();
+			apiClient = new ApiClient( api, '123' );
+			const resourceNames = [ 'thing:2', 'thing:3' ];
 			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
-			const dummyApi = new FreshDataApi();
-			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
-			const apiClient = new ApiClient( dummyApi, '123' );
-			const value = { foot: 'red' };
 
-			const result = apiClient.waitForData( 'thing:1', value, 1500 );
-			expect( result ).toBeInstanceOf( Promise );
-			result.then( ( resultValue ) => {
-				expect( resultValue ).toEqual(
-					{ resourceName: 'thing:1', data: value }
-				);
-			} );
-		} );
+			api.dataReceived = dataReceived;
+			const requests = apiClient.applyOperation( 'read', resourceNames );
 
-		it( 'should take a promise as a value and wrap it in another promise.', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
-			const dummyApi = new FreshDataApi();
-			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
-			dummyApi.dataHandlers.dataReceived = dataReceived;
-			const apiClient = new ApiClient( dummyApi, '123' );
-			const value = { foot: 'red' };
-			const valuePromise = Promise.resolve().then( () => value );
-
-			const result = apiClient.waitForData( 'thing:1', valuePromise, 1500 );
-			expect( result ).toBeInstanceOf( Promise );
-
-			return result.then( ( resultValue ) => {
-				expect( resultValue ).toEqual(
-					{ resourceName: 'thing:1', data: value }
-				);
-
-				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
+			Promise.all( requests ).then( () => {
 				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-				expect( dataReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', value );
-				expect( errorReceived ).not.toHaveBeenCalled();
-			} );
-		} );
-
-		it( 'should reject if value promise rejects.', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
-			const dummyApi = new FreshDataApi();
-			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
-			const apiClient = new ApiClient( dummyApi, '123' );
-			const message = 'I am misbehaving';
-			const value = new Promise( ( resolve, reject ) => reject( { message } ) );
-
-			const result = apiClient.waitForData( 'thing:1', value, DEFAULT_FETCH_TIMEOUT );
-			expect( result ).toBeInstanceOf( Promise );
-
-			return result.then( ( resultValue ) => {
-				expect( resultValue.resourceName ).toBe( 'thing:1' );
-				expect( resultValue.error ).toBeInstanceOf( Object );
-				expect( resultValue.error.message ).toBe( message );
-			} ).catch( ( error ) => {
-				expect( error.resourceName ).toBe( 'thing:1' );
-				expect( error.error ).toBeInstanceOf( Object );
-				expect( error.error.message ).toBe( message );
-
-				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
-				expect( dataReceived ).not.toHaveBeenCalled();
-				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', { message } );
-			} );
-		} );
-
-		it( 'should reject if timeout is reached.', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
-			const dummyApi = new FreshDataApi();
-			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
-			const apiClient = new ApiClient( dummyApi, '123' );
-			const value = new Promise( () => {} ); // This will intentionally never resolve.
-			const message = 'Timeout of 10 reached.';
-
-			const result = apiClient.waitForData( 'thing:1', value, 10 );
-			expect( result ).toBeInstanceOf( Promise );
-
-			return result.then( ( resultValue ) => {
-				expect( resultValue.resourceName ).toBe( 'thing:1' );
-				expect( resultValue.data ).toBeUndefined();
-				expect( resultValue.error ).toBeInstanceOf( Object );
-				expect( resultValue.error.message ).toBe( message );
-			} ).catch( ( error ) => {
-				expect( error.resourceName ).toBe( 'thing:1' );
-				expect( error.data ).toBeUndefined();
-				expect( error.error ).toBeInstanceOf( Object );
-				expect( error.error.message ).toBe( message );
-
-				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
-				expect( dataReceived ).not.toHaveBeenCalled();
-				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', { message } );
-			} );
-		} );
-
-		it( 'timeout promise should not reject if response was given in time.', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
-			const dummyApi = new FreshDataApi();
-			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
-			const apiClient = new ApiClient( dummyApi, '123' );
-			const value = new Promise( resolve => resolve( 'yay!' ) ); // This will intentionally never resolve.
-
-			const result = apiClient.waitForData( 'thing:1', value, 10 );
-			expect( result ).toBeInstanceOf( Promise );
-
-			return result.then( ( resultValue ) => {
-				expect( resultValue.resourceName ).toBe( 'thing:1' );
-				expect( resultValue.data ).toEqual( 'yay!' );
-				expect( resultValue.error ).toBeUndefined();
+				expect( dataReceived ).toHaveBeenCalledWith( '123', {
+					'thing:2': { error: { message: '😦' } },
+					'thing:3': { error: { message: '😝' } },
+				} );
 			} );
 		} );
 	} );
