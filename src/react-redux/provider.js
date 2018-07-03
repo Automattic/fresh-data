@@ -101,19 +101,19 @@ export class FreshDataReduxProvider extends Component {
 		return api.getClient( clientKey );
 	}
 
-	dataRequested = ( api, clientKey, endpointPath, params ) => {
+	dataRequested = ( api, clientKey, resourceName ) => {
 		const apiName = this.namesByApi.get( api );
-		this.props.dataRequested( apiName, clientKey, endpointPath, params );
+		this.props.dataRequested( apiName, clientKey, resourceName );
 	};
 
-	dataReceived = ( api, clientKey, endpointPath, params, data ) => {
+	dataReceived = ( api, clientKey, resourceName, data ) => {
 		const apiName = this.namesByApi.get( api );
-		this.props.dataReceived( apiName, clientKey, endpointPath, params, data );
+		this.props.dataReceived( apiName, clientKey, resourceName, data );
 	};
 
-	errorReceived = ( api, clientKey, endpointPath, params, error ) => {
+	errorReceived = ( api, clientKey, resourceName, error ) => {
 		const apiName = this.namesByApi.get( api );
-		this.props.errorReceived( apiName, clientKey, endpointPath, params, error );
+		this.props.errorReceived( apiName, clientKey, resourceName, error );
 	};
 
 	render() {

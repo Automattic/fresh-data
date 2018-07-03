@@ -202,9 +202,9 @@ describe( 'FreshDataReduxProvider', () => {
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.dataRequested( '123', [ 'thing', '1' ], { param: 1 } );
+			apis.test.dataRequested( '123', 'thing-1:{ param: 1 }' );
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 } );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }' );
 		} );
 	} );
 
@@ -224,9 +224,9 @@ describe( 'FreshDataReduxProvider', () => {
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.dataReceived( '123', [ 'thing', '1' ], { param: 1 }, { data: true } );
+			apis.test.dataReceived( '123', 'thing-1:{ param: 1 }', { data: true } );
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 }, { data: true } );
+			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { data: true } );
 		} );
 	} );
 
@@ -246,9 +246,9 @@ describe( 'FreshDataReduxProvider', () => {
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.errorReceived( '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
+			apis.test.errorReceived( '123', 'thing-1:{ param: 1 }', { message: '😦' } );
 			expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', [ 'thing', '1' ], { param: 1 }, { message: '😦' } );
+			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { message: '😦' } );
 		} );
 	} );
 

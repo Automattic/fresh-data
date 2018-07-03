@@ -2,12 +2,8 @@ import debugFactory from 'debug';
 import { isEqual, isEmpty } from 'lodash';
 import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
 import { combineComponentRequirements } from './requirements';
-import { default as getDataFromState } from './get-data';
-import requireData from './require-data';
 
 const debug = debugFactory( 'fresh-data:api-client' );
-
-export const DEFAULT_FETCH_TIMEOUT = 60000; // TODO: Remove this after we get it from requirements below.
 
 function _setTimer( callback, delay ) {
 	return window.setTimeout( callback, delay );
@@ -23,10 +19,10 @@ export default class ApiClient {
 		this.key = key;
 		this.subscriptionCallbacks = new Set();
 		this.requirementsByComponent = new Map();
-		this.requirementsByEndpoint = {};
+		this.requirementsByResource = {};
 		this.methods = mapMethods( api.methods, key );
-		this.endpointOperations = this.createEndpointOperations( api.endpoints );
-		this.mutations = mapMutations( api.mutations, this.endpointOperations );
+		this.operations = mapOperations( api.operations, this.methods );
+		this.mutations = mapMutations( api.mutations, this.operations );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
 		this.setTimer = setTimer;
@@ -64,34 +60,25 @@ export default class ApiClient {
 		return callback;
 	}
 
-	getData = ( endpointPath, params ) => {
-		return getDataFromState( this.state )( endpointPath, params );
+	getData = ( resourceName ) => {
+		const resources = this.state.resources || {};
+		const resource = resources[ resourceName ] || {};
+		return resource.data;
 	};
 
 	getMutations = () => {
 		return this.mutations;
 	}
 
-	createEndpointOperations = ( endpoints ) => {
-		// TODO: Use requirement timeout if it exists?
-		const timeout = DEFAULT_FETCH_TIMEOUT;
-		return {
-			create: ( endpointPath, params ) => {
-				return this.request( 'create', endpointPath, params, timeout, endpoints );
-			},
-			update: ( endpointPath, params ) => {
-				return this.request( 'update', endpointPath, params, timeout, endpoints );
-			},
-			delete: ( endpointPath, params ) => {
-				return this.request( 'delete', endpointPath, params, timeout, endpoints );
-			}
-		};
-	}
+	requireData = ( componentRequirements ) => ( requirement, resourceName ) => {
+		componentRequirements.push( { ...requirement, resourceName } );
+		return componentRequirements;
+	};
 
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
 			const componentRequirements = [];
-			const selectors = mapSelectors( this.api.selectors, this.getData, requireData( componentRequirements ) );
+			const selectors = mapSelectors( this.api.selectors, this.getData, this.requireData( componentRequirements ) );
 			selectorFunc( selectors );
 
 			this.requirementsByComponent.set( component, componentRequirements );
@@ -99,29 +86,26 @@ export default class ApiClient {
 			this.requirementsByComponent.clear( component );
 		}
 
-		// TODO: Consider using a reducer style function for endpoint requirements so we don't
+		// TODO: Consider using a reducer style function for resource requirements so we don't
 		// have to do a deep equals check.
-		const requirementsByEndpoint = combineComponentRequirements( this.requirementsByComponent );
-		if ( ! isEqual( this.requirementsByEndpoint, requirementsByEndpoint ) ) {
-			this.requirementsByEndpoint = requirementsByEndpoint;
+		const requirementsByResource = combineComponentRequirements( this.requirementsByComponent );
+		if ( ! isEqual( this.requirementsByResource, requirementsByResource ) ) {
+			this.requirementsByResource = requirementsByResource;
 			this.updateTimer( now );
 		}
 	};
 
 	updateRequirementsData = ( now ) => {
-		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
-		const endpointsState = state.endpoints || {};
+		const { requirementsByResource, state, minUpdate, maxUpdate } = this;
+		const resourceState = state.resources || {};
 
-		if ( ! isEmpty( requirementsByEndpoint ) ) {
+		if ( ! isEmpty( requirementsByResource ) ) {
 			const { nextUpdate, updates } =
-				calculateUpdates( requirementsByEndpoint, endpointsState, minUpdate, maxUpdate, now );
+				calculateUpdates( requirementsByResource, resourceState, minUpdate, maxUpdate, now );
 
-			updates.forEach( ( update ) => {
-				const { endpointPath, params } = update;
-				// TODO: Get timeout allowed from requirement and use it here.
-				this.fetchData( endpointPath, params, DEFAULT_FETCH_TIMEOUT );
-				this.api.dataRequested( this.key, endpointPath, params );
-			} );
+			if ( updates && updates.length > 0 ) {
+				this.applyOperation( this.api.readOperationName, updates );
+			}
 
 			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
 			this.updateTimer( now, nextUpdate );
@@ -132,13 +116,13 @@ export default class ApiClient {
 	}
 
 	updateTimer = ( now, nextUpdate = undefined ) => {
-		const { requirementsByEndpoint, state, minUpdate, maxUpdate } = this;
-		const endpointsState = state.endpoints || {};
+		const { requirementsByResource, state, minUpdate, maxUpdate } = this;
+		const resourceState = state.resources || {};
 
 		if ( undefined === nextUpdate ) {
 			nextUpdate = calculateUpdates(
-				requirementsByEndpoint,
-				endpointsState,
+				requirementsByResource,
+				resourceState,
 				minUpdate,
 				maxUpdate,
 				now
@@ -155,52 +139,51 @@ export default class ApiClient {
 		}
 	}
 
-	fetchData = ( endpointPath, params, timeout, endpoints = this.api.endpoints ) => {
-		return this.request( 'read', endpointPath, params, timeout, endpoints );
-	}
+	/**
+	 * Apply a given operation's handlers to a set of resourceNames.
+	 * @param {string} operationName The name of the operation to apply.
+	 * @param {Array} resourceNames The resources upon which to apply the operation.
+	 * @param {any} [data] (optional) data to apply via this operation.
+	 * @return {Object} Resource request promises keyed by resourceName.
+	 */
+	applyOperation = ( operationName, resourceNames, data ) => {
+		const handler = this.operations[ operationName ];
+		const resourceRequests = handler( resourceNames, data ) || {};
 
-	request = ( operation, endpointPath, params, timeout, endpoints ) => {
-		const [ endpointName, ...remainingPath ] = endpointPath;
-		const endpoint = endpoints[ endpointName ];
-
-		if ( ! endpoint ) {
-			throw new TypeError( `Failed to find required endpoint "${ endpointName }" in api.` );
-		}
-
-		if ( remainingPath.length > 0 && endpoint[ remainingPath[ 0 ] ] ) {
-			// Looks like we can go down a level in the path.
-			return this.fetchData( remainingPath, params, timeout, endpoint );
-		}
-
-		const operationFunc = endpoint[ operation ];
-		if ( ! operationFunc ) {
-			throw new TypeError( `Endpoint "${ endpointName }" has no ${ operation } method.` );
-		}
-
-		const value = operationFunc( this.methods, remainingPath, params );
-		return this.waitForData( endpointPath, params, value, timeout );
+		return resourceNames.reduce( ( requests, resourceName ) => {
+			const requirement = this.requirementsByResource[ resourceName ] || {};
+			const timeout = requirement.timeout;
+			const value = resourceRequests[ resourceName ];
+			if ( value ) {
+				requests[ resourceName ] = this.waitForData( resourceName, value, timeout );
+			} else {
+				debug( `Unhandled resource "${ resourceName }" for "${ operationName }" operation.` );
+			}
+			return requests;
+		}, {} );
 	}
 
 	/**
 	 * Return a promise that takes value as another promise or just data.
-	 * @param {Array} endpointPath The endpoint path of the data we're waiting for.
-	 * @param {Object} params The params of the data we want (or undefined if none).
+	 * @param {string} resourceName The resourceName for this operation. (e.g. 'thing:1')
 	 * @param {Promise | any } value Either the data itself, or a promise that resolves to it.
 	 * @param {number} timeout Timeout (in milliseconds allowed until promise is automatically rejected.
-	 * @return {Object} A promise that resolves to an object: { endpointPath, params, data|error }.
+	 * @return {Object} A promise that resolves to an object: { resourceName, data|error }.
 	 */
-	waitForData = ( endpointPath, params, value, timeout ) => {
+	waitForData = ( resourceName, value, timeout = 60000 ) => {
 		let response = null;
 
+		this.api.dataRequested( this.key, resourceName );
+
 		const success = ( data ) => {
-			this.api.dataReceived( this.key, endpointPath, params, data );
-			response = { endpointPath, params, data };
+			this.api.dataReceived( this.key, resourceName, data );
+			response = { resourceName, data };
 			return response;
 		};
 
 		const failure = ( error ) => {
-			this.api.errorReceived( this.key, endpointPath, params, error );
-			response = { endpointPath, params, error };
+			this.api.errorReceived( this.key, resourceName, error );
+			response = { resourceName, error };
 			return response;
 		};
 
@@ -211,8 +194,8 @@ export default class ApiClient {
 				this.clearTimer( timeoutId );
 				if ( ! response ) {
 					const error = { message: `Timeout of ${ timeout } reached.` };
-					this.api.errorReceived( this.key, endpointPath, params, error );
-					reject( { endpointPath, params, error } );
+					this.api.errorReceived( this.key, resourceName, error );
+					reject( { resourceName, error } );
 				}
 			}, timeout );
 		} );
@@ -221,7 +204,7 @@ export default class ApiClient {
 	}
 }
 
-// TODO: See if the three methods below could be more DRY.
+// TODO: Combine the four methods below to be more DRY.
 function mapMethods( methods, clientKey ) {
 	return Object.keys( methods ).reduce( ( mappedMethods, methodName ) => {
 		mappedMethods[ methodName ] = methods[ methodName ]( clientKey );
@@ -240,5 +223,12 @@ function mapSelectors( selectors, clientGetData, clientRequireData ) {
 	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
 		mappedSelectors[ selectorName ] = selectors[ selectorName ]( clientGetData, clientRequireData );
 		return mappedSelectors;
+	}, {} );
+}
+
+function mapOperations( operations, methods ) {
+	return Object.keys( operations ).reduce( ( mappedOperations, operationName ) => {
+		mappedOperations[ operationName ] = operations[ operationName ]( methods );
+		return mappedOperations;
 	}, {} );
 }

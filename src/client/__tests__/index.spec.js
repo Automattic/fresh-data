@@ -10,37 +10,29 @@ describe( 'ApiClient', () => {
 
 	const thingSelectors = {
 		getThing: ( getData, requireData ) => ( requirement, id ) => {
-			const path = [ 'things', id ];
-			requireData( requirement, path );
-			return getData( path );
+			const resourceName = `thing:${ id }`;
+			requireData( requirement, resourceName );
+			return getData( resourceName );
 		},
 		getThingPage: ( getData, requireData ) => ( requirement, page, perPage ) => {
-			const path = [ 'things' ];
-			const params = { page, perPage };
-			requireData( requirement, path, params );
-			return getData( path, params );
+			const resourceName = `thing-page:{page:${ page },perPage:${ perPage }}`;
+			requireData( requirement, resourceName );
+			return getData( resourceName );
 		},
 	};
 
 	const thing1 = { name: 'Thing 1' };
 	const thing1ClientState = {
-		endpoints: {
-			things: {
-				endpoints: {
-					1: {
-						lastRequested: now - ( 99 * SECOND ),
-						lastReceived: now - ( 92 * SECOND ),
-						data: thing1,
-					},
-				},
-				queries: [
-					{
-						params: { page: 1, perPage: 3 },
-						lastRequested: now - ( 80 * SECOND ),
-						lastReceived: now - ( 81 * SECOND ),
-						data: [ thing1 ]
-					},
-				],
+		resources: {
+			'thing:1': {
+				lastRequested: now - ( 99 * SECOND ),
+				lastReceived: now - ( 92 * SECOND ),
+				data: thing1,
+			},
+			'thing-page:{page:1,perPage:3}': {
+				lastRequested: now - ( 80 * SECOND ),
+				lastReceived: now - ( 81 * SECOND ),
+				data: [ thing1 ]
 			},
 		},
 	};
@@ -51,10 +43,30 @@ describe( 'ApiClient', () => {
 	} );
 
 	it( 'should set state', () => {
-		const clientState = { endpoints: {} };
+		const clientState = { resources: {} };
 		const apiClient = new ApiClient( emptyApi, '123' );
 		apiClient.setState( clientState );
 		expect( apiClient.state ).toBe( clientState );
+	} );
+
+	it( 'should update timer on set state', () => {
+		const clientState = { resources: {} };
+		const apiClient = new ApiClient( emptyApi, '123' );
+		apiClient.updateTimer = jest.fn();
+		apiClient.setState( clientState );
+		expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'should not set state twice', () => {
+		const clientState = { resources: {} };
+		const apiClient = new ApiClient( emptyApi, '123' );
+		apiClient.updateTimer = jest.fn();
+		apiClient.setState( clientState );
+		expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
+
+		apiClient.updateTimer = jest.fn();
+		apiClient.setState( clientState );
+		expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 	} );
 
 	it( 'should map api methods to client key', () => {
@@ -70,10 +82,6 @@ describe( 'ApiClient', () => {
 			};
 		}
 		const api = new TestApi();
-		const dataRequested = jest.fn();
-		const dataReceived = jest.fn();
-		const errorReceived = jest.fn();
-		api.setDataHandlers( dataRequested, dataReceived, errorReceived );
 		const apiClient = new ApiClient( api, '123' );
 
 		const thingsPath = [ 'things' ];
@@ -86,20 +94,40 @@ describe( 'ApiClient', () => {
 		expect( checkMethod ).toHaveBeenCalledWith( 'post', '123', thing2Path, undefined );
 	} );
 
-	it( 'should map mutations to endpoint operations', () => {
+	it( 'should map operations to methods', () => {
+		const checkOperation = jest.fn();
+		class TestApi extends FreshDataApi {
+			static methods = { get: () => () => {} };
+			static operations = {
+				read: ( methods ) => ( resourceNames, data ) => {
+					checkOperation( methods, resourceNames, data );
+				},
+			}
+		}
+		const api = new TestApi();
+		const apiClient = new ApiClient( api, '123' );
+
+		apiClient.operations.read( [ 'thing:1' ], { color: 'red' } );
+		expect( checkOperation ).toHaveBeenCalledWith( apiClient.methods, [ 'thing:1' ], { color: 'red' } );
+	} );
+
+	it( 'should map mutations to operations', () => {
 		const createThing = jest.fn();
+		const mappedCreateThing = jest.fn();
+		createThing.mockReturnValue( mappedCreateThing );
 
 		class TestApi extends FreshDataApi {
 			static mutations = {
 				createThing,
-			};
+			}
 		}
 
 		const api = new TestApi();
 		const apiClient = new ApiClient( api, '123' );
 
 		expect( createThing ).toHaveBeenCalledTimes( 1 );
-		expect( createThing ).toHaveBeenCalledWith( apiClient.endpointOperations );
+		expect( createThing ).toHaveBeenCalledWith( apiClient.operations );
+		expect( apiClient.getMutations() ).toEqual( { createThing: mappedCreateThing } );
 	} );
 
 	it( 'should map getData to current state', () => {
@@ -110,12 +138,8 @@ describe( 'ApiClient', () => {
 		const apiClient = new ApiClient( api, '123' );
 		apiClient.setState( thing1ClientState );
 
-		const dataThing1 = apiClient.getData( [ 'things', 1 ] );
+		const dataThing1 = apiClient.getData( 'thing:1' );
 		expect( dataThing1 ).toBe( thing1 );
-
-		const queryData = apiClient.getData( [ 'things' ], { page: 1, perPage: 3 } );
-		expect( queryData ).toHaveLength( 1 );
-		expect( queryData[ 0 ] ).toBe( thing1 );
 	} );
 
 	it( 'should start with no timeoutId', () => {
@@ -125,11 +149,6 @@ describe( 'ApiClient', () => {
 
 	describe( '#setComponentData', () => {
 		class TestApi extends FreshDataApi {
-			static endpoints = {
-				things: {
-					read: () => {},
-				},
-			};
 			static selectors = thingSelectors;
 		}
 		const api = new TestApi();
@@ -151,7 +170,7 @@ describe( 'ApiClient', () => {
 			} );
 			expect( apiClient.requirementsByComponent.size ).toEqual( 1 );
 			expect( apiClient.requirementsByComponent.get( component ) ).toEqual( [
-				{ freshness: 60 * SECOND, endpoint: [ 'things', 1 ] },
+				{ freshness: 60 * SECOND, resourceName: 'thing:1' },
 			] );
 
 			apiClient.setComponentData( component, null );
@@ -177,9 +196,34 @@ describe( 'ApiClient', () => {
 			expect( componentRequirements ).toEqual( [
 				{
 					freshness: 90 * SECOND,
-					endpoint: [ 'things', 1 ],
+					resourceName: 'thing:1',
 				}
 			] );
+		} );
+
+		it( 'should update timer', () => {
+			apiClient.setState( thing1ClientState );
+
+			apiClient.updateTimer = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+
+			expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'should not set requirements if they have not changed', () => {
+			apiClient.setState( thing1ClientState );
+
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+
+			apiClient.updateTimer = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			} );
+			expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 		} );
 	} );
 
@@ -238,10 +282,10 @@ describe( 'ApiClient', () => {
 
 	describe( '#updateRequirementsData', () => {
 		class TestApi extends FreshDataApi {
-			static endpoints = {
-				things: {
-					read: () => {},
-				},
+			static resources = {
+				read: [
+					() => () => {},
+				],
 			};
 			static selectors = thingSelectors;
 		}
@@ -263,76 +307,58 @@ describe( 'ApiClient', () => {
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			} );
-			expect( apiClient.updateRequirementsData ).toHaveBeenCalledTimes( 0 );
+			expect( apiClient.updateRequirementsData ).not.toHaveBeenCalled();
 		} );
 
-		it( 'should fetch data when a new requirement is added for data that has never been fetched.', () => {
-			apiClient.fetchData = jest.fn();
+		it( 'should read when a requirement is added for data that has never been read.', () => {
+			apiClient.applyOperation = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith(
-				[ 'things', '3' ], undefined, DEFAULT_FETCH_TIMEOUT
-			);
+			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:3' ] );
 		} );
 
-		it( 'should fetch data when a new requirement is added for data that is stale.', () => {
-			apiClient.fetchData = jest.fn();
+		it( 'should handle an empty state.', () => {
+			apiClient = new ApiClient( api, '123' );
+			apiClient.applyOperation = jest.fn();
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 3 );
+			}, now );
+			apiClient.updateRequirementsData( now );
+			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:3' ] );
+		} );
+
+		it( 'should read when a new requirement is added for data that is stale.', () => {
+			apiClient.applyOperation = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith(
-				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
-			);
+			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:1' ] );
 		} );
 
-		it( 'should not fetch data when a new requirement is added for data that is fresh enough.', () => {
-			apiClient.fetchData = jest.fn();
+		it( 'should not read when a new requirement is added for data that is fresh enough.', () => {
+			apiClient.applyOperation = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 95 * SECOND }, 1 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
+			expect( apiClient.applyOperation ).not.toHaveBeenCalled();
 		} );
 
-		it( 'should fetch data when data for an existing requirement goes stale.', () => {
-			apiClient.fetchData = jest.fn();
+		it( 'should read when data for an existing requirement goes stale.', () => {
+			apiClient.applyOperation = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 100 * SECOND }, 1 );
 			}, now );
 
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).not.toHaveBeenCalled();
+			expect( apiClient.applyOperation ).not.toHaveBeenCalled();
 
 			const future = now.getTime() + ( 40 * SECOND );
 			apiClient.updateRequirementsData( future );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith(
-				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
-			);
-		} );
-
-		it( 'should fetch data for a query when a new requirement is added.', () => {
-			apiClient.fetchData = jest.fn();
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 10 );
-			}, now );
-
-			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledWith(
-				[ 'things' ], { page: 1, perPage: 10 }, DEFAULT_FETCH_TIMEOUT
-			);
-		} );
-
-		it( 'should not fetch data for a query when a new requirement is already satisfied.', () => {
-			apiClient.fetchData = jest.fn();
-			apiClient.setComponentData( component, ( selectors ) => {
-				selectors.getThingPage( { freshness: 90 * SECOND }, 1, 3 );
-			}, now );
-
-			apiClient.updateRequirementsData( now );
-			expect( apiClient.fetchData ).toHaveBeenCalledTimes( 0 );
+			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:1' ] );
 		} );
 
 		it( 'should set timer for next update.', () => {
@@ -370,97 +396,66 @@ describe( 'ApiClient', () => {
 			expect( apiClient.setTimer ).not.toHaveBeenCalled();
 			expect( apiClient.clearTimer ).not.toHaveBeenCalled();
 		} );
-
-		it( 'should default endpointsState to empty object.', () => {
-			apiClient.state = {};
-			apiClient.updateRequirementsData( now );
-		} );
 	} );
 
-	describe( '#fetchData', () => {
-		it( 'should call the corresponding api endpoint read function.', () => {
+	describe( '#applyOperation', () => {
+		it( 'should call the corresponding api operation handlers.', () => {
 			const readFunc = jest.fn();
 			class TestApi extends FreshDataApi {
-				static endpoints = {
-					things: {
-						read: readFunc,
+				static operations = {
+					read: ( methods ) => ( resourceNames, data ) => {
+						return readFunc( methods, resourceNames, data );
 					},
-				};
-				static methods = {};
+				}
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			apiClient.fetchData( [ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT );
-			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ '1' ], undefined );
-		} );
-
-		it( 'should call a nested api endpoint if it exists.', () => {
-			const settingsReadFunc = jest.fn();
-			const currencyReadFunc = jest.fn();
-			class TestApi extends FreshDataApi {
-				static endpoints = {
-					settings: {
-						read: settingsReadFunc,
-						currency: {
-							read: currencyReadFunc,
-						},
-					},
-				};
-				static methods = {};
-			}
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-
-			apiClient.fetchData( [ 'settings', 'currency' ], undefined, DEFAULT_FETCH_TIMEOUT );
-			expect( currencyReadFunc ).toHaveBeenCalledWith( api.methods, [], undefined );
-			expect( settingsReadFunc ).toHaveBeenCalledTimes( 0 );
+			apiClient.applyOperation( 'read', [ 'thing:1' ], { data: true } );
+			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ 'thing:1' ], { data: true } );
 		} );
 
 		it( 'should throw error if no read function is found.', () => {
 			class TestApi extends FreshDataApi {
-				static endpoints = {
-					things: {},
-				};
-				static methods = {};
+				static operations = {};
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			expect( () => apiClient.fetchData(
-				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
-			) ).toThrowError();
+			expect( () => apiClient.applyOperation( 'read', [ 'thing:1' ] ) ).toThrowError();
 		} );
 
-		it( 'should throw error if no endpoint is found.', () => {
+		it( 'should not crash if a resource is not handled (but it will debug log it).', () => {
 			class TestApi extends FreshDataApi {
-				static methods = {};
-				static endpoints = {};
+				static operations = {
+					read: () => () => {
+						return { 'thing:5': {} };
+					},
+				}
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
 
-			expect( () => apiClient.fetchData(
-				[ 'things', '1' ], undefined, DEFAULT_FETCH_TIMEOUT
-			) ).toThrowError();
+			apiClient.applyOperation( 'read', [ 'thing:12' ], { data: true } );
 		} );
 
 		it( 'should call waitForData', () => {
 			const readValue = {};
 			class TestApi extends FreshDataApi {
-				static endpoints = {
-					things: {
-						read: () => ( readValue ),
+				static operations = {
+					read: () => () => {
+						return { 'thing:8': readValue };
 					},
 				};
 				static methods = {};
 			}
 			const api = new TestApi();
 			const apiClient = new ApiClient( api, '123' );
+			apiClient.requirementsByResource[ 'thing:8' ] = { timeout: 5 };
 
 			apiClient.waitForData = jest.fn();
-			apiClient.fetchData( [ 'things', '1' ], { param: true }, DEFAULT_FETCH_TIMEOUT );
-			expect( apiClient.waitForData ).toHaveBeenCalledWith( [ 'things', '1' ], { param: true }, readValue, DEFAULT_FETCH_TIMEOUT );
+			apiClient.applyOperation( 'read', [ 'thing:8' ] );
+			expect( apiClient.waitForData ).toHaveBeenCalledWith( 'thing:8', readValue, 5 );
 		} );
 	} );
 
@@ -474,11 +469,11 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( dummyApi, '123' );
 			const value = { foot: 'red' };
 
-			const result = apiClient.waitForData( [ 'things', '1' ], undefined, value, 1500 );
+			const result = apiClient.waitForData( 'thing:1', value, 1500 );
 			expect( result ).toBeInstanceOf( Promise );
 			result.then( ( resultValue ) => {
 				expect( resultValue ).toEqual(
-					{ endpointPath: [ 'things', '1' ], params: undefined, data: value }
+					{ resourceName: 'thing:1', data: value }
 				);
 			} );
 		} );
@@ -491,21 +486,21 @@ describe( 'ApiClient', () => {
 			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
 			dummyApi.dataHandlers.dataReceived = dataReceived;
 			const apiClient = new ApiClient( dummyApi, '123' );
-			const endpointPath = [ 'things', '1' ];
 			const value = { foot: 'red' };
 			const valuePromise = Promise.resolve().then( () => value );
 
-			const result = apiClient.waitForData( endpointPath, undefined, valuePromise, 1500 );
+			const result = apiClient.waitForData( 'thing:1', valuePromise, 1500 );
 			expect( result ).toBeInstanceOf( Promise );
 
 			return result.then( ( resultValue ) => {
 				expect( resultValue ).toEqual(
-					{ endpointPath: [ 'things', '1' ], params: undefined, data: value }
+					{ resourceName: 'thing:1', data: value }
 				);
 
-				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
 				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-				expect( dataReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, value );
+				expect( dataReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', value );
 				expect( errorReceived ).not.toHaveBeenCalled();
 			} );
 		} );
@@ -517,30 +512,26 @@ describe( 'ApiClient', () => {
 			const dummyApi = new FreshDataApi();
 			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
 			const apiClient = new ApiClient( dummyApi, '123' );
-			const endpointPath = [ 'things', '1' ];
 			const message = 'I am misbehaving';
 			const value = new Promise( ( resolve, reject ) => reject( { message } ) );
 
-			const result = apiClient.waitForData( endpointPath, undefined, value, DEFAULT_FETCH_TIMEOUT );
+			const result = apiClient.waitForData( 'thing:1', value, DEFAULT_FETCH_TIMEOUT );
 			expect( result ).toBeInstanceOf( Promise );
 
 			return result.then( ( resultValue ) => {
-				expect( resultValue.endpointPath ).toEqual( endpointPath );
-				expect( resultValue.params ).toBeUndefined();
-				expect( resultValue.data ).toBeUndefined();
+				expect( resultValue.resourceName ).toBe( 'thing:1' );
 				expect( resultValue.error ).toBeInstanceOf( Object );
-				expect( resultValue.error.message ).toEqual( message );
+				expect( resultValue.error.message ).toBe( message );
 			} ).catch( ( error ) => {
-				expect( error.endpointPath ).toEqual( endpointPath );
-				expect( error.params ).toBeUndefined();
-				expect( error.data ).toBeUndefined();
+				expect( error.resourceName ).toBe( 'thing:1' );
 				expect( error.error ).toBeInstanceOf( Object );
-				expect( error.error.message ).toEqual( message );
+				expect( error.error.message ).toBe( message );
 
-				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
 				expect( dataReceived ).not.toHaveBeenCalled();
 				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, { message } );
+				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', { message } );
 			} );
 		} );
 
@@ -551,30 +542,47 @@ describe( 'ApiClient', () => {
 			const dummyApi = new FreshDataApi();
 			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
 			const apiClient = new ApiClient( dummyApi, '123' );
-			const endpointPath = [ 'things', '1' ];
 			const value = new Promise( () => {} ); // This will intentionally never resolve.
 			const message = 'Timeout of 10 reached.';
 
-			const result = apiClient.waitForData( endpointPath, undefined, value, 10 );
+			const result = apiClient.waitForData( 'thing:1', value, 10 );
 			expect( result ).toBeInstanceOf( Promise );
 
 			return result.then( ( resultValue ) => {
-				expect( resultValue.endpointPath ).toEqual( endpointPath );
-				expect( resultValue.params ).toBeUndefined();
+				expect( resultValue.resourceName ).toBe( 'thing:1' );
 				expect( resultValue.data ).toBeUndefined();
 				expect( resultValue.error ).toBeInstanceOf( Object );
-				expect( resultValue.error.message ).toEqual( message );
+				expect( resultValue.error.message ).toBe( message );
 			} ).catch( ( error ) => {
-				expect( error.endpointPath ).toEqual( endpointPath );
-				expect( error.params ).toBeUndefined();
+				expect( error.resourceName ).toBe( 'thing:1' );
 				expect( error.data ).toBeUndefined();
 				expect( error.error ).toBeInstanceOf( Object );
-				expect( error.error.message ).toEqual( message );
+				expect( error.error.message ).toBe( message );
 
-				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+				expect( dataRequested ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1' );
 				expect( dataReceived ).not.toHaveBeenCalled();
 				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', endpointPath, undefined, { message } );
+				expect( errorReceived ).toHaveBeenCalledWith( dummyApi, '123', 'thing:1', { message } );
+			} );
+		} );
+
+		it( 'timeout promise should not reject if response was given in time.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			const errorReceived = jest.fn();
+			const dummyApi = new FreshDataApi();
+			dummyApi.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			const apiClient = new ApiClient( dummyApi, '123' );
+			const value = new Promise( resolve => resolve( 'yay!' ) ); // This will intentionally never resolve.
+
+			const result = apiClient.waitForData( 'thing:1', value, 10 );
+			expect( result ).toBeInstanceOf( Promise );
+
+			return result.then( ( resultValue ) => {
+				expect( resultValue.resourceName ).toBe( 'thing:1' );
+				expect( resultValue.data ).toEqual( 'yay!' );
+				expect( resultValue.error ).toBeUndefined();
 			} );
 		} );
 	} );

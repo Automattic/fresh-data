@@ -5,9 +5,9 @@ const debug = debugFactory( 'fresh-data:api' );
 
 export default class FreshDataApi {
 	// TODO: Consider making these part of the instance instead of the class.
-	// It would allow the use of `this` to retrieve things like methods and endpoints.
+	// It would allow the use of `this` to retrieve things like methods and resources.
 	static methods = {}
-	static endpoints = {}
+	static operations = {}
 	static selectors = {}
 	static mutations = {}
 
@@ -15,10 +15,11 @@ export default class FreshDataApi {
 		this.clients = new Map();
 		this.state = {};
 		this.dataHandlers = {};
+		this.readOperationName = 'read';
 
-		// TODO: Validate methods, endpoints, selectors here.
+		// TODO: Validate methods, resources, selectors here.
 		this.methods = this.constructor.methods;
-		this.endpoints = this.constructor.endpoints;
+		this.operations = this.constructor.operations;
 		this.selectors = this.constructor.selectors;
 		this.mutations = this.constructor.mutations;
 	}
@@ -54,27 +55,27 @@ export default class FreshDataApi {
 		}
 	}
 
-	dataRequested( clientKey, endpointPath, params ) {
+	dataRequested( clientKey, resourceName ) {
 		if ( ! this.dataHandlers.dataRequested ) {
 			debug( 'Data requested before dataHandlers were set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataRequested( this, clientKey, endpointPath, params );
+		this.dataHandlers.dataRequested( this, clientKey, resourceName );
 	}
 
-	dataReceived( clientKey, endpointPath, params, data ) {
+	dataReceived( clientKey, resourceName, data ) {
 		if ( ! this.dataHandlers.dataReceived ) {
 			debug( 'Data requested before dataHandlers were set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataReceived( this, clientKey, endpointPath, params, data );
+		this.dataHandlers.dataReceived( this, clientKey, resourceName, data );
 	}
 
-	errorReceived( clientKey, endpointPath, params, error ) {
+	errorReceived( clientKey, resourceName, error ) {
 		if ( ! this.dataHandlers.errorReceived ) {
 			debug( 'Data requested before dataHandlers were set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.errorReceived( this, clientKey, endpointPath, params, error );
+		this.dataHandlers.errorReceived( this, clientKey, resourceName, error );
 	}
 }

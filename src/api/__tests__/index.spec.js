@@ -27,13 +27,13 @@ describe( 'api', () => {
 			expect( api.methods ).toBe( methods );
 		} );
 
-		it( 'should use endpoint methods defined in subclass', () => {
-			const endpoints = { things: { read: () => {} } };
+		it( 'should use operations defined in subclass', () => {
+			const operations = { read: () => {} };
 			class MyApi extends FreshDataApi {
-				static endpoints = endpoints;
+				static operations = operations;
 			}
 			const api = new MyApi();
-			expect( api.endpoints ).toBe( endpoints );
+			expect( api.operations ).toBe( operations );
 		} );
 
 		it( 'should use selector methods defined in subclass', () => {
@@ -210,8 +210,7 @@ describe( 'api', () => {
 
 	describe( 'data handler functions', () => {
 		const clientKey = 'client1';
-		const endpointPath = [ 'things' ];
-		const params = { param1: 'one' };
+		const resourceName = 'things:{ param1: "one" }';
 		const data = { one: 'red', two: 'blue' };
 		const error = { message: 'oops!' };
 
@@ -220,7 +219,7 @@ describe( 'api', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.dataRequested( clientKey, endpointPath, params );
+				api.dataRequested( clientKey, resourceName );
 			} );
 
 			it( 'should call data handler', () => {
@@ -229,10 +228,10 @@ describe( 'api', () => {
 				}
 				const api = new MyApi();
 				api.setDataHandlers( dataRequested, null, null );
-				api.dataRequested( clientKey, endpointPath, params );
+				api.dataRequested( clientKey, resourceName );
 
 				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, endpointPath, params );
+				expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, resourceName );
 			} );
 		} );
 
@@ -241,7 +240,7 @@ describe( 'api', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.dataReceived( clientKey, endpointPath, params );
+				api.dataReceived( clientKey, resourceName );
 			} );
 
 			it( 'should call data handler', () => {
@@ -250,10 +249,10 @@ describe( 'api', () => {
 				}
 				const api = new MyApi();
 				api.setDataHandlers( null, dataReceived, null );
-				api.dataReceived( clientKey, endpointPath, params, data );
+				api.dataReceived( clientKey, resourceName, data );
 
 				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-				expect( dataReceived ).toHaveBeenCalledWith( api, clientKey, endpointPath, params, data );
+				expect( dataReceived ).toHaveBeenCalledWith( api, clientKey, resourceName, data );
 			} );
 		} );
 
@@ -262,7 +261,7 @@ describe( 'api', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.errorReceived( clientKey, endpointPath, params );
+				api.errorReceived( clientKey, resourceName );
 			} );
 
 			it( 'should call data handler', () => {
@@ -271,10 +270,10 @@ describe( 'api', () => {
 				}
 				const api = new MyApi();
 				api.setDataHandlers( null, null, errorReceived );
-				api.errorReceived( clientKey, endpointPath, params, error );
+				api.errorReceived( clientKey, resourceName, error );
 
 				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( api, clientKey, endpointPath, params, error );
+				expect( errorReceived ).toHaveBeenCalledWith( api, clientKey, resourceName, error );
 			} );
 		} );
 	} );

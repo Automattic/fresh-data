@@ -1,16 +1,13 @@
-import { find } from 'lodash';
-
 export const DEFAULT_MAX_UPDATE = 30000;
 export const DEFAULT_MIN_UPDATE = 500;
 
 /**
  * Compares requirements against current state for update information.
- * Takes a requirement tree by endpoint (returned by combineComponentRequirements)
- * and the current data state of the matching endpoints, and returns update information
- * which contains an array of updates that are currently needed, and when the
- * next update cycle should run, in milleseconds.
- * @param {Object} requirementsByEndpoint Tree with endpoint names for top-level keys.
- * @param {Object} endpointsState State indexed by enpoint names containing API data.
+ * Takes a list of requirements and the current state, both keyed by resourceName,
+ * and returns update information which contains an array of resourceNames that are
+ * currently needed and when the next update cycle should run, in milleseconds.
+ * @param {Object} requirementsByResource List of requirements keyed by resourceName.
+ * @param {Object} resourceState State indexed by resourceName.
  * @param {number} [minUpdate] Minimum nextUpdate value.
  * @param {number} [maxUpdate] Maximum nextUpdate value.
  * @param {Date} [now] Current time (used for tests).
@@ -18,112 +15,65 @@ export const DEFAULT_MIN_UPDATE = 500;
  * @see combineComponentRequirements
  */
 export default function calculateUpdates(
-	requirementsByEndpoint,
-	endpointsState,
+	requirementsByResource,
+	resourceState,
 	minUpdate = DEFAULT_MIN_UPDATE,
 	maxUpdate = DEFAULT_MAX_UPDATE,
 	now = new Date()
 ) {
 	const updateInfo = { updates: [], nextUpdate: maxUpdate };
-	appendUpdatesForEndpoints( updateInfo, [], requirementsByEndpoint, endpointsState, now );
+	appendUpdatesForResources( updateInfo, requirementsByResource, resourceState, now );
 	updateInfo.nextUpdate = Math.max( updateInfo.nextUpdate, minUpdate );
 	return updateInfo;
 }
 
 /**
- * Iterates endpoints to analyze needed updates.
- * Each endpoint is analyzed individually in the nested structure.
+ * Iterates resources to analyze needed updates.
  * @param {Object} updateInfo Update information to be mutated by this function.
- * @param {Array} endpointPath An array of strings indicating the nested endpoint path.
- * @param {Object} requirementsByEndpoint The requirements for this level of the tree.
- * @param {Object} endpointsState The state for this level of the tree.
+ * @param {Object} requirementsByResource List of requirements keyed by resource.
+ * @param {Object} resourceState State indexed by resourceName.
  * @param {Date} [now] Current time (used for tests).
  * @see calculateUpdates
- * @see appendUpdatesForEndpoint
+ * @see appendUpdatesForResource
  */
-function appendUpdatesForEndpoints( updateInfo, endpointPath, requirementsByEndpoint, endpointsState, now ) {
-	Object.keys( requirementsByEndpoint ).forEach( ( endpointName ) => {
-		const path = [ ...endpointPath, endpointName ];
-		const requirements = requirementsByEndpoint[ endpointName ];
-		const state = endpointsState[ endpointName ] || {};
-		appendUpdatesForEndpoint( updateInfo, path, undefined, requirements, state, now );
+function appendUpdatesForResources( updateInfo, requirementsByResource, resourceState, now ) {
+	Object.keys( requirementsByResource ).forEach( ( resourceName ) => {
+		const requirements = requirementsByResource[ resourceName ];
+		const state = resourceState[ resourceName ] || {};
+		appendUpdatesForResource( updateInfo, resourceName, requirements, state, now );
 	} );
 }
 
 /**
- * Iterates endpoint queries to analyze needed updates.
- * Each query is analyzed indivually in the nested structure.
+ * Analyzes a resource's requirements against its current state..
  * @param {Object} updateInfo Update information to be mutated by this function.
- * @param {Array} endpointPath An array of strings indicating the nested endpoint path.
- * @param {Object} requirementsByQuery The requirements for this level of the tree.
- * @param {Object} queriesState The state for this level of the tree.
- * @param {Date} [now] Current time (used for tests).
- * @see appendUpdatesForEndpoint
- */
-function appendUpdatesForQueries( updateInfo, endpointPath, requirementsByQuery, queriesState, now ) {
-	requirementsByQuery.forEach( ( requirements ) => {
-		const { params } = requirements;
-		const state = find( queriesState, { params } ) || {};
-		appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirements, state, now );
-	} );
-}
-
-/**
- * Analyzes an endpoint's child endpoints, queries, and metadata.
- * First, this function checks for child endpoints and recurses to handle them.
- * Then, it checks any queries for this endpoint and appends their updates.
- * Last, it checks for requirements on this endpoint.
- * @param {Object} updateInfo Update information to be mutated by this function.
- * @param {Array} endpointPath An array of strings indicating the nested endpoint path.
- * @param {Object} [params] If a query, the query parameters, otherwise undefined.
+ * @param {string} resourceName Name of the resource to be analyzed.
  * @param {Object} requirements The requirements for this level of the tree.
- * @param {Object} state The state for this level of the tree.
+ * @param {Object} state The current state for this resource.
  * @param {Date} [now] Current time (used for tests).
- * @see appendUpdatesForEndpoints
- * @see appendUpdatesForQueries
+ * @see appendUpdatesForResources
  */
-function appendUpdatesForEndpoint( updateInfo, endpointPath, params, requirements, state, now ) {
-	if ( requirements.endpoints ) {
-		appendUpdatesForEndpoints(
-			updateInfo,
-			endpointPath,
-			requirements.endpoints,
-			state.endpoints || {},
-			now
-		);
-	}
-
-	if ( requirements.queries ) {
-		appendUpdatesForQueries(
-			updateInfo,
-			endpointPath,
-			requirements.queries,
-			state.queries || {},
-			now
-		);
-	}
-
+function appendUpdatesForResource( updateInfo, resourceName, requirements, state, now ) {
 	const { lastRequested, lastReceived } = state;
 	const isRequested = lastRequested && ( ! lastReceived || lastRequested > lastReceived );
-	const timeoutLeft = getTimeoutLeft( requirements, state, now );
-	const freshnessLeft = getFreshnessLeft( requirements, state, now );
+	const timeoutLeft = getTimeoutLeft( requirements.timeout, state, now );
+	const freshnessLeft = getFreshnessLeft( requirements.freshness, state, now );
 	const nextUpdate = isRequested && 0 >= freshnessLeft ? timeoutLeft : freshnessLeft;
 
 	updateInfo.nextUpdate = Math.min( updateInfo.nextUpdate, nextUpdate );
 	if ( nextUpdate < 0 ) {
-		updateInfo.updates.push( { endpointPath, params } );
+		updateInfo.updates.push( resourceName );
 	}
 }
 
 /**
  * Calculates the remaining time left until a timeout is reached.
- * @param {Object} requirements The requirements for a given endpoint.
- * @param {Object} state The matching state for the endpoint.
+ * @param {Object} timeout The timeout requirements in milliseconds.
+ * @param {Object} state The matching state for the resource.
  * @param {Date} now Current time (used for tests).
  * @return {number} Time left until timeout, or MAX_SAFE_INTEGER if not applicable.
  */
-export function getTimeoutLeft( requirements, state, now ) {
-	const { timeout } = requirements;
+export function getTimeoutLeft( timeout, state, now ) {
 	const lastRequested = state.lastRequested || Number.MIN_SAFE_INTEGER;
 	const lastReceived = state.lastReceived || Number.MIN_SAFE_INTEGER;
 
@@ -135,13 +85,12 @@ export function getTimeoutLeft( requirements, state, now ) {
 
 /**
  * Calculates the time remaining until this data is considered stale.
- * @param {Object} requirements The requirements for a given endpoint.
- * @param {Object} state The matching state for the endpoint.
+ * @param {Object} freshness The freshness requirements in milliseconds.
+ * @param {Object} state The matching state for the resource.
  * @param {Date} now Current time (used for tests).
  * @return {number} Time left until stale, or MAX_SAFE_INTEGER if not applicable.
  */
-export function getFreshnessLeft( requirements, state, now ) {
-	const { freshness } = requirements;
+export function getFreshnessLeft( freshness, state, now ) {
 	const { lastReceived } = state;
 
 	if ( freshness && lastReceived ) {

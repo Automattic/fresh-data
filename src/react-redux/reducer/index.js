@@ -15,7 +15,7 @@ export default function reducer( state = _defaultState, action, subReducers = _s
 
 		const newClientState = subReducers.reduce( ( clientState, subReducer ) => {
 			return subReducer( clientState, action );
-		}, apiState[ clientKey ] || {} );
+		}, apiState[ clientKey ] );
 
 		const newApiState = { ...apiState, [ clientKey ]: newClientState };
 		const newState = { ...state, [ apiName ]: newApiState };
