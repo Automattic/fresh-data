@@ -54,8 +54,7 @@ export default class TestApi extends FreshDataApi {
 						.then( data => {
 							const resources = { greetings: { data } };
 							return resources;
-						} )
-						.catch( error => ( { greetings: { error } } ) );
+						} );
 					requests.push( request );
 				}
 			} );

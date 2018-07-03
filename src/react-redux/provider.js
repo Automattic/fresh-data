@@ -16,7 +16,6 @@ export class FreshDataReduxProvider extends Component {
 			PropTypes.string,
 		] ),
 		rootData: PropTypes.object.isRequired,
-		dataRequested: PropTypes.func.isRequired,
 		dataReceived: PropTypes.func.isRequired,
 	};
 
@@ -69,14 +68,13 @@ export class FreshDataReduxProvider extends Component {
 	}
 
 	updateApis = ( apis ) => {
-		const { dataRequested, dataReceived } = this;
 		debug( 'Setting apis: ', apis );
 		this.apisByName.clear();
 		this.namesByApi.clear();
 		Object.keys( apis ).forEach(
 			( apiName ) => {
 				const api = apis[ apiName ];
-				api.setDataHandlers( dataRequested, dataReceived );
+				api.setDataHandler( this.dataReceived );
 				this.apisByName.set( apiName, api );
 				this.namesByApi.set( api, apiName );
 			}
@@ -99,11 +97,6 @@ export class FreshDataReduxProvider extends Component {
 		}
 		return api.getClient( clientKey );
 	}
-
-	dataRequested = ( api, clientKey, resourceNames ) => {
-		const apiName = this.namesByApi.get( api );
-		this.props.dataRequested( apiName, clientKey, resourceNames );
-	};
 
 	dataReceived = ( api, clientKey, resources ) => {
 		const apiName = this.namesByApi.get( api );

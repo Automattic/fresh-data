@@ -64,10 +64,6 @@ export function readPostPages( get, resourceNames ) {
 
 				const resources = { ...postsById, [ resourceName ]: { data: pageData } };
 				return resources;
-			} )
-			.catch( error => {
-				// Only place error on the page resource.
-				return { [ resourceName ]: { error } };
 			} );
 			requests.push( request );
 		}

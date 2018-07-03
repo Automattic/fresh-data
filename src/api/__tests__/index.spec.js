@@ -13,9 +13,9 @@ describe( 'api', () => {
 			expect( api.state ).toEqual( {} );
 		} );
 
-		it( 'should initialize dataHandlers', () => {
+		it( 'should initialize dataHandler', () => {
 			const api = new FreshDataApi();
-			expect( api.dataHandlers ).toEqual( {} );
+			expect( api.dataHandler ).toEqual( null );
 		} );
 
 		it( 'should use api methods defined in subclass', () => {
@@ -55,18 +55,16 @@ describe( 'api', () => {
 		} );
 	} );
 
-	describe( '#setDataHandlers', () => {
-		it( 'should set dataHandlers', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
+	describe( '#setDataHandler', () => {
+		it( 'should set dataHandler', () => {
+			const dataHandler = jest.fn();
 
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			api.setDataHandlers( dataRequested, dataReceived );
+			api.setDataHandler( dataHandler );
 
-			expect( api.dataHandlers.dataRequested ).toBe( dataRequested );
-			expect( api.dataHandlers.dataReceived ).toBe( dataReceived );
+			expect( api.dataHandler ).toBe( dataHandler );
 		} );
 	} );
 
@@ -209,51 +207,39 @@ describe( 'api', () => {
 	describe( 'data handler functions', () => {
 		const clientKey = 'client1';
 
-		describe( '#dataRequested', () => {
-			it( 'should do nothing if data handler is not set.', () => {
-				class MyApi extends FreshDataApi {
-				}
-				const api = new MyApi();
-				api.dataRequested( clientKey, [ 'thing:1' ] );
-			} );
-
-			it( 'should call data handler', () => {
-				const dataRequested = jest.fn();
-				class MyApi extends FreshDataApi {
-				}
-				const api = new MyApi();
-				api.setDataHandlers( dataRequested, null, null );
-				api.dataRequested( clientKey, [ 'thing:1', 'thing:2' ] );
-
-				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, [ 'thing:1', 'thing:2' ] );
-			} );
-		} );
-
 		describe( '#dataReceived', () => {
-			it( 'should do nothing if data handler is not set.', () => {
+			it( 'should do nothing if dataHandler is not set.', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
 				api.dataReceived( clientKey, { 'thing:2': { data: { color: 'grey' } } } );
 			} );
 
-			it( 'should call data handler', () => {
-				const dataReceived = jest.fn();
+			it( 'should call dataHandler', () => {
+				const dataHandler = jest.fn();
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.setDataHandlers( null, dataReceived, null );
+				api.setDataHandler( dataHandler );
 				api.dataReceived( clientKey, {
 					'thing:3': { data: { color: 'grey' } },
 					'thing:4': { error: { message: 'oops' } }
 				} );
 
-				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-				expect( dataReceived ).toHaveBeenCalledWith( api, clientKey, {
+				expect( dataHandler ).toHaveBeenCalledTimes( 1 );
+				expect( dataHandler ).toHaveBeenCalledWith( api, clientKey, {
 					'thing:3': { data: { color: 'grey' } },
 					'thing:4': { error: { message: 'oops' } },
 				} );
+			} );
+		} );
+
+		describe( '#unhandledErrorReceived', () => {
+			it( 'should do nothing but log to debug by default.', () => {
+				class MyApi extends FreshDataApi {
+				}
+				const api = new MyApi();
+				api.unhandledErrorReceived( '123', 'cook', [ 'dish:1', 'dish:2' ], { message: 'Bork! Bork! Bork!' } );
 			} );
 		} );
 	} );

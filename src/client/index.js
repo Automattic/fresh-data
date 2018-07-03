@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import { isEqual, isEmpty } from 'lodash';
+import { isArray, isEqual, isEmpty } from 'lodash';
 import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
 import { combineComponentRequirements } from './requirements';
 
@@ -144,23 +144,81 @@ export default class ApiClient {
 	 * @param {string} operationName The name of the operation to apply.
 	 * @param {Array} resourceNames The resources upon which to apply the operation.
 	 * @param {any} [data] (optional) data to apply via this operation.
-	 * @return {Object} Resource request promises keyed by resourceName.
+	 * @return {Promise} Root promise of operation. Resolves when all requests have resolved.
 	 */
 	applyOperation = ( operationName, resourceNames, data ) => {
-		this.api.dataRequested( this.key, resourceNames );
+		this.dataRequested( resourceNames );
 
 		const operation = this.operations[ operationName ];
-		const values = operation( resourceNames, data ) || [];
+		if ( ! operation ) {
+			throw new Error( `Operation "${ operationName } not found.` );
+		}
 
-		const requests = values.map( value => {
-			// This takes any value (including a promise) and wraps it in a promise.
-			const promise = Promise.resolve().then( () => value );
+		const rootPromise = new Promise( () => {
+			try {
+				const operationResult = operation( resourceNames, data ) || [];
+				const values = isArray( operationResult ) ? operationResult : [ operationResult ];
 
-			return promise
-				.then( resources => this.api.dataReceived( this.key, resources ) )
-				.catch( resources => this.api.dataReceived( this.key, resources ) );
+				const requests = values.map( value => {
+					// This takes any value (including a promise) and wraps it in a promise.
+					const promise = Promise.resolve().then( () => value );
+
+					return promise
+						.then( this.dataReceived )
+						.catch( error => this.unhandledErrorReceived( operationName, resourceNames, error ) );
+				} );
+
+				// TODO: Maybe some monitoring of promises to ensure they all resolve?
+				return Promise.all( requests );
+			} catch ( error ) {
+				this.unhandledErrorReceived( operationName, resourceNames, error );
+			}
 		} );
-		return requests;
+		return rootPromise;
+	}
+
+	/**
+	 * Calls data handler to update state with updated lastRequested timestamps.
+	 * @param {Array} resourceNames The names of the resources that were requested.
+	 * @param {Date} [time] (optional, for test) The time of the request.
+	 */
+	dataRequested = ( resourceNames, time = new Date() ) => {
+		// Set timestamp on each resource.
+		const updatedResources = resourceNames.reduce( ( resources, resourceName ) => {
+			resources[ resourceName ] = { lastRequested: time };
+			return resources;
+		}, {} );
+		this.api.dataReceived( this.key, updatedResources );
+	}
+
+	/**
+	 * Calls data handler to update state with updated data/errors and lastReceived/errorReceived timestamps.
+	 * @param {Object} data The partial or full data of the resources that were received, indexed by name.
+	 * @param {Date} [time] (optional, for test) The time of the request.
+	 */
+	dataReceived = ( data, time = new Date() ) => {
+		// Set timestamp on each resource.
+		const updatedResources = Object.keys( data ).reduce( ( resources, resourceName ) => {
+			const resource = data[ resourceName ];
+			if ( resource.error ) {
+				resources[ resourceName ] = { ...resource, errorReceived: time };
+			}
+			if ( resource.data ) {
+				resources[ resourceName ] = { ...resource, lastReceived: time };
+			}
+			return resources;
+		}, {} );
+		this.api.dataReceived( this.key, updatedResources );
+	}
+
+	/**
+	 * Calls api error handler with info.
+	 * @param {string} operationName The name of the operation upon which the error occurred.
+	 * @param {Array} resourceNames The resourceNames for the faulty operation.
+	 * @param {any} error The error which occurred.
+	 */
+	unhandledErrorReceived = ( operationName, resourceNames, error ) => {
+		this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error );
 	}
 }
 
