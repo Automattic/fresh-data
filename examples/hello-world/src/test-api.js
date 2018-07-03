@@ -47,12 +47,18 @@ export default class TestApi extends FreshDataApi {
 
 	static operations = {
 		read: ( { get } ) => ( resourceNames ) => {
-			return resourceNames.reduce( ( requests, name ) => {
-				if ( 'greetings' === name ) {
-					requests[ name ] = get( [ name ] )();
+			const requests = [];
+			resourceNames.forEach( resourceName => {
+				if ( 'greetings' === resourceName ) {
+					const request = get( [ 'greetings' ] )()
+						.then( data => {
+							const resources = { greetings: { data } };
+							return resources;
+						} );
+					requests.push( request );
 				}
-				return requests;
-			}, {} );
+			} );
+			return requests;
 		}
 	}
 

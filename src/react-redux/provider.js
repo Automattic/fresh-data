@@ -16,9 +16,7 @@ export class FreshDataReduxProvider extends Component {
 			PropTypes.string,
 		] ),
 		rootData: PropTypes.object.isRequired,
-		dataRequested: PropTypes.func.isRequired,
 		dataReceived: PropTypes.func.isRequired,
-		errorReceived: PropTypes.func.isRequired,
 	};
 
 	static defaultProps = {
@@ -70,14 +68,13 @@ export class FreshDataReduxProvider extends Component {
 	}
 
 	updateApis = ( apis ) => {
-		const { dataRequested, dataReceived, errorReceived } = this;
 		debug( 'Setting apis: ', apis );
 		this.apisByName.clear();
 		this.namesByApi.clear();
 		Object.keys( apis ).forEach(
 			( apiName ) => {
 				const api = apis[ apiName ];
-				api.setDataHandlers( dataRequested, dataReceived, errorReceived );
+				api.setDataHandler( this.dataReceived );
 				this.apisByName.set( apiName, api );
 				this.namesByApi.set( api, apiName );
 			}
@@ -101,19 +98,9 @@ export class FreshDataReduxProvider extends Component {
 		return api.getClient( clientKey );
 	}
 
-	dataRequested = ( api, clientKey, resourceName ) => {
+	dataReceived = ( api, clientKey, resources ) => {
 		const apiName = this.namesByApi.get( api );
-		this.props.dataRequested( apiName, clientKey, resourceName );
-	};
-
-	dataReceived = ( api, clientKey, resourceName, data ) => {
-		const apiName = this.namesByApi.get( api );
-		this.props.dataReceived( apiName, clientKey, resourceName, data );
-	};
-
-	errorReceived = ( api, clientKey, resourceName, error ) => {
-		const apiName = this.namesByApi.get( api );
-		this.props.errorReceived( apiName, clientKey, resourceName, error );
+		this.props.dataReceived( apiName, clientKey, resources );
 	};
 
 	render() {

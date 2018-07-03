@@ -1,5 +1,5 @@
 import reducer from '../index';
-import { FRESH_DATA_CLIENT_REQUESTING } from '../../action-types';
+import { FRESH_DATA_CLIENT_RECEIVED } from '../../action-types';
 
 describe( 'reducer', () => {
 	const now = new Date();
@@ -19,27 +19,56 @@ describe( 'reducer', () => {
 		const state1 = {
 			testApi: {
 				123: {
-					endpoints: {
-						things: {},
+					resources: {
+						'thing:1': { lastRequested: now - 2000 },
 					},
 				},
 			},
 		};
-		const requestingAction = {
-			type: FRESH_DATA_CLIENT_REQUESTING,
+		const action = {
+			type: FRESH_DATA_CLIENT_RECEIVED,
 			apiName: 'testApi',
 			clientKey: '123',
-			endpointPath: [ 'things', 1 ],
+			resources: {
+				'thing:1': { lastReceived: now, data: { foot: 'red' } },
+				'thing:2': { lastReceived: now, data: { foot: 'blue' } },
+			},
+		};
+		const reducerMock = jest.fn();
+		reducerMock.mockReturnValue(
+			{
+				resources: {
+					'thing:1': { lastRequested: now - 2000, lastReceived: now, data: { foot: 'red' } },
+					'thing:2': { lastReceived: now, data: { foot: 'blue' } },
+				}
+			}
+		);
+		const state2 = reducer( state1, action, [ reducerMock ] );
+
+		expect( reducerMock ).toHaveBeenCalledTimes( 1 );
+		expect( reducerMock ).toHaveBeenCalledWith( state1.testApi[ 123 ], action );
+		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
+		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastReceived ).toEqual( now );
+		expect( state2.testApi[ 123 ].resources[ 'thing:2' ].lastReceived ).toEqual( now );
+	} );
+
+	it( 'should create a new sub state for the sub reducer', () => {
+		const state1 = {};
+		const action = {
+			type: FRESH_DATA_CLIENT_RECEIVED,
+			apiName: 'testApi',
+			clientKey: '123',
+			resources: { 'thing:1': { lastRequested: now - 2000 } },
 			time: now,
 		};
-		const requestingReducer = jest.fn();
-		requestingReducer.mockReturnValue(
-			{ endpoints: { things: { endpoints: { 1: { lastRequested: now } } } } }
+		const reducerMock = jest.fn();
+		reducerMock.mockReturnValue(
+			{ resources: { 'thing:1': { lastRequested: now - 2000 } } }
 		);
-		const state2 = reducer( state1, requestingAction, [ requestingReducer ] );
+		const state2 = reducer( state1, action, [ reducerMock ] );
 
-		expect( requestingReducer ).toHaveBeenCalledTimes( 1 );
-		expect( requestingReducer ).toHaveBeenCalledWith( state1.testApi[ 123 ], requestingAction );
-		expect( state2.testApi[ 123 ].endpoints.things.endpoints[ 1 ].lastRequested ).toEqual( now );
+		expect( reducerMock ).toHaveBeenCalledTimes( 1 );
+		expect( reducerMock ).toHaveBeenCalledWith( undefined, action );
+		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
 	} );
 } );

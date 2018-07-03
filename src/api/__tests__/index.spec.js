@@ -13,9 +13,9 @@ describe( 'api', () => {
 			expect( api.state ).toEqual( {} );
 		} );
 
-		it( 'should initialize dataHandlers', () => {
+		it( 'should initialize dataHandler', () => {
 			const api = new FreshDataApi();
-			expect( api.dataHandlers ).toEqual( {} );
+			expect( api.dataHandler ).toEqual( null );
 		} );
 
 		it( 'should use api methods defined in subclass', () => {
@@ -55,20 +55,16 @@ describe( 'api', () => {
 		} );
 	} );
 
-	describe( '#setDataHandlers', () => {
-		it( 'should set dataHandlers', () => {
-			const dataRequested = jest.fn();
-			const dataReceived = jest.fn();
-			const errorReceived = jest.fn();
+	describe( '#setDataHandler', () => {
+		it( 'should set dataHandler', () => {
+			const dataHandler = jest.fn();
 
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			api.setDataHandlers( dataRequested, dataReceived, errorReceived );
+			api.setDataHandler( dataHandler );
 
-			expect( api.dataHandlers.dataRequested ).toBe( dataRequested );
-			expect( api.dataHandlers.dataReceived ).toBe( dataReceived );
-			expect( api.dataHandlers.errorReceived ).toBe( errorReceived );
+			expect( api.dataHandler ).toBe( dataHandler );
 		} );
 	} );
 
@@ -210,70 +206,40 @@ describe( 'api', () => {
 
 	describe( 'data handler functions', () => {
 		const clientKey = 'client1';
-		const resourceName = 'things:{ param1: "one" }';
-		const data = { one: 'red', two: 'blue' };
-		const error = { message: 'oops!' };
-
-		describe( '#dataRequested', () => {
-			it( 'should do nothing if data handler is not set.', () => {
-				class MyApi extends FreshDataApi {
-				}
-				const api = new MyApi();
-				api.dataRequested( clientKey, resourceName );
-			} );
-
-			it( 'should call data handler', () => {
-				const dataRequested = jest.fn();
-				class MyApi extends FreshDataApi {
-				}
-				const api = new MyApi();
-				api.setDataHandlers( dataRequested, null, null );
-				api.dataRequested( clientKey, resourceName );
-
-				expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-				expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, resourceName );
-			} );
-		} );
 
 		describe( '#dataReceived', () => {
-			it( 'should do nothing if data handler is not set.', () => {
+			it( 'should do nothing if dataHandler is not set.', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.dataReceived( clientKey, resourceName );
+				api.dataReceived( clientKey, { 'thing:2': { data: { color: 'grey' } } } );
 			} );
 
-			it( 'should call data handler', () => {
-				const dataReceived = jest.fn();
+			it( 'should call dataHandler', () => {
+				const dataHandler = jest.fn();
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.setDataHandlers( null, dataReceived, null );
-				api.dataReceived( clientKey, resourceName, data );
+				api.setDataHandler( dataHandler );
+				api.dataReceived( clientKey, {
+					'thing:3': { data: { color: 'grey' } },
+					'thing:4': { error: { message: 'oops' } }
+				} );
 
-				expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-				expect( dataReceived ).toHaveBeenCalledWith( api, clientKey, resourceName, data );
+				expect( dataHandler ).toHaveBeenCalledTimes( 1 );
+				expect( dataHandler ).toHaveBeenCalledWith( api, clientKey, {
+					'thing:3': { data: { color: 'grey' } },
+					'thing:4': { error: { message: 'oops' } },
+				} );
 			} );
 		} );
 
-		describe( '#errorReceived', () => {
-			it( 'should do nothing if data handler is not set.', () => {
+		describe( '#unhandledErrorReceived', () => {
+			it( 'should do nothing but log to debug by default.', () => {
 				class MyApi extends FreshDataApi {
 				}
 				const api = new MyApi();
-				api.errorReceived( clientKey, resourceName );
-			} );
-
-			it( 'should call data handler', () => {
-				const errorReceived = jest.fn();
-				class MyApi extends FreshDataApi {
-				}
-				const api = new MyApi();
-				api.setDataHandlers( null, null, errorReceived );
-				api.errorReceived( clientKey, resourceName, error );
-
-				expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-				expect( errorReceived ).toHaveBeenCalledWith( api, clientKey, resourceName, error );
+				api.unhandledErrorReceived( '123', 'cook', [ 'dish:1', 'dish:2' ], { message: 'Bork! Bork! Bork!' } );
 			} );
 		} );
 	} );

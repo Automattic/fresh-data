@@ -14,7 +14,7 @@ export default class FreshDataApi {
 	constructor() {
 		this.clients = new Map();
 		this.state = {};
-		this.dataHandlers = {};
+		this.dataHandler = null;
 		this.readOperationName = 'read';
 
 		// TODO: Validate methods, resources, selectors here.
@@ -24,8 +24,8 @@ export default class FreshDataApi {
 		this.mutations = this.constructor.mutations;
 	}
 
-	setDataHandlers = ( dataRequested, dataReceived, errorReceived ) => {
-		this.dataHandlers = { dataRequested, dataReceived, errorReceived };
+	setDataHandler = ( dataHandler ) => {
+		this.dataHandler = dataHandler;
 	}
 
 	getClient( clientKey ) {
@@ -55,27 +55,31 @@ export default class FreshDataApi {
 		}
 	}
 
-	dataRequested( clientKey, resourceName ) {
-		if ( ! this.dataHandlers.dataRequested ) {
-			debug( 'Data requested before dataHandlers were set. Disregarding.' );
+	/**
+	 * Sets received data states for resources.
+	 * @param {string} clientKey The clientKey for the api instance.
+	 * @param {Object} resources Data keyed by resourceName.
+	 */
+	dataReceived( clientKey, resources ) {
+		if ( ! this.dataHandler ) {
+			debug( 'Data received before dataHandler set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataRequested( this, clientKey, resourceName );
+		this.dataHandler( this, clientKey, resources );
 	}
 
-	dataReceived( clientKey, resourceName, data ) {
-		if ( ! this.dataHandlers.dataReceived ) {
-			debug( 'Data requested before dataHandlers were set. Disregarding.' );
-			return;
-		}
-		this.dataHandlers.dataReceived( this, clientKey, resourceName, data );
-	}
-
-	errorReceived( clientKey, resourceName, error ) {
-		if ( ! this.dataHandlers.errorReceived ) {
-			debug( 'Data requested before dataHandlers were set. Disregarding.' );
-			return;
-		}
-		this.dataHandlers.errorReceived( this, clientKey, resourceName, error );
+	/**
+	 * Logs an unhandled error from an operation.
+	 * @param {string} clientKey The clientKey for the api instance.
+	 * @param {string} operationName The name of the operation attempted.
+	 * @param {Array} resourceNames The names of resources requested.
+	 * @param {any} error The error returned from the operation.
+	 */
+	unhandledErrorReceived( clientKey, operationName, resourceNames, error ) {
+		debug(
+			`Unhandled error for client "${ clientKey }", operation "${ operationName }":`,
+			' resourceNames:', resourceNames,
+			' error:', error
+		);
 	}
 }

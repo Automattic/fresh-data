@@ -21,9 +21,7 @@ describe( 'FreshDataReduxProvider', () => {
 			<FreshDataReduxProvider
 				apis={ apis }
 				rootData={ {} }
-				dataRequested={ actions.dataRequested }
 				dataReceived={ actions.dataReceived }
-				errorReceived={ actions.errorReceived }
 			>
 				<span>Testing</span>
 			</FreshDataReduxProvider>
@@ -46,9 +44,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<ChildComponent />
 				</FreshDataReduxProvider>
@@ -63,9 +59,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -78,9 +72,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -94,9 +86,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -107,21 +97,19 @@ describe( 'FreshDataReduxProvider', () => {
 
 	describe( '#updateApis', () => {
 		it( 'should set api data handlers initially.', () => {
-			apis.test.setDataHandlers = jest.fn();
+			apis.test.setDataHandler = jest.fn();
 
 			mount(
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.setDataHandler ).toHaveBeenCalledTimes( 1 );
 		} );
 
 		it( 'should set api data handlers when the apis prop is updated.', () => {
@@ -129,17 +117,15 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ {} }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.setDataHandlers = jest.fn();
+			apis.test.setDataHandler = jest.fn();
 			wrapper.setProps( { apis } );
-			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.setDataHandler ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 
@@ -152,9 +138,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
@@ -186,28 +170,6 @@ describe( 'FreshDataReduxProvider', () => {
 		} );
 	} );
 
-	describe( '#dataRequested', () => {
-		it( 'should dispatch when called from an api.', () => {
-			const dataRequested = jest.fn();
-
-			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
-					rootData={ {} }
-					dataRequested={ dataRequested }
-					dataReceived={ actions.dataReceived }
-					errorReceived={ actions.errorReceived }
-				>
-					<span>Testing</span>
-				</FreshDataReduxProvider>
-			);
-
-			apis.test.dataRequested( '123', 'thing-1:{ param: 1 }' );
-			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }' );
-		} );
-	} );
-
 	describe( '#dataReceived', () => {
 		it( 'should dispatch when called from an api.', () => {
 			const dataReceived = jest.fn();
@@ -216,39 +178,21 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
-					dataRequested={ actions.dataRequested }
 					dataReceived={ dataReceived }
-					errorReceived={ actions.errorReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.dataReceived( '123', 'thing-1:{ param: 1 }', { data: true } );
+			apis.test.dataReceived( '123', {
+				'thing:1': { data: { color: 'blue' } },
+				'thing:2': { error: { message: 'oops!' } },
+			} );
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { data: true } );
-		} );
-	} );
-
-	describe( '#errorReceived', () => {
-		it( 'should dispatch when called from an api.', () => {
-			const errorReceived = jest.fn();
-
-			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
-					rootData={ {} }
-					dataRequested={ actions.dataRequested }
-					dataReceived={ actions.dataReceived }
-					errorReceived={ errorReceived }
-				>
-					<span>Testing</span>
-				</FreshDataReduxProvider>
-			);
-
-			apis.test.errorReceived( '123', 'thing-1:{ param: 1 }', { message: '😦' } );
-			expect( errorReceived ).toHaveBeenCalledTimes( 1 );
-			expect( errorReceived ).toHaveBeenCalledWith( 'test', '123', 'thing-1:{ param: 1 }', { message: '😦' } );
+			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', {
+				'thing:1': { data: { color: 'blue' } },
+				'thing:2': { error: { message: 'oops!' } },
+			} );
 		} );
 	} );
 

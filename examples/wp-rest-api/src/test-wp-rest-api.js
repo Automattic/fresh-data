@@ -27,13 +27,7 @@ export function createApi( fetch = window.fetch ) {
 
 		static operations = {
 			read: ( { get } ) => ( resourceNames ) => {
-				const postPages = resourceNames.filter( name => startsWith( name, 'posts-page:' ) );
-
-				return postPages.reduce( ( requests, name ) => {
-					const params = JSON.parse( name.substr( name.indexOf( ':' ) + 1 ) );
-					requests[ name ] = get( [ 'posts' ] )( params );
-					return requests;
-				}, {} );
+				return readPostPages( get, resourceNames );
 			},
 		}
 
@@ -41,11 +35,40 @@ export function createApi( fetch = window.fetch ) {
 			getPosts: ( getData, requireData ) => ( requirement, page = 1, perPage = 10 ) => {
 				const resourceName = `posts-page:{"page":${ page },"perPage":${ perPage }}`;
 				requireData( requirement, resourceName );
-				return getData( resourceName ) || [];
+				const pageIds = getData( resourceName ) || [];
+				const pagePosts = pageIds.map( id => getData( `post:${ id }` ) ) || {};
+				return pagePosts;
 			}
 		}
 	}
 	return TestWPRestApi;
+}
+
+export function readPostPages( get, resourceNames ) {
+	const requests = [];
+	resourceNames.forEach( resourceName => {
+		if ( startsWith( resourceName, 'posts-page:' ) ) {
+			const params = JSON.parse( resourceName.substr( resourceName.indexOf( ':' ) + 1 ) );
+
+			// Do a get for each page.
+			const request = get( [ 'posts' ] )( params )
+			.then( responseData => {
+				// Store each post separately so it can be used by the rest of the app.
+				const postsById = responseData.reduce( ( posts, data ) => {
+					posts[ `post:${ data.id }` ] = { data };
+					return posts;
+				}, {} );
+
+				// Store the page as a list of ids so we don't duplicate data.
+				const pageData = responseData.map( post => post.id );
+
+				const resources = { ...postsById, [ resourceName ]: { data: pageData } };
+				return resources;
+			} );
+			requests.push( request );
+		}
+	} );
+	return requests;
 }
 
 export function verifySiteUrl( siteUrl, fetch = window.fetch ) {
