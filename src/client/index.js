@@ -21,7 +21,7 @@ export default class ApiClient {
 		this.requirementsByComponent = new Map();
 		this.requirementsByResource = {};
 		this.methods = mapFunctions( api.methods, key );
-		this.operations = mapFunctions( api.operations, this.methods );
+		this.operations = this.mapOperations( api.operations );
 		this.mutations = mapFunctions( api.mutations, this.operations );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
@@ -30,6 +30,15 @@ export default class ApiClient {
 		this.timeoutId = null;
 		this.state = {};
 		debug( 'New ApiClient "' + key + '" for api: ', api );
+	}
+
+	mapOperations = ( apiOperations ) => {
+		return Object.keys( apiOperations ).reduce( ( operations, operationName ) => {
+			operations[ operationName ] = ( resourceNames, data ) => {
+				this.applyOperation( operationName, resourceNames, data );
+			};
+			return operations;
+		}, {} );
 	}
 
 	setState = ( state, now = new Date() ) => {
@@ -104,7 +113,11 @@ export default class ApiClient {
 				calculateUpdates( requirementsByResource, resourceState, minUpdate, maxUpdate, now );
 
 			if ( updates && updates.length > 0 ) {
-				this.applyOperation( this.api.readOperationName, updates );
+				const readOperation = this.operations[ this.api.readOperationName ];
+				if ( ! readOperation ) {
+					throw new Error( `Operation "${ this.api.readOperationName }" not found.` );
+				}
+				this.operations[ this.api.readOperationName ]( updates );
 			}
 
 			debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
@@ -149,14 +162,14 @@ export default class ApiClient {
 	applyOperation = ( operationName, resourceNames, data ) => {
 		this.dataRequested( resourceNames );
 
-		const operation = this.operations[ operationName ];
-		if ( ! operation ) {
+		const apiOperation = this.api.operations[ operationName ];
+		if ( ! apiOperation ) {
 			throw new Error( `Operation "${ operationName } not found.` );
 		}
 
 		const rootPromise = new Promise( () => {
 			try {
-				const operationResult = operation( resourceNames, data ) || [];
+				const operationResult = apiOperation( this.methods )( resourceNames, data ) || [];
 				const values = isArray( operationResult ) ? operationResult : [ operationResult ];
 
 				const requests = values.map( value => {
