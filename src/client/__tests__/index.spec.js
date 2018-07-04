@@ -312,54 +312,63 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should read when a requirement is added for data that has never been read.', () => {
-			apiClient.applyOperation = jest.fn();
+			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:3' ] );
+			expect( apiClient.operations.read ).toHaveBeenCalledWith( [ 'thing:3' ] );
 		} );
 
 		it( 'should handle an empty state.', () => {
 			apiClient = new ApiClient( api, '123' );
-			apiClient.applyOperation = jest.fn();
+			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:3' ] );
+			expect( apiClient.operations.read ).toHaveBeenCalledWith( [ 'thing:3' ] );
+		} );
+
+		it( 'should throw an exception when the api read operation is not present.', () => {
+			apiClient.operations = {};
+			apiClient.setComponentData( component, ( selectors ) => {
+				selectors.getThing( { freshness: 90 * SECOND }, 1 );
+			}, now );
+
+			expect( () => apiClient.updateRequirementsData( now ) ).toThrow();
 		} );
 
 		it( 'should read when a new requirement is added for data that is stale.', () => {
-			apiClient.applyOperation = jest.fn();
+			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 1 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:1' ] );
+			expect( apiClient.operations.read ).toHaveBeenCalledWith( [ 'thing:1' ] );
 		} );
 
 		it( 'should not read when a new requirement is added for data that is fresh enough.', () => {
-			apiClient.applyOperation = jest.fn();
+			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 95 * SECOND }, 1 );
 			}, now );
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.applyOperation ).not.toHaveBeenCalled();
+			expect( apiClient.operations.read ).not.toHaveBeenCalled();
 		} );
 
 		it( 'should read when data for an existing requirement goes stale.', () => {
-			apiClient.applyOperation = jest.fn();
+			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 100 * SECOND }, 1 );
 			}, now );
 
 			apiClient.updateRequirementsData( now );
-			expect( apiClient.applyOperation ).not.toHaveBeenCalled();
+			expect( apiClient.operations.read ).not.toHaveBeenCalled();
 
 			const future = now.getTime() + ( 40 * SECOND );
 			apiClient.updateRequirementsData( future );
-			expect( apiClient.applyOperation ).toHaveBeenCalledWith( 'read', [ 'thing:1' ] );
+			expect( apiClient.operations.read ).toHaveBeenCalledWith( [ 'thing:1' ] );
 		} );
 
 		it( 'should set timer for next update.', () => {
