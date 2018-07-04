@@ -20,9 +20,9 @@ export default class ApiClient {
 		this.subscriptionCallbacks = new Set();
 		this.requirementsByComponent = new Map();
 		this.requirementsByResource = {};
-		this.methods = mapMethods( api.methods, key );
-		this.operations = mapOperations( api.operations, this.methods );
-		this.mutations = mapMutations( api.mutations, this.operations );
+		this.methods = mapFunctions( api.methods, key );
+		this.operations = mapFunctions( api.operations, this.methods );
+		this.mutations = mapFunctions( api.mutations, this.operations );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
 		this.setTimer = setTimer;
@@ -78,7 +78,7 @@ export default class ApiClient {
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
 			const componentRequirements = [];
-			const selectors = mapSelectors( this.api.selectors, this.getData, this.requireData( componentRequirements ) );
+			const selectors = mapFunctions( this.api.selectors, this.getData, this.requireData( componentRequirements ) );
 			selectorFunc( selectors );
 
 			this.requirementsByComponent.set( component, componentRequirements );
@@ -222,31 +222,9 @@ export default class ApiClient {
 	}
 }
 
-// TODO: Combine the four methods below to be more DRY.
-function mapMethods( methods, clientKey ) {
-	return Object.keys( methods ).reduce( ( mappedMethods, methodName ) => {
-		mappedMethods[ methodName ] = methods[ methodName ]( clientKey );
-		return mappedMethods;
-	}, {} );
-}
-
-function mapMutations( mutations, operations ) {
-	return Object.keys( mutations ).reduce( ( mappedMutations, mutationName ) => {
-		mappedMutations[ mutationName ] = mutations[ mutationName ]( operations );
-		return mappedMutations;
-	}, {} );
-}
-
-function mapSelectors( selectors, clientGetData, clientRequireData ) {
-	return Object.keys( selectors ).reduce( ( mappedSelectors, selectorName ) => {
-		mappedSelectors[ selectorName ] = selectors[ selectorName ]( clientGetData, clientRequireData );
-		return mappedSelectors;
-	}, {} );
-}
-
-function mapOperations( operations, methods ) {
-	return Object.keys( operations ).reduce( ( mappedOperations, operationName ) => {
-		mappedOperations[ operationName ] = operations[ operationName ]( methods );
-		return mappedOperations;
+function mapFunctions( functionsByName, ...params ) {
+	return Object.keys( functionsByName ).reduce( ( mappedFunctions, functionName ) => {
+		mappedFunctions[ functionName ] = functionsByName[ functionName ]( ...params );
+		return mappedFunctions;
 	}, {} );
 }
