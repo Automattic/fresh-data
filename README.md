@@ -56,54 +56,70 @@ Modules for each API can be kept in your application or a separate module.
 ```js
 export default class MyApi extends FreshDataApi {
 	static methods = {
-		get: ( clientKey ) => ( endpointPath ) => ( params ) => {
+		get: ( clientKey ) => ( endpointPath, params ) => {
 			const uri = clientKey + endpointPath.join( '/' );
 			const queryString = qs.stringify( params );
 			return fetch( `${ uri }?${ query }` );
 		},
-		put: ( clientKey ) => ( endpointPath ) => ( params ) => {
+		put: ( clientKey ) => ( endpointPath, params ) => {
 			const uri = clientKey + endpointPath.join( '/' );
 			const { data } = params;
 			return fetch( uri, { method: 'PUT', body: JSON.stringify( data ) } );
 		}
 	}
 
-	static endpoints = {
-		things: {
-			read: ( methods, endpointPath, params ) => {
-				const { get } = methods;
-				const fullEndpointPath = [ 'things', ...endpointPath ];
-				return get( fullEndpointPath )( params );
-			},
-			update: ( methods, endpointPath, params ) => {
-				const { put } = methods;
-				const fullEndpointPath = [ 'things', ...endpointPath ];
-				return put( fullEndpointPath )( params );
-			}
-		}
-	}
+	static operations = {
+		read: ( methods ) => ( resourceNames ) => {
+			return compact( resourceNames.map( resourceName => {
+				if ( startsWith( resourceName, 'thing:' ) ) {
+					const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
 
-	static selectors = {
-		getThing: ( getData, requireData ) => ( thingId, requirement ) => {
-			const path = [ 'things', thingId ];
-			requireData( requirement, path );
-			return getData( path ) || {};
+					const request = methods.get( [ 'things' ] ).then( responseData => {
+						return { [ resourceName ]: { data: responseData } };
+					} );
+					return request;
+				}
+			} ) );
+		}
+		update: ( methods ) => ( resourceNames, resourceData ) => {
+			return compact( resourceNames.map( resourceName => {
+				if ( startsWith( resourceName, 'thing:' ) ) {
+					const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
+					const data = resourceData[ resourceName ];
+
+					const request = methods.update( [ 'things' ], { data } ).then( responseData => {
+						return { [ resourceName ]: { data: responseData } };
+					} );
+					return request;
+				}
+			} ) );
 		}
 	}
 
 	static mutations = {
 		updateThing: ( operations ) => ( thingId, data ) => {
-			const { update } = endpoints.things;
-			return operations.update( methods, [ thingId ], { data } );
+			const resourceName = `thing:${ thingId }`;
+			const resourceNames = [ resourceName ];
+			const resourceData = { [ resourceName ]: data };
+			return operations.update( resourceNames, resourceData );
+		}
+	}
+
+	static selectors = {
+		getThing: ( getData, requireData ) => ( requirement, thingId ) => {
+			const resourceName = `thing:${ thingId }`;
+			requireData( requirement, resourceName );
+			return getData( resourceName ) || {};
 		}
 	}
 }
 ```
 
-Your own API depends on the methods, endpoints, and selectors you define.
+Your own API depends on the methods, operations, methods, and selectors you define.
 - Methods: The way you access your API.
-- Endpoints: Object context of your API, uses methods for data.
-- Selectors: Set requirements and return data from endpoints.
+- Operations: The operations you can perform on your data (e.g. read, update, create, delete )
+- Methods: Functions you provide to application developers can call to perform operations on your data.
+- Selectors: Functions you provide to application developers to access data in their preferred format.
 
 ## Integrating Fresh Data APIs into your React application
 
