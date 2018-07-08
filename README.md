@@ -32,7 +32,7 @@ function mapSelectorsToProps( selectors, ownProps, state ) {
 	const { getThing } = selectors;
 	const { thingId } = ownProps;
 
-	const thing = getThing( thingId, { freshness: 90 * SECOND } );
+	const thing = getThing( { freshness: 90 * SECOND }, thingId );
 
 	return {
 		thing,
@@ -54,6 +54,8 @@ The above code will handle the initial fetching of your data and will re-fetch e
 Modules for each API can be kept in your application or a separate module.
 
 ```js
+import { compact, startsWith } from 'lodash';
+
 export default class MyApi extends FreshDataApi {
 	static methods = {
 		get: ( clientKey ) => ( endpointPath, params ) => {
@@ -87,7 +89,7 @@ export default class MyApi extends FreshDataApi {
 					const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
 					const data = resourceData[ resourceName ];
 
-					const request = methods.update( [ 'things' ], { data } ).then( responseData => {
+					const request = methods.put( [ 'things' ], { data } ).then( responseData => {
 						return { [ resourceName ]: { data: responseData } };
 					} );
 					return request;
@@ -118,7 +120,7 @@ export default class MyApi extends FreshDataApi {
 Your own API depends on the methods, operations, methods, and selectors you define.
 - Methods: The way you access your API.
 - Operations: The operations you can perform on your data (e.g. read, update, create, delete )
-- Methods: Functions you provide to application developers can call to perform operations on your data.
+- Mutations: Functions you provide to application developers can call to perform operations on your data.
 - Selectors: Functions you provide to application developers to access data in their preferred format.
 
 ## Integrating Fresh Data APIs into your React application
