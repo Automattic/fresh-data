@@ -1,6 +1,6 @@
 import React from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { FreshDataProvider } from 'fresh-data';
+import { FreshDataProvider } from '@fresh-data/framework';
 import './App.css';
 import Message from './Message';
 import TestApi from './test-api';

@@ -1,5 +1,5 @@
 import { startsWith } from 'lodash';
-import { FreshDataApi } from 'fresh-data';
+import { FreshDataApi } from '@fresh-data/framework';
 import qs from 'qs';
 
 const NAMESPACE = 'wp/v2';

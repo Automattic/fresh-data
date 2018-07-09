@@ -1,4 +1,4 @@
-import { FreshDataApi } from 'fresh-data';
+import { FreshDataApi } from '@fresh-data/framework';
 
 const greetings = [
 	'Hello world!',

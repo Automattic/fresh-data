@@ -1,11 +1,11 @@
 {
-	"name": "fresh-data",
+	"name": "@fresh-data/framework",
 	"version": "0.1.0",
 	"description": "Describe the data you need and simply use it in your app.",
 	"license": "GPL-2.0+",
-	"homepage": "https://github.com/coderkevin/fresh-data#readme",
-	"repository": "github:coderkevin/fresh-data",
-	"bugs": "https://github.com/coderkevin/fresh-data/issues",
+	"homepage": "https://github.com/automattic/fresh-data#readme",
+	"repository": "github:automattic/fresh-data",
+	"bugs": "https://github.com/automattic/fresh-data/issues",
 	"keywords": [
 		"javascript",
 		"api",
@@ -35,7 +35,6 @@
 		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data.js",
 		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data.min.js",
 		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
-		"postinstall": "npm run clean && npm run build",
 		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {

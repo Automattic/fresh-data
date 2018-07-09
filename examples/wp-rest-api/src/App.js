@@ -1,6 +1,6 @@
 import React from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { FreshDataProvider } from 'fresh-data';
+import { FreshDataProvider } from '@fresh-data/framework';
 import PostList from './PostList';
 import SiteSelect from './SiteSelect';
 import WpRestApi from './test-wp-rest-api';
