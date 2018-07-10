@@ -1,5 +1,5 @@
 import React from 'react';
-import { SECOND, withApiClient } from 'fresh-data';
+import { SECOND, withApiClient } from '@fresh-data/framework';
 
 class Message extends React.Component {
 	state = { counter: 0 };
