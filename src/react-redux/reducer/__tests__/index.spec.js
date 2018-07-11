@@ -1,5 +1,5 @@
 import reducer from '../index';
-import { FRESH_DATA_CLIENT_RECEIVED } from '../../action-types';
+import { FRESH_DATA_RECEIVED } from '../../action-types';
 
 describe( 'reducer', () => {
 	const now = new Date();
@@ -26,7 +26,7 @@ describe( 'reducer', () => {
 			},
 		};
 		const action = {
-			type: FRESH_DATA_CLIENT_RECEIVED,
+			type: FRESH_DATA_RECEIVED,
 			apiName: 'testApi',
 			clientKey: '123',
 			resources: {
@@ -55,7 +55,7 @@ describe( 'reducer', () => {
 	it( 'should create a new sub state for the sub reducer', () => {
 		const state1 = {};
 		const action = {
-			type: FRESH_DATA_CLIENT_RECEIVED,
+			type: FRESH_DATA_RECEIVED,
 			apiName: 'testApi',
 			clientKey: '123',
 			resources: { 'thing:1': { lastRequested: now - 2000 } },

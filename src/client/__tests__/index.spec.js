@@ -542,10 +542,10 @@ describe( 'ApiClient', () => {
 			const data = { data: true };
 			const dataRequested = jest.fn();
 
-			apiClient.dataRequested = dataRequested;
+			api.dataRequested = dataRequested;
 			apiClient.applyOperation( 'read', resourceNames, data );
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( resourceNames );
+			expect( dataRequested ).toHaveBeenCalledWith( '123', resourceNames );
 		} );
 
 		it( 'should call dataReceived for each resource received from either an object or promise.', () => {
@@ -603,97 +603,6 @@ describe( 'ApiClient', () => {
 				expect( unhandled ).toHaveBeenCalledTimes( 1 );
 				expect( unhandled ).toHaveBeenCalledWith( 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
 			} );
-		} );
-	} );
-
-	describe( '#dataRequested', () => {
-		class TestApi extends FreshDataApi {
-		}
-
-		it( 'should call api.dataReceived with updated timestamps.', () => {
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-			const dataReceived = jest.fn();
-
-			api.dataReceived = dataReceived;
-			apiClient.dataRequested( [ 'thing:1', 'thing:2' ], now );
-			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( '123', {
-				'thing:1': { lastRequested: now },
-				'thing:2': { lastRequested: now },
-			} );
-		} );
-
-		it( 'should set current time when no time parameter is given.', () => {
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-
-			let lastRequestedTime;
-			const dataReceived = ( clientKey, resources ) => {
-				lastRequestedTime = resources[ 'thing:1' ].lastRequested;
-			};
-
-			api.dataReceived = dataReceived;
-			apiClient.dataRequested( [ 'thing:1' ] );
-			expect( lastRequestedTime.getTime() ).toBeGreaterThan( now.getTime() );
-		} );
-	} );
-
-	describe( '#dataReceived', () => {
-		class TestApi extends FreshDataApi {
-		}
-
-		it( 'should call api.dataReceived with updated timestamps.', () => {
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-			const dataReceived = jest.fn();
-
-			api.dataReceived = dataReceived;
-			apiClient.dataReceived( {
-				'thing:1': { data: { foot: 'red' } },
-				'thing:2': { error: { message: 'oops!' } },
-			}, now );
-
-			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( '123', {
-				'thing:1': { data: { foot: 'red' }, lastReceived: now },
-				'thing:2': { error: { message: 'oops!' }, errorReceived: now },
-			} );
-		} );
-
-		it( 'should set current time when no time parameter is given.', () => {
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-
-			let lastReceivedTime;
-			const dataReceived = ( clientKey, resources ) => {
-				lastReceivedTime = resources[ 'thing:1' ].lastReceived;
-			};
-
-			api.dataReceived = dataReceived;
-			apiClient.dataReceived( { 'thing:1': { data: { foot: 'red' } } } );
-			expect( lastReceivedTime.getTime() ).toBeGreaterThan( now.getTime() );
-		} );
-	} );
-
-	describe( '#unhandledErrorReceived', () => {
-		class TestApi extends FreshDataApi {
-		}
-
-		it( 'should call api.unhandledErrorReceived', () => {
-			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
-			const unhandled = jest.fn();
-
-			api.unhandledErrorReceived = unhandled;
-			apiClient.unhandledErrorReceived( 'cook', [ 'dish:1', 'dish:2' ], { message: 'Bork! Bork! Bork!' } );
-			expect( unhandled ).toHaveBeenCalledTimes( 1 );
-			expect( unhandled ).toHaveBeenCalledWith(
-				'123',
-				'cook',
-				[ 'dish:1', 'dish:2' ],
-				{ message: 'Bork! Bork! Bork!' }
-			);
 		} );
 	} );
 

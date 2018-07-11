@@ -13,12 +13,12 @@ export default class FreshDataApi {
 		// TODO: Validate methods, operations, mutations, and selectors?
 		this.clients = new Map();
 		this.state = {};
-		this.dataHandler = null;
+		this.dataHandlers = null;
 		this.readOperationName = 'read';
 	}
 
-	setDataHandler = ( dataHandler ) => {
-		this.dataHandler = dataHandler;
+	setDataHandlers = ( { dataRequested, dataReceived } ) => {
+		this.dataHandlers = { dataRequested, dataReceived };
 	}
 
 	getClient( clientKey ) {
@@ -49,16 +49,29 @@ export default class FreshDataApi {
 	}
 
 	/**
+	 * Sets requested data states for resources.
+	 * @param {string} clientKey The clientKey for the api instance.
+	 * @param {Array} resourceNames Array of resourceName.
+	 */
+	dataRequested( clientKey, resourceNames ) {
+		if ( ! this.dataHandlers ) {
+			debug( 'Data requested before dataHandlers set. Disregarding.' );
+			return;
+		}
+		this.dataHandlers.dataRequested( this, clientKey, resourceNames );
+	}
+
+	/**
 	 * Sets received data states for resources.
 	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {Object} resources Data keyed by resourceName.
 	 */
 	dataReceived( clientKey, resources ) {
-		if ( ! this.dataHandler ) {
-			debug( 'Data received before dataHandler set. Disregarding.' );
+		if ( ! this.dataHandlers ) {
+			debug( 'Data received before dataHandlers set. Disregarding.' );
 			return;
 		}
-		this.dataHandler( this, clientKey, resources );
+		this.dataHandlers.dataReceived( this, clientKey, resources );
 	}
 
 	/**
