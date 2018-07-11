@@ -21,7 +21,9 @@ describe( 'api', () => {
 		it( 'should use api methods defined in subclass', () => {
 			const methods = { get: () => {} };
 			class MyApi extends FreshDataApi {
-				static methods = methods;
+				constructor() {
+					super( methods, {}, {}, {} );
+				}
 			}
 			const api = new MyApi();
 			expect( api.methods ).toBe( methods );
@@ -30,28 +32,34 @@ describe( 'api', () => {
 		it( 'should use operations defined in subclass', () => {
 			const operations = { read: () => {} };
 			class MyApi extends FreshDataApi {
-				static operations = operations;
+				constructor() {
+					super( {}, operations, {}, {} );
+				}
 			}
 			const api = new MyApi();
 			expect( api.operations ).toBe( operations );
 		} );
 
-		it( 'should use selector methods defined in subclass', () => {
-			const selectors = { getThings: () => () => {} };
-			class MyApi extends FreshDataApi {
-				static selectors = selectors;
-			}
-			const api = new MyApi();
-			expect( api.selectors ).toBe( selectors );
-		} );
-
 		it( 'should use mutation methods defined in subclass', () => {
 			const mutations = { getThings: () => () => {} };
 			class MyApi extends FreshDataApi {
-				static mutations = mutations;
+				constructor() {
+					super( {}, {}, mutations, {} );
+				}
 			}
 			const api = new MyApi();
 			expect( api.mutations ).toBe( mutations );
+		} );
+
+		it( 'should use selector methods defined in subclass', () => {
+			const selectors = { getThings: () => () => {} };
+			class MyApi extends FreshDataApi {
+				constructor() {
+					super( {}, {}, {}, selectors );
+				}
+			}
+			const api = new MyApi();
+			expect( api.selectors ).toBe( selectors );
 		} );
 	} );
 

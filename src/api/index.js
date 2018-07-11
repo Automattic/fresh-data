@@ -4,24 +4,16 @@ import ApiClient from '../client/index';
 const debug = debugFactory( 'fresh-data:api' );
 
 export default class FreshDataApi {
-	// TODO: Consider making these part of the instance instead of the class.
-	// It would allow the use of `this` to retrieve things like methods and resources.
-	static methods = {}
-	static operations = {}
-	static selectors = {}
-	static mutations = {}
-
-	constructor() {
+	constructor( methods = {}, operations = {}, mutations = {}, selectors = {} ) {
+		// TODO: Validate things coming in from the constructo?
+		this.methods = methods;
+		this.operations = operations;
+		this.mutations = mutations;
+		this.selectors = selectors;
 		this.clients = new Map();
 		this.state = {};
 		this.dataHandler = null;
 		this.readOperationName = 'read';
-
-		// TODO: Validate methods, resources, selectors here.
-		this.methods = this.constructor.methods;
-		this.operations = this.constructor.operations;
-		this.selectors = this.constructor.selectors;
-		this.mutations = this.constructor.mutations;
 	}
 
 	setDataHandler = ( dataHandler ) => {

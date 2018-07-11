@@ -72,14 +72,21 @@ describe( 'ApiClient', () => {
 	it( 'should map api methods to client key', () => {
 		const checkMethod = jest.fn();
 		class TestApi extends FreshDataApi {
-			static methods = {
-				get: ( clientKey ) => ( endpointPath ) => ( params ) => {
-					checkMethod( 'get', clientKey, endpointPath, params );
-				},
-				post: ( clientKey ) => ( endpointPath ) => ( params ) => {
-					checkMethod( 'post', clientKey, endpointPath, params );
-				},
-			};
+			constructor() {
+				super(
+					{ // methods
+						get: ( clientKey ) => ( endpointPath ) => ( params ) => {
+							checkMethod( 'get', clientKey, endpointPath, params );
+						},
+						post: ( clientKey ) => ( endpointPath ) => ( params ) => {
+							checkMethod( 'post', clientKey, endpointPath, params );
+						},
+					},
+					{}, // operations
+					{}, // mutations
+					{} // selectors
+				);
+			}
 		}
 		const api = new TestApi();
 		const apiClient = new ApiClient( api, '123' );
@@ -97,12 +104,18 @@ describe( 'ApiClient', () => {
 	it( 'should map operations to methods', () => {
 		const checkOperation = jest.fn();
 		class TestApi extends FreshDataApi {
-			static methods = { get: () => () => {} };
-			static operations = {
-				read: ( methods ) => ( resourceNames, data ) => {
-					checkOperation( methods, resourceNames, data );
-					return [];
-				},
+			constructor() {
+				super(
+					{ get: () => () => {} }, // methods
+					{ // operations
+						read: ( methods ) => ( resourceNames, data ) => {
+							checkOperation( methods, resourceNames, data );
+							return [];
+						},
+					},
+					{}, // mutations
+					{} // selectors
+				);
 			}
 		}
 		const api = new TestApi();
@@ -118,8 +131,15 @@ describe( 'ApiClient', () => {
 		createThing.mockReturnValue( mappedCreateThing );
 
 		class TestApi extends FreshDataApi {
-			static mutations = {
-				createThing,
+			constructor() {
+				super(
+					{}, // methods
+					{}, // operations
+					{ // mutations
+						createThing,
+					},
+					{}, // selectors
+				);
 			}
 		}
 
@@ -133,7 +153,14 @@ describe( 'ApiClient', () => {
 
 	it( 'should map getResource to current state', () => {
 		class TestApi extends FreshDataApi {
-			static selectors = thingSelectors;
+			constructor() {
+				super(
+					{}, // methods
+					{}, // operations
+					{}, // mutations
+					thingSelectors, // selectors
+				);
+			}
 		}
 		const api = new TestApi();
 		const apiClient = new ApiClient( api, '123' );
@@ -213,7 +240,14 @@ describe( 'ApiClient', () => {
 
 	describe( '#setComponentData', () => {
 		class TestApi extends FreshDataApi {
-			static selectors = thingSelectors;
+			constructor() {
+				super(
+					{}, // methods
+					{}, // operations
+					{}, // mutations
+					thingSelectors,
+				);
+			}
 		}
 		const api = new TestApi();
 
@@ -307,7 +341,14 @@ describe( 'ApiClient', () => {
 
 		it( 'should calculate nextUpdate when not given.', () => {
 			class TestApi extends FreshDataApi {
-				static selectors = thingSelectors;
+				constructor() {
+					super(
+						{}, // methods
+						{}, // operations
+						{}, // mutations
+						thingSelectors, // selectors
+					);
+				}
 			}
 			const api = new TestApi();
 			const setTimer = jest.fn();
@@ -346,12 +387,14 @@ describe( 'ApiClient', () => {
 
 	describe( '#updateRequirementsData', () => {
 		class TestApi extends FreshDataApi {
-			static resources = {
-				read: [
-					() => () => {},
-				],
-			};
-			static selectors = thingSelectors;
+			constructor() {
+				super(
+					{}, // methods
+					{}, // operations
+					{}, // mutations
+					thingSelectors, // selectors
+				);
+			}
 		}
 		const api = new TestApi();
 		const component = () => {};
@@ -477,19 +520,26 @@ describe( 'ApiClient', () => {
 
 		beforeEach( () => {
 			class TestApi extends FreshDataApi {
-				static operations = {
-					read: () => () => {
-						const returnObject = {
-							'type:1': { data: { attribute: 'some' } },
-						};
-						const returnPromise = new Promise( ( resolve ) => {
-							resolve( {
-								'thing:2': { data: { color: 'blue' } },
-								'thing:3': { data: { color: 'green' } },
-							} );
-						} );
-						return [ returnObject, returnPromise ];
-					},
+				constructor() {
+					super(
+						{}, // methods
+						{ // operations
+							read: () => () => {
+								const returnObject = {
+									'type:1': { data: { attribute: 'some' } },
+								};
+								const returnPromise = new Promise( ( resolve ) => {
+									resolve( {
+										'thing:2': { data: { color: 'blue' } },
+										'thing:3': { data: { color: 'green' } },
+									} );
+								} );
+								return [ returnObject, returnPromise ];
+							},
+						},
+						{}, // mutations
+						{}, // selectors
+					);
 				}
 			}
 			api = new TestApi();
@@ -499,11 +549,18 @@ describe( 'ApiClient', () => {
 		it( 'should call the corresponding api operation handlers.', () => {
 			const readFunc = jest.fn();
 			class TestApi extends FreshDataApi {
-				static operations = {
-					read: ( methods ) => ( resourceNames, data ) => {
-						readFunc( methods, resourceNames, data );
-						return [];
-					},
+				constructor() {
+					super(
+						{}, // methods
+						{ // operations
+							read: ( methods ) => ( resourceNames, data ) => {
+								readFunc( methods, resourceNames, data );
+								return [];
+							},
+						},
+						{}, // mutations
+						{}, // selectors
+					);
 				}
 			}
 			api = new TestApi();
@@ -515,7 +572,14 @@ describe( 'ApiClient', () => {
 
 		it( 'should throw error if no read function is found.', () => {
 			class TestApi extends FreshDataApi {
-				static operations = {};
+				constructor() {
+					super(
+						{}, // methods
+						{}, // operations
+						{}, // mutations
+						{}, // selectors
+					);
+				}
 			}
 			api = new TestApi();
 			apiClient = new ApiClient( api, '123' );
@@ -525,11 +589,18 @@ describe( 'ApiClient', () => {
 
 		it( 'should not crash if the operation returns undefined', () => {
 			class TestApi extends FreshDataApi {
-				static operations = {
-					read: () => () => {
-						return undefined;
-					}
-				};
+				constructor() {
+					super(
+						{}, // methods
+						{ // operations
+							read: () => () => {
+								return undefined;
+							}
+						},
+						{}, // mutations
+						{}, // selectors
+					);
+				}
 			}
 			api = new TestApi();
 			apiClient = new ApiClient( api, '123' );
@@ -571,10 +642,17 @@ describe( 'ApiClient', () => {
 
 		it( 'should handle an error thrown from within an operation function.', () => {
 			class TestApi extends FreshDataApi {
-				static operations = {
-					read: () => () => {
-						throw new Error( 'BOOM!' );
-					},
+				constructor() {
+					super(
+						{}, // methods
+						{ // operations
+							read: () => () => {
+								throw new Error( 'BOOM!' );
+							},
+						},
+						{}, // mutations
+						{}, // selectors
+					);
 				}
 			}
 			api = new TestApi();
@@ -590,12 +668,19 @@ describe( 'ApiClient', () => {
 
 		it( 'should handle an unhandled error from within a promise.', () => {
 			class TestApi extends FreshDataApi {
-				static operations = {
-					read: () => () => {
-						return new Promise( () => {
-							throw new Error( 'BOOM!' );
-						} );
-					},
+				constructor() {
+					super(
+						{}, // methods
+						{ // operations
+							read: () => () => {
+								return new Promise( () => {
+									throw new Error( 'BOOM!' );
+								} );
+							},
+						},
+						{}, // mutations
+						{}, // selectors
+					);
 				}
 			}
 			api = new TestApi();

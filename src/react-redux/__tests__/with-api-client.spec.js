@@ -6,11 +6,18 @@ import withApiClient from '../with-api-client';
 
 describe( 'withApiClient', () => {
 	class TestApi extends FreshDataApi {
-		static selectors = {
-			getThing: () => () => {
-				return { id: 1, color: 'red' };
-			},
-		};
+		constructor() {
+			super(
+				{}, // methods
+				{}, // operations
+				{}, // mutations
+				{ // selectors
+					getThing: () => () => {
+						return { id: 1, color: 'red' };
+					},
+				}
+			);
+		}
 	}
 
 	let api;
@@ -266,29 +273,34 @@ describe( 'withApiClient', () => {
 			const updateFunc = jest.fn();
 
 			class MutationsTestApi extends FreshDataApi {
-				static methods = {
-					put: ( clientKey ) => ( path, data ) => {
-						putFunc( clientKey, path, data );
-					}
-				};
-				static operations = {
-					update: ( { put } ) => ( resourceNames, resourceData ) => {
-						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
-						return filteredNames.reduce( ( requests, name ) => {
-							const id = name.substr( name.indexOf( ':' ) + 1 );
-							const data = resourceData[ name ];
-							requests[ name ] = put( [ 'things', id ], { data } );
-							return requests;
-						}, {} );
-					},
-				};
-				static mutations = {
-					updateThing: ( operations ) => ( id, data ) => {
-						updateFunc( id, data );
-						const resourceName = `thing:${ id }`;
-						operations.update( [ resourceName ], { [ resourceName ]: data } );
-					}
-				};
+				constructor() {
+					super(
+						{ // methods
+							put: ( clientKey ) => ( path, data ) => {
+								putFunc( clientKey, path, data );
+							}
+						},
+						{ // operations
+							update: ( { put } ) => ( resourceNames, resourceData ) => {
+								const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
+								return filteredNames.reduce( ( requests, name ) => {
+									const id = name.substr( name.indexOf( ':' ) + 1 );
+									const data = resourceData[ name ];
+									requests[ name ] = put( [ 'things', id ], { data } );
+									return requests;
+								}, {} );
+							},
+						},
+						{ // mutations
+							updateThing: ( operations ) => ( id, data ) => {
+								updateFunc( id, data );
+								const resourceName = `thing:${ id }`;
+								operations.update( [ resourceName ], { [ resourceName ]: data } );
+							}
+						},
+						{}
+					);
+				}
 			}
 
 			api = new MutationsTestApi();
