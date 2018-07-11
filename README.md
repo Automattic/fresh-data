@@ -11,7 +11,8 @@ The application simply declares the data it needs and the Fresh APIs ensure that
 
 ## Caveat
 
-Fresh Data is new. Very new. As such it should *not* be used in production just yet!
+Fresh Data is new. Very new. As such it should *not* be used in production just yet! This code will be changing still.
+
 Try it out on something noncritical and provide some feedback!
 
 ## Installation
@@ -69,7 +70,7 @@ Modules for each API can be kept in your application or a separate module.
 import { compact, startsWith } from 'lodash';
 
 export default class MyApi extends FreshDataApi {
-	static methods = {
+	methods = {
 		get: ( clientKey ) => ( endpointPath, params ) => {
 			const uri = clientKey + endpointPath.join( '/' );
 			const queryString = qs.stringify( params );
@@ -82,7 +83,7 @@ export default class MyApi extends FreshDataApi {
 		}
 	}
 
-	static operations = {
+	operations = {
 		read: ( methods ) => ( resourceNames ) => {
 			return compact( resourceNames.map( resourceName => {
 				if ( startsWith( resourceName, 'thing:' ) ) {
@@ -110,7 +111,7 @@ export default class MyApi extends FreshDataApi {
 		}
 	}
 
-	static mutations = {
+	mutations = {
 		updateThing: ( operations ) => ( thingId, data ) => {
 			const resourceName = `thing:${ thingId }`;
 			const resourceNames = [ resourceName ];
@@ -119,7 +120,7 @@ export default class MyApi extends FreshDataApi {
 		}
 	}
 
-	static selectors = {
+	selectors = {
 		getThing: ( getResource, requireResource ) => ( requirement, thingId ) => {
 			const resourceName = `thing:${ thingId }`;
 			return requireResource( requirement, resourceName );

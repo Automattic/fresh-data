@@ -6,11 +6,11 @@ import withApiClient from '../with-api-client';
 
 describe( 'withApiClient', () => {
 	class TestApi extends FreshDataApi {
-		static selectors = {
+		selectors = {
 			getThing: () => () => {
 				return { id: 1, color: 'red' };
 			},
-		};
+		}
 	}
 
 	let api;
@@ -266,12 +266,12 @@ describe( 'withApiClient', () => {
 			const updateFunc = jest.fn();
 
 			class MutationsTestApi extends FreshDataApi {
-				static methods = {
+				methods = {
 					put: ( clientKey ) => ( path, data ) => {
 						putFunc( clientKey, path, data );
-					}
-				};
-				static operations = {
+					},
+				}
+				operations = {
 					update: ( { put } ) => ( resourceNames, resourceData ) => {
 						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
 						return filteredNames.reduce( ( requests, name ) => {
@@ -281,14 +281,14 @@ describe( 'withApiClient', () => {
 							return requests;
 						}, {} );
 					},
-				};
-				static mutations = {
+				}
+				mutations = {
 					updateThing: ( operations ) => ( id, data ) => {
 						updateFunc( id, data );
 						const resourceName = `thing:${ id }`;
 						operations.update( [ resourceName ], { [ resourceName ]: data } );
-					}
-				};
+					},
+				}
 			}
 
 			api = new MutationsTestApi();
