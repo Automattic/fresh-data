@@ -2,11 +2,23 @@
 
 Fresh Data is a declarative data API framework for JavaScript apps.
 
+Fresh Data isn't an API. It's *your* API made easier to use!
 It offers a single integration point between APIs and your application.
 The application simply declares the data it needs and the Fresh APIs ensure that the data it receives stays fresh.
 
-[![Build Status](https://travis-ci.org/coderkevin/fresh-data.svg?branch=master)](https://travis-ci.org/coderkevin/fresh-data)
-[![Test Coverage](https://img.shields.io/codecov/c/github/coderkevin/fresh-data.svg)](https://travis-ci.org/coderkevin/fresh-data)
+[![Build Status](https://travis-ci.org/automattic/fresh-data.svg?branch=master)](https://travis-ci.org/automattic/fresh-data)
+[![Test Coverage](https://img.shields.io/codecov/c/github/automattic/fresh-data.svg)](https://travis-ci.org/automattic/fresh-data)
+
+## Caveat
+
+Fresh Data is new. Very new. As such it should *not* be used in production just yet!
+Try it out on something noncritical and provide some feedback!
+
+## Installation
+
+```sh
+npm install --save @fresh-data/framework
+```
 
 ## Benefits
 
@@ -154,6 +166,3 @@ Fresh Data is functional, but still a work in progress. Here's what's next on th
 - Feature: Clearing out old data
   - Detecting when data was last rendered
   - Unlinking data over a threshold
-
-## License
-GPL v2
