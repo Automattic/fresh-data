@@ -4,12 +4,13 @@ import ApiClient from '../client/index';
 const debug = debugFactory( 'fresh-data:api' );
 
 export default class FreshDataApi {
-	constructor( methods = {}, operations = {}, mutations = {}, selectors = {} ) {
-		// TODO: Validate things coming in from the constructo?
-		this.methods = methods;
-		this.operations = operations;
-		this.mutations = mutations;
-		this.selectors = selectors;
+	methods = {};
+	operations = {};
+	mutations = {};
+	selectors = {};
+
+	constructor() {
+		// TODO: Validate methods, operations, mutations, and selectors?
 		this.clients = new Map();
 		this.state = {};
 		this.dataHandler = null;

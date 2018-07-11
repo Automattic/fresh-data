@@ -17,50 +17,6 @@ describe( 'api', () => {
 			const api = new FreshDataApi();
 			expect( api.dataHandler ).toEqual( null );
 		} );
-
-		it( 'should use api methods defined in subclass', () => {
-			const methods = { get: () => {} };
-			class MyApi extends FreshDataApi {
-				constructor() {
-					super( methods, {}, {}, {} );
-				}
-			}
-			const api = new MyApi();
-			expect( api.methods ).toBe( methods );
-		} );
-
-		it( 'should use operations defined in subclass', () => {
-			const operations = { read: () => {} };
-			class MyApi extends FreshDataApi {
-				constructor() {
-					super( {}, operations, {}, {} );
-				}
-			}
-			const api = new MyApi();
-			expect( api.operations ).toBe( operations );
-		} );
-
-		it( 'should use mutation methods defined in subclass', () => {
-			const mutations = { getThings: () => () => {} };
-			class MyApi extends FreshDataApi {
-				constructor() {
-					super( {}, {}, mutations, {} );
-				}
-			}
-			const api = new MyApi();
-			expect( api.mutations ).toBe( mutations );
-		} );
-
-		it( 'should use selector methods defined in subclass', () => {
-			const selectors = { getThings: () => () => {} };
-			class MyApi extends FreshDataApi {
-				constructor() {
-					super( {}, {}, {}, selectors );
-				}
-			}
-			const api = new MyApi();
-			expect( api.selectors ).toBe( selectors );
-		} );
 	} );
 
 	describe( '#setDataHandler', () => {

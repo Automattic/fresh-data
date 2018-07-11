@@ -70,65 +70,61 @@ Modules for each API can be kept in your application or a separate module.
 import { compact, startsWith } from 'lodash';
 
 export default class MyApi extends FreshDataApi {
-	constructor() {
-		const methods = {
-			get: ( clientKey ) => ( endpointPath, params ) => {
-				const uri = clientKey + endpointPath.join( '/' );
-				const queryString = qs.stringify( params );
-				return fetch( `${ uri }?${ query }` );
-			},
-			put: ( clientKey ) => ( endpointPath, params ) => {
-				const uri = clientKey + endpointPath.join( '/' );
-				const { data } = params;
-				return fetch( uri, { method: 'PUT', body: JSON.stringify( data ) } );
-			}
+	methods = {
+		get: ( clientKey ) => ( endpointPath, params ) => {
+			const uri = clientKey + endpointPath.join( '/' );
+			const queryString = qs.stringify( params );
+			return fetch( `${ uri }?${ query }` );
+		},
+		put: ( clientKey ) => ( endpointPath, params ) => {
+			const uri = clientKey + endpointPath.join( '/' );
+			const { data } = params;
+			return fetch( uri, { method: 'PUT', body: JSON.stringify( data ) } );
 		}
+	}
 
-		const operations = {
-			read: ( methods ) => ( resourceNames ) => {
-				return compact( resourceNames.map( resourceName => {
-					if ( startsWith( resourceName, 'thing:' ) ) {
-						const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
+	operations = {
+		read: ( methods ) => ( resourceNames ) => {
+			return compact( resourceNames.map( resourceName => {
+				if ( startsWith( resourceName, 'thing:' ) ) {
+					const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
 
-						const request = methods.get( [ 'things' ] ).then( responseData => {
-							return { [ resourceName ]: { data: responseData } };
-						} );
-						return request;
-					}
-				} ) );
-			}
-			update: ( methods ) => ( resourceNames, resourceData ) => {
-				return compact( resourceNames.map( resourceName => {
-					if ( startsWith( resourceName, 'thing:' ) ) {
-						const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
-						const data = resourceData[ resourceName ];
-
-						const request = methods.put( [ 'things' ], { data } ).then( responseData => {
-							return { [ resourceName ]: { data: responseData } };
-						} );
-						return request;
-					}
-				} ) );
-			}
+					const request = methods.get( [ 'things' ] ).then( responseData => {
+						return { [ resourceName ]: { data: responseData } };
+					} );
+					return request;
+				}
+			} ) );
 		}
+		update: ( methods ) => ( resourceNames, resourceData ) => {
+			return compact( resourceNames.map( resourceName => {
+				if ( startsWith( resourceName, 'thing:' ) ) {
+					const thingNumber = resourceName.substr( resourceName.indexOf( ':' ) + 1 );
+					const data = resourceData[ resourceName ];
 
-		const mutations = {
-			updateThing: ( operations ) => ( thingId, data ) => {
-				const resourceName = `thing:${ thingId }`;
-				const resourceNames = [ resourceName ];
-				const resourceData = { [ resourceName ]: data };
-				return operations.update( resourceNames, resourceData );
-			}
+					const request = methods.put( [ 'things' ], { data } ).then( responseData => {
+						return { [ resourceName ]: { data: responseData } };
+					} );
+					return request;
+				}
+			} ) );
 		}
+	}
 
-		const selectors = {
-			getThing: ( getResource, requireResource ) => ( requirement, thingId ) => {
-				const resourceName = `thing:${ thingId }`;
-				return requireResource( requirement, resourceName );
-			}
+	mutations = {
+		updateThing: ( operations ) => ( thingId, data ) => {
+			const resourceName = `thing:${ thingId }`;
+			const resourceNames = [ resourceName ];
+			const resourceData = { [ resourceName ]: data };
+			return operations.update( resourceNames, resourceData );
 		}
+	}
 
-		super( methods, operations, mutations, selectors );
+	selectors = {
+		getThing: ( getResource, requireResource ) => ( requirement, thingId ) => {
+			const resourceName = `thing:${ thingId }`;
+			return requireResource( requirement, resourceName );
+		}
 	}
 }
 ```
