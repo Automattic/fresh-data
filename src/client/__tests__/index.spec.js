@@ -9,14 +9,14 @@ describe( 'ApiClient', () => {
 	const emptyApi = new FreshDataApi();
 
 	const thingSelectors = {
-		getThing: ( getResource, requireData ) => ( requirement, id ) => {
+		getThing: ( getResource, requireResource ) => ( requirement, id ) => {
 			const resourceName = `thing:${ id }`;
-			requireData( requirement, resourceName );
+			requireResource( requirement, resourceName );
 			return getResource( resourceName ).data;
 		},
-		getThingPage: ( getResource, requireData ) => ( requirement, page, perPage ) => {
+		getThingPage: ( getResource, requireResource ) => ( requirement, page, perPage ) => {
 			const resourceName = `thing-page:{page:${ page },perPage:${ perPage }}`;
-			requireData( requirement, resourceName );
+			requireResource( requirement, resourceName );
 			return getResource( resourceName ).data;
 		},
 	};
@@ -164,6 +164,50 @@ describe( 'ApiClient', () => {
 			const apiClient = new ApiClient( api, '123' );
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.getResource( 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
+		} );
+	} );
+
+	describe( '#requireResource', () => {
+		it( 'should return an empty object if the resource does not yet exist.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			expect( apiClient.requireResource( [] )( {}, 'nonexistentResource:1' ) ).toEqual( {} );
+		} );
+
+		it( 'should return resource state just like getResource.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
+			expect( apiClient.requireResource( [] )( {}, 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
+		} );
+
+		it( 'should add a requirement to a resource that does not yet exist.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			const requirement = { freshness: 5 * SECOND };
+			const componentRequirements = [];
+			apiClient.requireResource( componentRequirements )( requirement, 'thing:1' );
+			expect( componentRequirements ).toEqual( [ { freshness: 5 * SECOND, resourceName: 'thing:1' } ] );
+		} );
+
+		it( 'should add a duplicate requirement to a resource that already exists.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			const requirement = { freshness: 5 * SECOND };
+			const componentRequirements = [ { freshness: 2 * SECOND, resourceName: 'thing:1' } ];
+			apiClient.requireResource( componentRequirements )( requirement, 'thing:1' );
+			expect( componentRequirements ).toEqual( [
+				{ freshness: 2 * SECOND, resourceName: 'thing:1' },
+				{ freshness: 5 * SECOND, resourceName: 'thing:1' },
+			] );
 		} );
 	} );
 

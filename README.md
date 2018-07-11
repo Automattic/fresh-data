@@ -120,10 +120,9 @@ export default class MyApi extends FreshDataApi {
 	}
 
 	static selectors = {
-		getThing: ( getResource, requireData ) => ( requirement, thingId ) => {
+		getThing: ( getResource, requireResource ) => ( requirement, thingId ) => {
 			const resourceName = `thing:${ thingId }`;
-			requireData( requirement, resourceName );
-			return getResource( resourceName ).data || {};
+			return requireResource( requirement, resourceName );
 		}
 	}
 }
