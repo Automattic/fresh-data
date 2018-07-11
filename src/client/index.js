@@ -69,25 +69,25 @@ export default class ApiClient {
 		return callback;
 	}
 
-	getData = ( resourceName ) => {
+	getResource = ( resourceName ) => {
 		const resources = this.state.resources || {};
 		const resource = resources[ resourceName ] || {};
-		return resource.data;
+		return resource;
+	};
+
+	requireResource = ( componentRequirements ) => ( requirement, resourceName ) => {
+		componentRequirements.push( { ...requirement, resourceName } );
+		return this.getResource( resourceName );
 	};
 
 	getMutations = () => {
 		return this.mutations;
 	}
 
-	requireData = ( componentRequirements ) => ( requirement, resourceName ) => {
-		componentRequirements.push( { ...requirement, resourceName } );
-		return componentRequirements;
-	};
-
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
 			const componentRequirements = [];
-			const selectors = mapFunctions( this.api.selectors, this.getData, this.requireData( componentRequirements ) );
+			const selectors = mapFunctions( this.api.selectors, this.getResource, this.requireResource( componentRequirements ) );
 			selectorFunc( selectors );
 
 			this.requirementsByComponent.set( component, componentRequirements );
