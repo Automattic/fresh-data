@@ -34,8 +34,8 @@ const greetings = [
 let requestCount = 0;
 
 export default class TestApi extends FreshDataApi {
-	static methods = {
-		get: ( clientKey ) => ( endpointPath ) => ( params ) => { // eslint-disable-line no-unused-vars
+	methods = {
+		get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
 			return new Promise( ( resolve ) => {
 				requestCount++;
 				const valueCount = Math.min( requestCount, greetings.length );
@@ -45,12 +45,12 @@ export default class TestApi extends FreshDataApi {
 		},
 	}
 
-	static operations = {
+	operations = {
 		read: ( { get } ) => ( resourceNames ) => {
 			const requests = [];
 			resourceNames.forEach( resourceName => {
 				if ( 'greetings' === resourceName ) {
-					const request = get( [ 'greetings' ] )()
+					const request = get( [ 'greetings' ] )
 						.then( data => {
 							const resources = { greetings: { data } };
 							return resources;
@@ -62,11 +62,10 @@ export default class TestApi extends FreshDataApi {
 		}
 	}
 
-	static selectors = {
-		getGreetings: ( getData, requireData ) => ( requirement ) => {
+	selectors = {
+		getGreetings: ( getResource, requireResource ) => ( requirement ) => {
 			const resourceName = 'greetings';
-			requireData( requirement, resourceName );
-			return getData( resourceName ) || [];
+			return requireResource( requirement, resourceName ).data || [];
 		}
 	}
 }
