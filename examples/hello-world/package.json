@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@fresh-data/framework": "github:automattic/fresh-data",
+    "@fresh-data/framework": "^0.1.0",
     "ajv": "^6.5.2",
     "debug": "^3.1.0",
     "lodash": "^4.17.10",
