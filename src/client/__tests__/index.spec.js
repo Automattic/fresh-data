@@ -9,15 +9,15 @@ describe( 'ApiClient', () => {
 	const emptyApi = new FreshDataApi();
 
 	const thingSelectors = {
-		getThing: ( getData, requireData ) => ( requirement, id ) => {
+		getThing: ( getResource, requireData ) => ( requirement, id ) => {
 			const resourceName = `thing:${ id }`;
 			requireData( requirement, resourceName );
-			return getData( resourceName );
+			return getResource( resourceName ).data;
 		},
-		getThingPage: ( getData, requireData ) => ( requirement, page, perPage ) => {
+		getThingPage: ( getResource, requireData ) => ( requirement, page, perPage ) => {
 			const resourceName = `thing-page:{page:${ page },perPage:${ perPage }}`;
 			requireData( requirement, resourceName );
-			return getData( resourceName );
+			return getResource( resourceName ).data;
 		},
 	};
 
@@ -131,7 +131,7 @@ describe( 'ApiClient', () => {
 		expect( apiClient.getMutations() ).toEqual( { createThing: mappedCreateThing } );
 	} );
 
-	it( 'should map getData to current state', () => {
+	it( 'should map getResource to current state', () => {
 		class TestApi extends FreshDataApi {
 			static selectors = thingSelectors;
 		}
@@ -139,13 +139,32 @@ describe( 'ApiClient', () => {
 		const apiClient = new ApiClient( api, '123' );
 		apiClient.setState( thing1ClientState );
 
-		const dataThing1 = apiClient.getData( 'thing:1' );
+		const dataThing1 = apiClient.getResource( 'thing:1' ).data;
 		expect( dataThing1 ).toBe( thing1 );
 	} );
 
 	it( 'should start with no timeoutId', () => {
 		const apiClient = new ApiClient( emptyApi, '123' );
 		expect( apiClient.timeoutId ).toBeNull();
+	} );
+
+	describe( '#getResource', () => {
+		it( 'should return an empty object if the resource does not yet exist.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			expect( apiClient.getResource( 'nonexistentResource:1' ) ).toEqual( {} );
+		} );
+
+		it( 'should return resource state.', () => {
+			class TestApi extends FreshDataApi {
+			}
+			const api = new TestApi();
+			const apiClient = new ApiClient( api, '123' );
+			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
+			expect( apiClient.getResource( 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
+		} );
 	} );
 
 	describe( '#setComponentData', () => {
