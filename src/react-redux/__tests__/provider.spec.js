@@ -21,6 +21,7 @@ describe( 'FreshDataReduxProvider', () => {
 			<FreshDataReduxProvider
 				apis={ apis }
 				rootData={ {} }
+				dataRequested={ actions.dataRequested }
 				dataReceived={ actions.dataReceived }
 			>
 				<span>Testing</span>
@@ -44,6 +45,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<ChildComponent />
@@ -59,6 +61,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
@@ -72,6 +75,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
@@ -86,6 +90,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
@@ -97,19 +102,20 @@ describe( 'FreshDataReduxProvider', () => {
 
 	describe( '#updateApis', () => {
 		it( 'should set api data handlers initially.', () => {
-			apis.test.setDataHandler = jest.fn();
+			apis.test.setDataHandlers = jest.fn();
 
 			mount(
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			expect( apis.test.setDataHandler ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
 		} );
 
 		it( 'should set api data handlers when the apis prop is updated.', () => {
@@ -117,15 +123,16 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ {} }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
 				</FreshDataReduxProvider>
 			);
 
-			apis.test.setDataHandler = jest.fn();
+			apis.test.setDataHandlers = jest.fn();
 			wrapper.setProps( { apis } );
-			expect( apis.test.setDataHandler ).toHaveBeenCalledTimes( 1 );
+			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 
@@ -138,6 +145,7 @@ describe( 'FreshDataReduxProvider', () => {
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
@@ -170,14 +178,39 @@ describe( 'FreshDataReduxProvider', () => {
 		} );
 	} );
 
-	describe( '#dataReceived', () => {
+	describe( '#dataRequested', () => {
 		it( 'should dispatch when called from an api.', () => {
+			const dataRequested = jest.fn();
 			const dataReceived = jest.fn();
 
 			mount(
 				<FreshDataReduxProvider
 					apis={ apis }
 					rootData={ {} }
+					dataRequested={ dataRequested }
+					dataReceived={ dataReceived }
+				>
+					<span>Testing</span>
+				</FreshDataReduxProvider>
+			);
+
+			apis.test.dataRequested( '123', [ 'thing:1', 'thing:2' ] );
+			expect( dataReceived ).not.toHaveBeenCalled();
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', [ 'thing:1', 'thing:2' ] );
+		} );
+	} );
+
+	describe( '#dataReceived', () => {
+		it( 'should dispatch when called from an api.', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+
+			mount(
+				<FreshDataReduxProvider
+					apis={ apis }
+					rootData={ {} }
+					dataRequested={ dataRequested }
 					dataReceived={ dataReceived }
 				>
 					<span>Testing</span>
@@ -188,6 +221,7 @@ describe( 'FreshDataReduxProvider', () => {
 				'thing:1': { data: { color: 'blue' } },
 				'thing:2': { error: { message: 'oops!' } },
 			} );
+			expect( dataRequested ).not.toHaveBeenCalled();
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
 			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', {
 				'thing:1': { data: { color: 'blue' } },

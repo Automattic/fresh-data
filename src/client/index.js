@@ -160,7 +160,7 @@ export default class ApiClient {
 	 * @return {Promise} Root promise of operation. Resolves when all requests have resolved.
 	 */
 	applyOperation = ( operationName, resourceNames, data ) => {
-		this.dataRequested( resourceNames );
+		this.api.dataRequested( this.key, resourceNames );
 
 		const apiOperation = this.api.operations[ operationName ];
 		if ( ! apiOperation ) {
@@ -177,61 +177,17 @@ export default class ApiClient {
 					const promise = Promise.resolve().then( () => value );
 
 					return promise
-						.then( this.dataReceived )
-						.catch( error => this.unhandledErrorReceived( operationName, resourceNames, error ) );
+						.then( ( resources ) => this.api.dataReceived( this.key, resources ) )
+						.catch( error => this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error ) );
 				} );
 
 				// TODO: Maybe some monitoring of promises to ensure they all resolve?
 				return Promise.all( requests );
 			} catch ( error ) {
-				this.unhandledErrorReceived( operationName, resourceNames, error );
+				this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error );
 			}
 		} );
 		return rootPromise;
-	}
-
-	/**
-	 * Calls data handler to update state with updated lastRequested timestamps.
-	 * @param {Array} resourceNames The names of the resources that were requested.
-	 * @param {Date} [time] (optional, for test) The time of the request.
-	 */
-	dataRequested = ( resourceNames, time = new Date() ) => {
-		// Set timestamp on each resource.
-		const updatedResources = resourceNames.reduce( ( resources, resourceName ) => {
-			resources[ resourceName ] = { lastRequested: time };
-			return resources;
-		}, {} );
-		this.api.dataReceived( this.key, updatedResources );
-	}
-
-	/**
-	 * Calls data handler to update state with updated data/errors and lastReceived/errorReceived timestamps.
-	 * @param {Object} data The partial or full data of the resources that were received, indexed by name.
-	 * @param {Date} [time] (optional, for test) The time of the request.
-	 */
-	dataReceived = ( data, time = new Date() ) => {
-		// Set timestamp on each resource.
-		const updatedResources = Object.keys( data ).reduce( ( resources, resourceName ) => {
-			const resource = data[ resourceName ];
-			if ( resource.error ) {
-				resources[ resourceName ] = { ...resource, errorReceived: time };
-			}
-			if ( resource.data ) {
-				resources[ resourceName ] = { ...resource, lastReceived: time };
-			}
-			return resources;
-		}, {} );
-		this.api.dataReceived( this.key, updatedResources );
-	}
-
-	/**
-	 * Calls api error handler with info.
-	 * @param {string} operationName The name of the operation upon which the error occurred.
-	 * @param {Array} resourceNames The resourceNames for the faulty operation.
-	 * @param {any} error The error which occurred.
-	 */
-	unhandledErrorReceived = ( operationName, resourceNames, error ) => {
-		this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error );
 	}
 }
 
