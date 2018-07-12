@@ -32,11 +32,19 @@ export function createApi( fetch = window.fetch ) {
 		}
 
 		selectors = {
-			getPosts: ( getResource, requireResource ) => ( requirement, page = 1, perPage = 10 ) => {
-				const resourceName = `posts-page:{"page":${ page },"perPage":${ perPage }}`;
+			getPostsPage: ( getResource, requireResource ) => ( requirement, params ) => {
+				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
+				const resourceName = 'posts-page:' + paramsString;
 				const pageIds = requireResource( requirement, resourceName ).data || [];
 				const pagePosts = pageIds.map( id => getResource( `post:${ id }` ).data );
 				return pagePosts;
+			},
+
+			isPostsPageLoading: ( getResource ) => ( params ) => {
+				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
+				const resourceName = 'posts-page:' + paramsString;
+				const { data, lastRequested, lastReceived = 0 } = getResource( resourceName );
+				return ( ! data || ( lastRequested && lastRequested > lastReceived ) );
 			}
 		}
 	}

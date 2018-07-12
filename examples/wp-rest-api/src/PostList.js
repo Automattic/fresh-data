@@ -16,10 +16,12 @@ function renderPostLine( post ) {
 	);
 }
 
-function PostList( { posts, siteUrl } ) {
+function PostList( { isLoading, posts, siteUrl } ) {
+	const heading = isLoading ? 'Loading' : 'Recent Posts for';
+
 	return (
 		<div className="post-list">
-			<h3>Recent Posts for</h3>
+			<h3>{ heading }</h3>
 			<h4><pre>{ siteUrl }</pre></h4>
 			<table>
 				<tbody>
@@ -36,9 +38,12 @@ PostList.propTypes = {
 };
 
 function mapSelectorsToProps( selectors ) {
-	const { getPosts } = selectors;
-	const posts = getPosts( { freshness: 5 * MINUTE, timeout: 3 * SECOND } );
+	const { getPostsPage, isPostsPageLoading } = selectors;
+	const params = { page: 1, perPage: 10 };
+	const posts = getPostsPage( { freshness: 5 * MINUTE, timeout: 3 * SECOND }, params );
+	const isLoading = isPostsPageLoading( params );
 	return {
+		isLoading,
 		posts,
 	};
 }
