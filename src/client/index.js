@@ -35,7 +35,7 @@ export default class ApiClient {
 	mapOperations = ( apiOperations ) => {
 		return Object.keys( apiOperations ).reduce( ( operations, operationName ) => {
 			operations[ operationName ] = ( resourceNames, data ) => {
-				this.applyOperation( operationName, resourceNames, data );
+				return this.applyOperation( operationName, resourceNames, data );
 			};
 			return operations;
 		}, {} );
@@ -167,7 +167,7 @@ export default class ApiClient {
 			throw new Error( `Operation "${ operationName } not found.` );
 		}
 
-		const rootPromise = new Promise( () => {
+		const rootPromise = new Promise( ( resolve, reject ) => {
 			try {
 				const operationResult = apiOperation( this.methods )( resourceNames, data ) || [];
 				const values = isArray( operationResult ) ? operationResult : [ operationResult ];
@@ -182,9 +182,12 @@ export default class ApiClient {
 				} );
 
 				// TODO: Maybe some monitoring of promises to ensure they all resolve?
-				return Promise.all( requests );
+				const all = Promise.all( requests );
+				resolve( all );
+				//resolve( Promise.all( requests ) );
 			} catch ( error ) {
 				this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error );
+				reject( error );
 			}
 		} );
 		return rootPromise;
