@@ -30,6 +30,10 @@ export default class FreshDataApi {
 	}
 
 	createClient( clientKey ) {
+		if ( ! clientKey ) {
+			return null;
+		}
+
 		const client = new ApiClient( this, clientKey );
 		this.clients.set( clientKey, client );
 		client.setState( this.state );

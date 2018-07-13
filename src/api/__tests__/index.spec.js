@@ -46,6 +46,24 @@ describe( 'api', () => {
 			expect( api.clients.size ).toBe( 1 );
 			expect( api.clients.get( 'myKey' ) ).toEqual( client );
 		} );
+
+		it( 'should not create a client if the key is null', () => {
+			class MyApi extends FreshDataApi {
+			}
+			const api = new MyApi();
+			const client = api.createClient( null );
+
+			expect( client ).toBeNull();
+		} );
+
+		it( 'should not create a client if the key is undefined', () => {
+			class MyApi extends FreshDataApi {
+			}
+			const api = new MyApi();
+			const client = api.createClient( undefined );
+
+			expect( client ).toBeNull();
+		} );
 	} );
 
 	describe( '#findClient', () => {
