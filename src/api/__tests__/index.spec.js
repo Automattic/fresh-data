@@ -211,6 +211,19 @@ describe( 'api', () => {
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
 			expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, [ 'thing:3', 'thing:4' ] );
 		} );
+
+		it( 'should return resourceNames given', () => {
+			const resourceNames = [ 'thing:3', 'thing:4' ];
+			const dataRequested = jest.fn();
+			dataRequested.mockReturnValue( resourceNames );
+
+			class MyApi extends FreshDataApi {
+			}
+			const api = new MyApi();
+			api.setDataHandlers( { dataRequested } );
+
+			expect( api.dataRequested( clientKey, resourceNames ) ).toBe( resourceNames );
+		} );
 	} );
 
 	describe( '#dataReceived', () => {
@@ -241,6 +254,21 @@ describe( 'api', () => {
 				'thing:3': { data: { color: 'grey' } },
 				'thing:4': { error: { message: 'oops' } },
 			} );
+		} );
+
+		it( 'should return resources', () => {
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			class MyApi extends FreshDataApi {
+			}
+			const api = new MyApi();
+			const resources = {
+				'thing:3': { data: { color: 'grey' } },
+				'thing:4': { error: { message: 'oops' } },
+			};
+
+			api.setDataHandlers( { dataRequested, dataReceived } );
+			expect( api.dataReceived( clientKey, resources ) ).toBe( resources );
 		} );
 	} );
 
