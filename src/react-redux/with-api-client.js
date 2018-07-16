@@ -28,61 +28,82 @@ export default function withApiClient( apiName, options ) {
 			static childContextTypes = WrappedComponent.childContextTypes;
 			static WrappedComponent = WrappedComponent;
 
-			state = { clientKey: null, client: null, clientState: null };
+			constructor( props ) {
+				super( ...arguments );
 
-			componentDidMount() {
-				this.updateClient( this.props, this.state );
+				this.clientKey = null;
+				this.client = null;
+				this.clientState = null;
+				this.clientStateChanged = false;
+
+				this.updateClient( props );
 			}
 
-			componentDidUpdate( prevProps, prevState ) {
-				if ( this.state.client !== prevState.client && prevState.client ) {
-					prevState.client.unsubscribe( this.handleSubscriptionChange );
-				}
+			componentDidMount() {
+				this.updateClient( this.props );
+			}
 
-				this.updateClient( this.props, this.state );
+			componentDidUpdate() {
+				this.updateClient( this.props );
 			}
 
 			componentWillUnmount() {
-				if ( this.state.client ) {
-					this.state.client.unsubscribe( this.handleSubscriptionChange );
+				if ( this.client ) {
+					this.client.unsubscribe( this.handleSubscriptionChange );
 				}
 			}
 
-			updateClient = ( nextProps, prevState ) => {
-				const clientKey = getClientKey( nextProps );
-				if ( clientKey !== prevState.clientKey ) {
-					const { getApiClient } = this.context;
+			shouldComponentUpdate( nextProps, nextState ) {
+				const propsChanged = nextProps !== this.props;
+				const stateChanged = nextState !== this.state;
+				return this.clientStateChanged || propsChanged || stateChanged;
+			}
 
-					if ( ! getApiClient ) {
-						debug(
-							'getApiClient not found in context. ' +
-							'Ensure this component is a child of the FreshDataProvider component.'
-						);
-						return;
+			getApiClient = ( clientKey ) => {
+				const { getApiClient } = this.context;
+
+				if ( ! getApiClient ) {
+					debug(
+						'getApiClient not found in context. ' +
+						'Ensure this component is a child of the FreshDataProvider component.'
+					);
+					return null;
+				}
+
+				return getApiClient( apiName, clientKey );
+			}
+
+			updateClient = ( nextProps ) => {
+				const clientKey = getClientKey( nextProps );
+
+				if ( clientKey !== this.clientKey ) {
+					if ( this.client ) {
+						this.client.unsubscribe( this.handleSubscriptionChange );
+						this.clientState = null;
+						this.clientStateChanged = true;
 					}
 
-					const client = getApiClient( apiName, clientKey );
-					const clientState = client.state;
-					client.subscribe( this.handleSubscriptionChange );
-					this.setState( () => {
-						return { clientKey, client, clientState };
-					} );
+					this.clientKey = clientKey;
+					this.client = this.getApiClient( clientKey );
+
+					if ( this.client ) {
+						this.clientState = this.client.state;
+						this.clientStateChanged = true;
+						this.client.subscribe( this.handleSubscriptionChange );
+					}
 				}
 			}
 
 			handleSubscriptionChange = ( client ) => {
-				this.setState( ( state ) => {
-					if ( client === state.client ) {
-						// This is our client, set the state.
-						return {
-							clientState: client.state,
-						};
-					}
-				} );
+				if ( client === this.client ) {
+					this.clientState = this.client.state;
+					// TODO: Check if any of the resourceNames we actually use have changed.
+					this.clientStateChanged = true;
+				}
 			}
 
 			calculateDerivedProps = () => {
-				const { client } = this.state;
+				const { client } = this;
 				let selectorProps = {};
 				let mutationProps = {};
 
@@ -109,6 +130,7 @@ export default function withApiClient( apiName, options ) {
 			}
 
 			render() {
+				this.clientStateChanged = false;
 				const derivedProps = this.calculateDerivedProps();
 				return createElement( WrappedComponent, { ...this.props, ...derivedProps } );
 			}
