@@ -43,7 +43,7 @@ export function createApi( fetch = window.fetch ) {
 			isPostsPageLoading: ( getResource ) => ( params ) => {
 				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
 				const resourceName = 'posts-page:' + paramsString;
-				const { data, lastRequested, lastReceived = 0 } = getResource( resourceName );
+				const { data, lastRequested, lastReceived = -Infinity } = getResource( resourceName );
 				return ( ! data || ( lastRequested && lastRequested > lastReceived ) );
 			}
 		}
