@@ -552,13 +552,13 @@ describe( 'ApiClient', () => {
 			const resourceNames = [ 'thing:2', 'thing:3', 'type:1' ];
 			const dataReceived = jest.fn();
 
-			apiClient.dataReceived = dataReceived;
+			api.dataReceived = dataReceived;
 			apiClient.applyOperation( 'read', resourceNames ).then( () => {
 				expect( dataReceived ).toHaveBeenCalledTimes( 2 );
-				expect( dataReceived ).toHaveBeenCalledWith( {
+				expect( dataReceived ).toHaveBeenCalledWith( '123', {
 					'type:1': { data: { attribute: 'some' } },
 				} );
-				expect( dataReceived ).toHaveBeenCalledWith( {
+				expect( dataReceived ).toHaveBeenCalledWith( '123', {
 					'thing:2': { data: { color: 'blue' } },
 					'thing:3': { data: { color: 'green' } },
 				} );
@@ -577,10 +577,12 @@ describe( 'ApiClient', () => {
 			apiClient = new ApiClient( api, '123' );
 			const unhandled = jest.fn();
 
-			apiClient.unhandledErrorReceived = unhandled;
+			api.unhandledErrorReceived = unhandled;
 			apiClient.applyOperation( 'read', [ 'thing:1' ] ).then( () => {
+			} ).catch( ( error ) => {
 				expect( unhandled ).toHaveBeenCalledTimes( 1 );
-				expect( unhandled ).toHaveBeenCalledWith( 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
+				expect( unhandled ).toHaveBeenCalledWith( '123', 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
+				expect( error ).toEqual( new Error( 'BOOM!' ) );
 			} );
 		} );
 
@@ -600,8 +602,10 @@ describe( 'ApiClient', () => {
 
 			apiClient.unhandledErrorReceived = unhandled;
 			apiClient.applyOperation( 'read', [ 'thing:1' ] ).then( () => {
+			} ).catch( ( error ) => {
 				expect( unhandled ).toHaveBeenCalledTimes( 1 );
 				expect( unhandled ).toHaveBeenCalledWith( 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
+				expect( error ).toEqual( new Error( 'BOOM!' ) );
 			} );
 		} );
 	} );

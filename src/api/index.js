@@ -30,6 +30,10 @@ export default class FreshDataApi {
 	}
 
 	createClient( clientKey ) {
+		if ( ! clientKey ) {
+			return null;
+		}
+
 		const client = new ApiClient( this, clientKey );
 		this.clients.set( clientKey, client );
 		client.setState( this.state );
@@ -52,6 +56,7 @@ export default class FreshDataApi {
 	 * Sets requested data states for resources.
 	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {Array} resourceNames Array of resourceName.
+	 * @return {Array} The resourceNames given.
 	 */
 	dataRequested( clientKey, resourceNames ) {
 		if ( ! this.dataHandlers ) {
@@ -59,12 +64,14 @@ export default class FreshDataApi {
 			return;
 		}
 		this.dataHandlers.dataRequested( this, clientKey, resourceNames );
+		return resourceNames;
 	}
 
 	/**
 	 * Sets received data states for resources.
 	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {Object} resources Data keyed by resourceName.
+	 * @return {Object} The resources given.
 	 */
 	dataReceived( clientKey, resources ) {
 		if ( ! this.dataHandlers ) {
@@ -72,6 +79,7 @@ export default class FreshDataApi {
 			return;
 		}
 		this.dataHandlers.dataReceived( this, clientKey, resources );
+		return resources;
 	}
 
 	/**
@@ -80,6 +88,7 @@ export default class FreshDataApi {
 	 * @param {string} operationName The name of the operation attempted.
 	 * @param {Array} resourceNames The names of resources requested.
 	 * @param {any} error The error returned from the operation.
+	 * @return {any} The error received.
 	 */
 	unhandledErrorReceived( clientKey, operationName, resourceNames, error ) {
 		debug(
@@ -87,5 +96,6 @@ export default class FreshDataApi {
 			' resourceNames:', resourceNames,
 			' error:', error
 		);
+		return error;
 	}
 }

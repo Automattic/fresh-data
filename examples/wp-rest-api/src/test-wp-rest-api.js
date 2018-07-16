@@ -7,8 +7,8 @@ const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
 export function createApi( fetch = window.fetch ) {
 	class TestWPRestApi extends FreshDataApi {
-		static methods = {
-			get: ( clientKey ) => ( endpointPath ) => ( params ) => { // eslint-disable-line no-unused-vars
+		methods = {
+			get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
 				const baseUrl = `${ clientKey }/${ API_URL_PREFIX }`;
 				const path = endpointPath.join( '/' );
 				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
@@ -25,19 +25,26 @@ export function createApi( fetch = window.fetch ) {
 			},
 		}
 
-		static operations = {
+		operations = {
 			read: ( { get } ) => ( resourceNames ) => {
 				return readPostPages( get, resourceNames );
 			},
 		}
 
-		static selectors = {
-			getPosts: ( getData, requireData ) => ( requirement, page = 1, perPage = 10 ) => {
-				const resourceName = `posts-page:{"page":${ page },"perPage":${ perPage }}`;
-				requireData( requirement, resourceName );
-				const pageIds = getData( resourceName ) || [];
-				const pagePosts = pageIds.map( id => getData( `post:${ id }` ) ) || {};
+		selectors = {
+			getPostsPage: ( getResource, requireResource ) => ( requirement, params ) => {
+				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
+				const resourceName = 'posts-page:' + paramsString;
+				const pageIds = requireResource( requirement, resourceName ).data || [];
+				const pagePosts = pageIds.map( id => getResource( `post:${ id }` ).data );
 				return pagePosts;
+			},
+
+			isPostsPageLoading: ( getResource ) => ( params ) => {
+				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
+				const resourceName = 'posts-page:' + paramsString;
+				const { data, lastRequested, lastReceived = 0 } = getResource( resourceName );
+				return ( ! data || ( lastRequested && lastRequested > lastReceived ) );
 			}
 		}
 	}
@@ -51,7 +58,7 @@ export function readPostPages( get, resourceNames ) {
 			const params = JSON.parse( resourceName.substr( resourceName.indexOf( ':' ) + 1 ) );
 
 			// Do a get for each page.
-			const request = get( [ 'posts' ] )( params )
+			const request = get( [ 'posts' ], params )
 			.then( responseData => {
 				// Store each post separately so it can be used by the rest of the app.
 				const postsById = responseData.reduce( ( posts, data ) => {
