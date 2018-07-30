@@ -61,7 +61,7 @@ export default function withApiClient( apiName, options ) {
 						return;
 					}
 
-					const client = getApiClient( apiName, clientKey );
+					const client = getApiClient( clientKey );
 					const clientState = client.state;
 					client.subscribe( this.handleSubscriptionChange );
 					this.setState( () => {

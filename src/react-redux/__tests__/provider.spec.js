@@ -3,29 +3,30 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ApiClient from '../../client';
 import FreshDataApi from '../../api';
-import { FreshDataReduxProvider, mapStateToProps } from '../provider';
+import { ApiProvider, mapStateToProps } from '../provider';
 import * as actions from '../actions';
 
-describe( 'FreshDataReduxProvider', () => {
+describe( 'ApiProvider', () => {
 	class TestApi extends FreshDataApi {
 	}
 
-	let apis;
+	let api;
 
 	beforeEach( () => {
-		apis = { test: new TestApi() };
+		api = new TestApi();
 	} );
 
 	it( 'should render without crashing.', () => {
 		mount(
-			<FreshDataReduxProvider
-				apis={ apis }
+			<ApiProvider
+				api={ api }
+				apiName={ 'test-api' }
 				rootData={ {} }
 				dataRequested={ actions.dataRequested }
 				dataReceived={ actions.dataReceived }
 			>
 				<span>Testing</span>
-			</FreshDataReduxProvider>
+			</ApiProvider>
 		);
 	} );
 
@@ -42,14 +43,15 @@ describe( 'FreshDataReduxProvider', () => {
 			ChildComponent.contextTypes = { getApiClient: PropTypes.func };
 
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<ChildComponent />
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
 			expect( childContext ).toBeInstanceOf( Object );
@@ -58,102 +60,113 @@ describe( 'FreshDataReduxProvider', () => {
 
 		it( 'should return newly created api client.', () => {
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
-			expect( wrapper.instance().getApiClient( 'test', '123' ) ).toBeInstanceOf( ApiClient );
+			expect( wrapper.instance().getApiClient( '123' ) ).toBeInstanceOf( ApiClient );
 		} );
 
 		it( 'should return already created api client.', () => {
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
-			const apiClient = wrapper.instance().getApiClient( 'test', '123' );
-			expect( wrapper.instance().getApiClient( 'test', '123' ) ).toBe( apiClient );
+			const apiClient = wrapper.instance().getApiClient( '123' );
+			expect( wrapper.instance().getApiClient( '123' ) ).toBe( apiClient );
 		} );
 
-		it( 'should return null if incorrect api name is given.', () => {
+		it( 'should return undefined if no api prop is set.', () => {
+			class ApiProviderOptionalPropTypes extends ApiProvider {
+				static propTypes = {};
+			}
+
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProviderOptionalPropTypes
+					api={ null }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProviderOptionalPropTypes>
 			);
-			expect( wrapper.instance().getApiClient( 'tst', '123' ) ).toBeNull();
+			expect( wrapper.instance().getApiClient( '123' ) ).toBeUndefined();
 		} );
 	} );
 
 	describe( '#updateApis', () => {
 		it( 'should set api data handlers initially.', () => {
-			apis.test.setDataHandlers = jest.fn();
+			api.setDataHandlers = jest.fn();
 
 			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
-			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+			expect( api.setDataHandlers ).toHaveBeenCalledTimes( 1 );
 		} );
 
-		it( 'should set api data handlers when the apis prop is updated.', () => {
+		it( 'should set api data handlers when the api prop is updated.', () => {
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ {} }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
-			apis.test.setDataHandlers = jest.fn();
-			wrapper.setProps( { apis } );
-			expect( apis.test.setDataHandlers ).toHaveBeenCalledTimes( 1 );
+			const newApi = new TestApi();
+			newApi.setDataHandlers = jest.fn();
+			wrapper.setProps( { api: newApi } );
+			expect( newApi.setDataHandlers ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 
 	describe( '#updateState', () => {
 		it( 'should update the states of the apis', () => {
-			apis.test.updateState = jest.fn();
+			api.updateState = jest.fn();
 
 			const now = new Date();
 			const wrapper = mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ actions.dataRequested }
 					dataReceived={ actions.dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
-			expect( apis.test.updateState ).toHaveBeenCalledTimes( 1 );
-			expect( apis.test.updateState ).toHaveBeenCalledWith( {} );
+			expect( api.updateState ).toHaveBeenCalledTimes( 1 );
+			expect( api.updateState ).toHaveBeenCalledWith( {} );
 
 			const expectedApiState = {
 				123: {
@@ -170,11 +183,11 @@ describe( 'FreshDataReduxProvider', () => {
 				},
 			};
 
-			apis.test.updateState = jest.fn();
-			wrapper.setProps( { rootData: { test: expectedApiState, } } );
+			api.updateState = jest.fn();
+			wrapper.setProps( { rootData: { 'test-api': expectedApiState, } } );
 
-			expect( apis.test.updateState ).toHaveBeenCalledTimes( 1 );
-			expect( apis.test.updateState ).toHaveBeenCalledWith( expectedApiState );
+			expect( api.updateState ).toHaveBeenCalledTimes( 1 );
+			expect( api.updateState ).toHaveBeenCalledWith( expectedApiState );
 		} );
 	} );
 
@@ -184,20 +197,21 @@ describe( 'FreshDataReduxProvider', () => {
 			const dataReceived = jest.fn();
 
 			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ dataRequested }
 					dataReceived={ dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
-			apis.test.dataRequested( '123', [ 'thing:1', 'thing:2' ] );
+			api.dataRequested( '123', [ 'thing:1', 'thing:2' ] );
 			expect( dataReceived ).not.toHaveBeenCalled();
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( 'test', '123', [ 'thing:1', 'thing:2' ] );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test-api', '123', [ 'thing:1', 'thing:2' ] );
 		} );
 	} );
 
@@ -207,23 +221,24 @@ describe( 'FreshDataReduxProvider', () => {
 			const dataReceived = jest.fn();
 
 			mount(
-				<FreshDataReduxProvider
-					apis={ apis }
+				<ApiProvider
+					api={ api }
+					apiName={ 'test-api' }
 					rootData={ {} }
 					dataRequested={ dataRequested }
 					dataReceived={ dataReceived }
 				>
 					<span>Testing</span>
-				</FreshDataReduxProvider>
+				</ApiProvider>
 			);
 
-			apis.test.dataReceived( '123', {
+			api.dataReceived( '123', {
 				'thing:1': { data: { color: 'blue' } },
 				'thing:2': { error: { message: 'oops!' } },
 			} );
 			expect( dataRequested ).not.toHaveBeenCalled();
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( 'test', '123', {
+			expect( dataReceived ).toHaveBeenCalledWith( 'test-api', '123', {
 				'thing:1': { data: { color: 'blue' } },
 				'thing:2': { error: { message: 'oops!' } },
 			} );

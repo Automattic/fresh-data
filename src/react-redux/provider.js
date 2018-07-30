@@ -5,12 +5,13 @@ import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import * as actions from './actions';
 
-const debug = debugFactory( 'fresh-data:provider' );
+const debug = debugFactory( 'fresh-data:api-provider' );
 
-export class FreshDataReduxProvider extends Component {
+export class ApiProvider extends Component {
 	static propTypes = {
-		children: PropTypes.node.isRequired,
-		apis: PropTypes.object.isRequired,
+		children: PropTypes.node,
+		apiName: PropTypes.string.isRequired,
+		api: PropTypes.object.isRequired,
 		rootPath: PropTypes.oneOfType( [
 			PropTypes.arrayOf( PropTypes.oneOfType( [ PropTypes.string, PropTypes.number ] ) ),
 			PropTypes.string,
@@ -28,11 +29,9 @@ export class FreshDataReduxProvider extends Component {
 		getApiClient: PropTypes.func.isRequired,
 	};
 
-	constructor() {
+	constructor( props ) {
 		super( ...arguments );
-		this.apisByName = new Map();
-		this.namesByApi = new Map();
-		this.update();
+		this.update( props );
 	}
 
 	getChildContext() {
@@ -40,74 +39,56 @@ export class FreshDataReduxProvider extends Component {
 	}
 
 	componentDidMount() {
-		this.update();
+		this.update( this.props );
 	}
 
 	componentDidUpdate() {
-		this.update();
+		this.update( this.props );
 	}
 
 	shouldComponentUpdate( nextProps ) {
-		const { apis, rootData } = nextProps;
-		return ( this.lastApis !== apis || this.lastState !== rootData );
+		const { api, rootData } = nextProps;
+		return ( this.lastApi !== api || this.lastRootData !== rootData );
 	}
 
-	update() {
-		const { apis, rootData } = this.props;
-		const apisChanged = this.lastApis !== apis;
-		const stateChanged = this.lastState !== rootData;
-
-		if ( apisChanged ) {
-			this.updateApis( apis );
-			this.lastApis = apis;
-		}
-
-		if ( stateChanged || apisChanged ) {
-			this.updateState( rootData );
-			this.lastState = rootData;
-		}
-	}
-
-	updateApis = ( apis ) => {
+	update( props ) {
 		const { dataRequested, dataReceived } = this;
-		debug( 'Setting apis: ', apis );
-		this.apisByName.clear();
-		this.namesByApi.clear();
-		Object.keys( apis ).forEach(
-			( apiName ) => {
-				const api = apis[ apiName ];
-				api.setDataHandlers( { dataRequested, dataReceived } );
-				this.apisByName.set( apiName, api );
-				this.namesByApi.set( api, apiName );
-			}
-		);
+		const { apiName, api, rootData } = props;
+		const apiChanged = api && this.lastApi !== api;
+		const stateChanged = api && this.lastRootData !== rootData;
+
+		if ( apiChanged ) {
+			debug( 'Updating api: ', api );
+			api.setDataHandlers( { dataRequested, dataReceived } );
+			this.lastApi = api;
+		}
+
+		if ( stateChanged || apiChanged ) {
+			debug( 'Updating root data: ', rootData );
+			api.updateState( rootData[ apiName ] || {} );
+			this.lastRootData = rootData;
+		}
 	}
 
-	updateState = ( state ) => {
-		debug( 'Updating api state: ', state );
-		this.apisByName.forEach( ( api, name ) => {
-			const apiState = state[ name ] || {};
-			api.updateState( apiState );
-		} );
-	}
-
-	getApiClient = ( apiName, clientKey ) => {
-		const api = this.apisByName.get( apiName );
+	getApiClient = ( clientKey ) => {
+		const { api } = this.props;
 		if ( ! api ) {
-			debug( 'Failed to find api by name: ', apiName );
-			return null;
+			debug( 'No api prop set' );
+			return undefined;
 		}
 		return api.getClient( clientKey );
 	}
 
+	// TODO: Remove unused api param.
 	dataRequested = ( api, clientKey, resourceNames ) => {
-		const apiName = this.namesByApi.get( api );
+		const { apiName } = this.props;
 		const { dataRequested } = this.props;
 		dataRequested( apiName, clientKey, resourceNames );
 	}
 
+	// TODO: Remove unused api param.
 	dataReceived = ( api, clientKey, resources ) => {
-		const apiName = this.namesByApi.get( api );
+		const { apiName } = this.props;
 		const { dataReceived } = this.props;
 		dataReceived( apiName, clientKey, resources );
 	};
@@ -123,9 +104,9 @@ export function mapStateToProps( state, ownProps ) {
 	return { rootData };
 }
 
-const ConnectedFreshDataReduxProvider = connect( mapStateToProps, actions )( FreshDataReduxProvider );
+const ConnectedApiProvider = connect( mapStateToProps, actions )( ApiProvider );
 
 // Ensure the defaults props are assigned the first time mapStateToProps() is run.
-ConnectedFreshDataReduxProvider.defaultProps = FreshDataReduxProvider.defaultProps;
+ConnectedApiProvider.defaultProps = ApiProvider.defaultProps;
 
-export default ConnectedFreshDataReduxProvider;
+export default ConnectedApiProvider;
