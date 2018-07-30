@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 const debug = debugFactory( 'fresh-data:with-api-client' );
 
 export default function withApiClient( apiName, options ) {
-	const { getClientKey, mapSelectorsToProps, mapMutationsToProps } = options;
+	const { mapSelectorsToProps, mapMutationsToProps } = options;
 
 	return function connectWithApiClient( WrappedComponent ) {
 		if ( typeof WrappedComponent !== 'function' ) {
@@ -28,7 +28,7 @@ export default function withApiClient( apiName, options ) {
 			static childContextTypes = WrappedComponent.childContextTypes;
 			static WrappedComponent = WrappedComponent;
 
-			state = { clientKey: null, client: null, clientState: null };
+			state = { client: null, clientState: null };
 
 			componentDidMount() {
 				this.updateClient( this.props, this.state );
@@ -49,23 +49,22 @@ export default function withApiClient( apiName, options ) {
 			}
 
 			updateClient = ( nextProps, prevState ) => {
-				const clientKey = getClientKey( nextProps );
-				if ( clientKey !== prevState.clientKey ) {
-					const { getApiClient } = this.context;
+				const { getApiClient } = this.context;
 
-					if ( ! getApiClient ) {
-						debug(
-							'getApiClient not found in context. ' +
-							'Ensure this component is a child of the FreshDataProvider component.'
-						);
-						return;
-					}
+				if ( ! getApiClient ) {
+					debug(
+						'getApiClient not found in context. ' +
+						'Ensure this component is a child of the ApiProvider component.'
+					);
+					return;
+				}
 
-					const client = getApiClient( clientKey );
+				const client = getApiClient();
+				if ( client !== prevState.client ) {
 					const clientState = client.state;
 					client.subscribe( this.handleSubscriptionChange );
 					this.setState( () => {
-						return { clientKey, client, clientState };
+						return { client, clientState };
 					} );
 				}
 			}
