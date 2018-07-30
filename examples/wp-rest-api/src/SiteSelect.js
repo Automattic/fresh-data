@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { verifySiteUrl } from './test-wp-rest-api';
+import { verifySiteUrl, createApi } from './test-wp-rest-api';
+import { ApiProvider } from '@fresh-data/framework';
 
 class SiteSelect extends Component {
 	static propTypes = {
@@ -31,9 +32,13 @@ class SiteSelect extends Component {
 		const siteUrl = url.startsWith( 'http' ) ? url : `http://${ url }`;
 
 		if ( -1 !== previousSites.indexOf( url ) ) {
+			const ApiClass = createApi( siteUrl );
+			const api = new ApiClass();
+
 			// We've seen this site before, don't verify.
 			this.setState( () => ( {
 				siteUrl,
+				api,
 				isSiteValid: true,
 			} ) );
 			return;
@@ -41,8 +46,12 @@ class SiteSelect extends Component {
 
 		this.setState( () => ( { isVerifyingUrl: true } ) );
 		verifySiteUrl( siteUrl ).then( ( isSiteValid ) => {
+			const ApiClass = createApi( siteUrl );
+			const api = new ApiClass();
+
 			this.setState( () => ( {
 				siteUrl,
+				api,
 				isSiteValid,
 				previousSites: [ ...previousSites, url ],
 				isVerifyingUrl: false
@@ -53,9 +62,13 @@ class SiteSelect extends Component {
 	}
 
 	renderChildren() {
-		const { siteUrl } = this.state;
+		const { api, siteUrl } = this.state;
 		const { children } = this.props;
-		return React.Children.map( children, child => React.cloneElement( child, { siteUrl } ) );
+		return (
+			<ApiProvider apiName={ 'wp-site' } api={ api }>
+				{ React.Children.map( children, child => React.cloneElement( child, { siteUrl } ) ) }
+			</ApiProvider>
+		);
 	}
 
 	renderSiteOption( site, index ) {

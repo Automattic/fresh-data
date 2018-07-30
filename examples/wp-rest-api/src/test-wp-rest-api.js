@@ -5,11 +5,11 @@ import qs from 'qs';
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
-export function createApi( fetch = window.fetch ) {
+export function createApi( siteUrl, fetch = window.fetch ) {
 	class TestWPRestApi extends FreshDataApi {
 		methods = {
 			get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
-				const baseUrl = `${ clientKey }/${ API_URL_PREFIX }`;
+				const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
 				const path = endpointPath.join( '/' );
 				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
 				const url = `${ baseUrl }/${ path }${ httpParams ? '?' + qs.stringify( httpParams ) : '' }`;
@@ -100,5 +100,3 @@ export function verifySiteUrl( siteUrl, fetch = window.fetch ) {
 		} );
 	} );
 }
-
-export default createApi();
