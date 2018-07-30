@@ -35,7 +35,7 @@ let requestCount = 0;
 
 export default class TestApi extends FreshDataApi {
 	methods = {
-		get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
+		get: ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
 			return new Promise( ( resolve ) => {
 				requestCount++;
 				const valueCount = Math.min( requestCount, greetings.length );

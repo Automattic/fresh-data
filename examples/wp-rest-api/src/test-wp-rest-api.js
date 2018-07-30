@@ -8,7 +8,7 @@ const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 export function createApi( siteUrl, fetch = window.fetch ) {
 	class TestWPRestApi extends FreshDataApi {
 		methods = {
-			get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
+			get: ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
 				const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
 				const path = endpointPath.join( '/' );
 				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
@@ -48,7 +48,7 @@ export function createApi( siteUrl, fetch = window.fetch ) {
 			}
 		}
 	}
-	return TestWPRestApi;
+	return new TestWPRestApi();
 }
 
 export function readPostPages( get, resourceNames ) {

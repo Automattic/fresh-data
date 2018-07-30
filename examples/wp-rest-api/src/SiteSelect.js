@@ -32,8 +32,7 @@ class SiteSelect extends Component {
 		const siteUrl = url.startsWith( 'http' ) ? url : `http://${ url }`;
 
 		if ( -1 !== previousSites.indexOf( url ) ) {
-			const ApiClass = createApi( siteUrl );
-			const api = new ApiClass();
+			const api = createApi( siteUrl );
 
 			// We've seen this site before, don't verify.
 			this.setState( () => ( {
@@ -46,8 +45,7 @@ class SiteSelect extends Component {
 
 		this.setState( () => ( { isVerifyingUrl: true } ) );
 		verifySiteUrl( siteUrl ).then( ( isSiteValid ) => {
-			const ApiClass = createApi( siteUrl );
-			const api = new ApiClass();
+			const api = createApi( siteUrl );
 
 			this.setState( () => ( {
 				siteUrl,
@@ -65,7 +63,7 @@ class SiteSelect extends Component {
 		const { api, siteUrl } = this.state;
 		const { children } = this.props;
 		return (
-			<ApiProvider apiName={ 'wp-site' } api={ api }>
+			<ApiProvider apiName={ siteUrl } api={ api }>
 				{ React.Children.map( children, child => React.cloneElement( child, { siteUrl } ) ) }
 			</ApiProvider>
 		);

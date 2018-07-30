@@ -14,7 +14,7 @@ const App = ( { store } ) => (
 				<header className="App-header">
 					<h1 className="App-title">Fresh Data</h1>
 				</header>
-				<Message clientKey="123" />
+				<Message />
 			</div>
 		</ApiProvider>
 	</ReduxProvider>
