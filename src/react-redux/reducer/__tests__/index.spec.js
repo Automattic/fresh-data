@@ -18,17 +18,14 @@ describe( 'reducer', () => {
 	it( 'should pass down an apiclient state to the apiclient reducer', () => {
 		const state1 = {
 			testApi: {
-				123: {
-					resources: {
-						'thing:1': { lastRequested: now - 2000 },
-					},
+				resources: {
+					'thing:1': { lastRequested: now - 2000 },
 				},
 			},
 		};
 		const action = {
 			type: FRESH_DATA_RECEIVED,
 			apiName: 'testApi',
-			clientKey: '123',
 			resources: {
 				'thing:1': { lastReceived: now, data: { foot: 'red' } },
 				'thing:2': { lastReceived: now, data: { foot: 'blue' } },
@@ -46,10 +43,10 @@ describe( 'reducer', () => {
 		const state2 = reducer( state1, action, [ reducerMock ] );
 
 		expect( reducerMock ).toHaveBeenCalledTimes( 1 );
-		expect( reducerMock ).toHaveBeenCalledWith( state1.testApi[ 123 ], action );
-		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
-		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastReceived ).toEqual( now );
-		expect( state2.testApi[ 123 ].resources[ 'thing:2' ].lastReceived ).toEqual( now );
+		expect( reducerMock ).toHaveBeenCalledWith( state1.testApi, action );
+		expect( state2.testApi.resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
+		expect( state2.testApi.resources[ 'thing:1' ].lastReceived ).toEqual( now );
+		expect( state2.testApi.resources[ 'thing:2' ].lastReceived ).toEqual( now );
 	} );
 
 	it( 'should create a new sub state for the sub reducer', () => {
@@ -57,7 +54,6 @@ describe( 'reducer', () => {
 		const action = {
 			type: FRESH_DATA_RECEIVED,
 			apiName: 'testApi',
-			clientKey: '123',
 			resources: { 'thing:1': { lastRequested: now - 2000 } },
 			time: now,
 		};
@@ -68,7 +64,7 @@ describe( 'reducer', () => {
 		const state2 = reducer( state1, action, [ reducerMock ] );
 
 		expect( reducerMock ).toHaveBeenCalledTimes( 1 );
-		expect( reducerMock ).toHaveBeenCalledWith( undefined, action );
-		expect( state2.testApi[ 123 ].resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
+		expect( reducerMock ).toHaveBeenCalledWith( {}, action );
+		expect( state2.testApi.resources[ 'thing:1' ].lastRequested ).toEqual( now - 2000 );
 	} );
 } );
