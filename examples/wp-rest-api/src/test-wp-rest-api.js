@@ -1,13 +1,12 @@
 import { startsWith } from 'lodash';
-import { FreshDataApi } from '@fresh-data/framework';
 import qs from 'qs';
 
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
 export function createApi( siteUrl, fetch = window.fetch ) {
-	class TestWPRestApi extends FreshDataApi {
-		methods = {
+	return {
+		methods: {
 			get: ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
 				const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
 				const path = endpointPath.join( '/' );
@@ -23,15 +22,13 @@ export function createApi( siteUrl, fetch = window.fetch ) {
 					} );
 				} );
 			},
-		}
-
-		operations = {
+		},
+		operations: {
 			read: ( { get } ) => ( resourceNames ) => {
 				return readPostPages( get, resourceNames );
 			},
-		}
-
-		selectors = {
+		},
+		selectors: {
 			getPostsPage: ( getResource, requireResource ) => ( requirement, params ) => {
 				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
 				const resourceName = 'posts-page:' + paramsString;
@@ -46,9 +43,8 @@ export function createApi( siteUrl, fetch = window.fetch ) {
 				const { data, lastRequested, lastReceived = -Infinity } = getResource( resourceName );
 				return ( ! data || ( lastRequested && lastRequested > lastReceived ) );
 			}
-		}
-	}
-	return new TestWPRestApi();
+		},
+	};
 }
 
 export function readPostPages( get, resourceNames ) {

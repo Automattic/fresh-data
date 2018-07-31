@@ -3,13 +3,11 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { ApiProvider } from '@fresh-data/framework';
 import './App.css';
 import Message from './Message';
-import TestApi from './test-api';
-
-const api = new TestApi();
+import testApi from './test-api';
 
 const App = ( { store } ) => (
 	<ReduxProvider store={ store } >
-		<ApiProvider apiName={ 'test-api' } api={ api }>
+		<ApiProvider apiName={ 'test-api' } api={ testApi }>
 			<div className="App">
 				<header className="App-header">
 					<h1 className="App-title">Fresh Data</h1>
