@@ -4,8 +4,8 @@
  * in order to use Fresh Data with your own APIs.
  */
 
-// Subclass this to create your own API.
-export { default as FreshDataApi } from './api/index';
+// Instantiate an ApiClient with a given apiSpec.
+export { default as ApiClient } from './client/index';
 
 // Combine this in your top-level Redux reducer under 'freshData'.
 export { default as reducer } from './react-redux/reducer/index';

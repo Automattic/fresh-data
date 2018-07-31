@@ -4,6 +4,7 @@ import debugFactory from 'debug';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import * as actions from './actions';
+import ApiClient from '../client';
 
 const debug = debugFactory( 'fresh-data:api-provider' );
 
@@ -11,7 +12,7 @@ export class ApiProvider extends Component {
 	static propTypes = {
 		children: PropTypes.node,
 		apiName: PropTypes.string.isRequired,
-		api: PropTypes.object.isRequired,
+		api: PropTypes.object.isRequired, // TODO: Add shape for api spec
 		rootPath: PropTypes.oneOfType( [
 			PropTypes.arrayOf( PropTypes.oneOfType( [ PropTypes.string, PropTypes.number ] ) ),
 			PropTypes.string,
@@ -31,6 +32,7 @@ export class ApiProvider extends Component {
 
 	constructor( props ) {
 		super( ...arguments );
+		this.apiClient = null;
 		this.update( props );
 	}
 
@@ -58,25 +60,21 @@ export class ApiProvider extends Component {
 		const stateChanged = api && this.lastRootData !== rootData;
 
 		if ( apiChanged ) {
-			debug( 'Updating api: ', api );
-			api.setDataHandlers( { dataRequested, dataReceived } );
+			debug( `Updating api ${ apiName }: `, api );
+			this.apiClient = new ApiClient( api );
+			this.apiClient.setDataHandlers( { dataRequested, dataReceived } );
 			this.lastApi = api;
 		}
 
 		if ( stateChanged || apiChanged ) {
 			debug( 'Updating root data: ', rootData );
-			api.updateState( rootData[ apiName ] || {} );
+			this.apiClient.setState( rootData[ apiName ] || {} );
 			this.lastRootData = rootData;
 		}
 	}
 
 	getApiClient = () => {
-		const { api } = this.props;
-		if ( ! api ) {
-			debug( 'No api prop set' );
-			return undefined;
-		}
-		return api.getClient();
+		return this.apiClient;
 	}
 
 	dataRequested = ( resourceNames ) => {

@@ -43,8 +43,10 @@ export default function withApiClient( apiName, options ) {
 			}
 
 			componentWillUnmount() {
-				if ( this.state.client ) {
-					this.state.client.unsubscribe( this.handleSubscriptionChange );
+				const { client } = this.state;
+				if ( client ) {
+					client.unsubscribe( this.handleSubscriptionChange );
+					client.setComponentData( this );
 				}
 			}
 
