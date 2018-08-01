@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 const debug = debugFactory( 'fresh-data:with-api-client' );
 
-export default function withApiClient( apiName, options ) {
+export default function withApiClient( options ) {
 	const { mapSelectorsToProps, mapMutationsToProps } = options;
 
 	return function connectWithApiClient( WrappedComponent ) {

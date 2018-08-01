@@ -12,7 +12,7 @@ export class ApiProvider extends Component {
 	static propTypes = {
 		children: PropTypes.node,
 		apiName: PropTypes.string.isRequired,
-		api: PropTypes.object.isRequired, // TODO: Add shape for api spec
+		apiSpec: PropTypes.object.isRequired, // TODO: Add shape for api spec
 		rootPath: PropTypes.oneOfType( [
 			PropTypes.arrayOf( PropTypes.oneOfType( [ PropTypes.string, PropTypes.number ] ) ),
 			PropTypes.string,
@@ -49,21 +49,21 @@ export class ApiProvider extends Component {
 	}
 
 	shouldComponentUpdate( nextProps ) {
-		const { api, rootData } = nextProps;
-		return ( this.lastApi !== api || this.lastRootData !== rootData );
+		const { apiSpec, rootData } = nextProps;
+		return ( this.lastApi !== apiSpec || this.lastRootData !== rootData );
 	}
 
 	update( props ) {
 		const { dataRequested, dataReceived } = this;
-		const { apiName, api, rootData } = props;
-		const apiChanged = api && this.lastApi !== api;
-		const stateChanged = api && this.lastRootData !== rootData;
+		const { apiName, apiSpec, rootData } = props;
+		const apiChanged = apiSpec && this.lastApi !== apiSpec;
+		const stateChanged = apiSpec && this.lastRootData !== rootData;
 
 		if ( apiChanged ) {
-			debug( `Updating api ${ apiName }: `, api );
-			this.apiClient = new ApiClient( api );
+			debug( `Updating apiSpec ${ apiName }: `, apiSpec );
+			this.apiClient = new ApiClient( apiSpec );
 			this.apiClient.setDataHandlers( { dataRequested, dataReceived } );
-			this.lastApi = api;
+			this.lastApi = apiSpec;
 		}
 
 		if ( stateChanged || apiChanged ) {

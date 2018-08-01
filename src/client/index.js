@@ -44,7 +44,7 @@ export default class ApiClient {
 		return Object.keys( apiOperations ).reduce( ( operations, operationName ) => {
 			operations[ operationName ] = ( resourceNames, data ) => {
 				const apiOperation = apiOperations[ operationName ];
-				return this.applyOperation( apiOperation, operationName, resourceNames, data );
+				return this.applyOperation( apiOperation, resourceNames, data );
 			};
 			return operations;
 		}, {} );
@@ -117,7 +117,7 @@ export default class ApiClient {
 		}
 	};
 
-	updateRequirementsData = ( now ) => {
+	updateRequirementsData = async ( now ) => {
 		const { requirementsByComponent, requirementsByResource, state, minUpdate, maxUpdate } = this;
 		const resourceState = state.resources || {};
 
@@ -130,12 +130,13 @@ export default class ApiClient {
 				calculateUpdates( requirementsByResource, resourceState, minUpdate, maxUpdate, now );
 
 			if ( updates && updates.length > 0 ) {
-				const readOperationName = this.readOperationName || DEFAULT_READ_OPERATION;
+				const readOperationName = this.readOperationName;
 				const readOperation = this.operations[ readOperationName ];
 				if ( ! readOperation ) {
 					throw new Error( `Operation "${ readOperationName }" not found.` );
 				}
-				this.operations[ readOperationName ]( updates );
+
+				await this.operations[ readOperationName ]( updates );
 			}
 
 			this.debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
@@ -173,38 +174,28 @@ export default class ApiClient {
 	/**
 	 * Apply a given operation's handlers to a set of resourceNames.
 	 * @param {Function} apiOperation The original operation from the apiSpec.
-	 * @param {string} operationName The name of the operation to apply.
 	 * @param {Array} resourceNames The resources upon which to apply the operation.
 	 * @param {any} [data] (optional) data to apply via this operation.
 	 * @return {Promise} Root promise of operation. Resolves when all requests have resolved.
 	 */
-	applyOperation = ( apiOperation, operationName, resourceNames, data ) => {
-		this.dataRequested( resourceNames );
+	applyOperation = async ( apiOperation, resourceNames, data ) => {
+		try {
+			this.dataRequested( resourceNames );
 
-		const rootPromise = new Promise( ( resolve, reject ) => {
-			try {
-				const operationResult = apiOperation( this.methods )( resourceNames, data ) || [];
-				const values = isArray( operationResult ) ? operationResult : [ operationResult ];
+			const operationResult = apiOperation( this.methods )( resourceNames, data ) || [];
+			const values = isArray( operationResult ) ? operationResult : [ operationResult ];
 
-				const requests = values.map( value => {
-					// This takes any value (including a promise) and wraps it in a promise.
-					const promise = Promise.resolve().then( () => value );
+			const requests = values.map( async ( value ) => {
+				const resources = await value;
+				this.dataReceived( resources );
+				return resources;
+			} );
 
-					return promise
-						.then( resources => this.dataReceived( resources ) )
-						.catch( error => this.unhandledErrorReceived( operationName, resourceNames, error ) );
-				} );
-
-				// TODO: Maybe some monitoring of promises to ensure they all resolve?
-				const all = Promise.all( requests );
-				resolve( all );
-				//resolve( Promise.all( requests ) );
-			} catch ( error ) {
-				this.unhandledErrorReceived( operationName, resourceNames, error );
-				reject( error );
-			}
-		} );
-		return rootPromise;
+			return await Promise.all( requests );
+		} catch ( error ) {
+			this.debug( 'Error caught while applying operation: ', apiOperation );
+			throw error;
+		}
 	}
 
 	/**
@@ -233,22 +224,6 @@ export default class ApiClient {
 		}
 		this.dataHandlers.dataReceived( resources );
 		return resources;
-	}
-
-	/**
-	 * Logs an unhandled error from an operation.
-	 * @param {string} operationName The name of the operation attempted.
-	 * @param {Array} resourceNames The names of resources requested.
-	 * @param {any} error The error returned from the operation.
-	 * @return {any} The error received.
-	 */
-	unhandledErrorReceived = ( operationName, resourceNames, error ) => {
-		this.debug(
-			`Unhandled error for client operation "${ operationName }":`,
-			' resourceNames:', resourceNames,
-			' error:', error
-		);
-		return error;
 	}
 }
 
