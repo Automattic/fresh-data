@@ -56,4 +56,4 @@ function mapSelectorsToProps( selectors ) {
 	};
 }
 
-export default withApiClient( 'test', { mapSelectorsToProps } )( Message );
+export default withApiClient( { mapSelectorsToProps } )( Message );

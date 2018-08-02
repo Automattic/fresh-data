@@ -4,7 +4,7 @@ import qs from 'qs';
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
-export function createApi( siteUrl, fetch = window.fetch ) {
+export function createApiSpec( siteUrl, fetch = window.fetch ) {
 	return {
 		methods: {
 			get: ( endpointPath, params ) => { // eslint-disable-line no-unused-vars

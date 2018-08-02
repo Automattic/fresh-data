@@ -48,4 +48,4 @@ function mapSelectorsToProps( selectors ) {
 	};
 }
 
-export default withApiClient( 'wp-rest-api', { mapSelectorsToProps } )( PostList );
+export default withApiClient( { mapSelectorsToProps } )( PostList );

@@ -7,7 +7,7 @@ import testApi from './test-api';
 
 const App = ( { store } ) => (
 	<ReduxProvider store={ store } >
-		<ApiProvider apiName={ 'test-api' } api={ testApi }>
+		<ApiProvider apiName={ 'test-api' } apiSpec={ testApi }>
 			<div className="App">
 				<header className="App-header">
 					<h1 className="App-title">Fresh Data</h1>
