@@ -68,37 +68,6 @@ describe( 'ApiClient', () => {
 		expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 	} );
 
-	it( 'should set api methods', () => {
-		const apiSpec = {
-			methods: {
-				get: () => {},
-				post: () => {},
-			},
-		};
-		const apiClient = new ApiClient( apiSpec );
-
-		expect( apiClient.methods ).toBe( apiSpec.methods );
-	} );
-
-	it( 'should map operations to methods', () => {
-		const checkOperation = jest.fn();
-		const apiSpec = {
-			methods: {
-				get: () => {},
-			},
-			operations: {
-				read: ( methods ) => ( resourceNames, data ) => {
-					checkOperation( methods, resourceNames, data );
-					return [];
-				},
-			},
-		};
-		const apiClient = new ApiClient( apiSpec );
-
-		apiClient.operations.read( [ 'thing:1' ], { color: 'red' } );
-		expect( checkOperation ).toHaveBeenCalledWith( apiClient.methods, [ 'thing:1' ], { color: 'red' } );
-	} );
-
 	it( 'should map mutations to operations', () => {
 		const createThing = jest.fn();
 		const mappedCreateThing = jest.fn();
@@ -404,7 +373,7 @@ describe( 'ApiClient', () => {
 			const error = new Error( 'BOOM!' );
 			apiSpec = {
 				operations: {
-					read: () => () => {
+					read: () => {
 						throw error;
 					},
 				},
@@ -468,7 +437,7 @@ describe( 'ApiClient', () => {
 		beforeEach( () => {
 			apiSpec = {
 				operations: {
-					read: () => () => {
+					read: () => {
 						const returnObject = {
 							'type:1': { data: { attribute: 'some' } },
 						};
@@ -485,63 +454,62 @@ describe( 'ApiClient', () => {
 			apiClient = new ApiClient( apiSpec );
 		} );
 
-		it( 'should call the corresponding api operation handlers.', () => {
+		it( 'should call the corresponding api operation handlers.', async () => {
 			const readFunc = jest.fn();
 			apiSpec = {
-				methods: {},
 				operations: {
-					read: ( methods ) => ( resourceNames, resourceData ) => {
-						readFunc( methods, resourceNames, resourceData );
+					read: ( resourceNames, resourceData ) => {
+						readFunc( resourceNames, resourceData );
 						return [];
 					},
 				},
 			};
 			apiClient = new ApiClient( apiSpec );
 
-			apiClient.applyOperation( apiSpec.operations.read, [ 'thing:1' ], { data: true } );
-			expect( readFunc ).toHaveBeenCalledWith( apiSpec.methods, [ 'thing:1' ], { data: true } );
+			await apiClient.applyOperation( apiSpec.operations.read, [ 'thing:1' ], { data: true } );
+			expect( readFunc ).toHaveBeenCalledWith( [ 'thing:1' ], { data: true } );
 		} );
 
-		it( 'should not crash if the operation returns undefined', () => {
+		it( 'should not crash if the operation returns undefined', async () => {
 			apiSpec = {
 				operations: {
-					read: () => () => {
+					read: () => {
 						return undefined;
 					},
 				},
 			};
 			apiClient = new ApiClient( apiSpec );
 
-			apiClient.applyOperation( apiSpec.operations.read, [ 'thing:1' ] );
+			await apiClient.applyOperation( apiSpec.operations.read, [ 'thing:1' ] );
 		} );
 
-		it( 'should not crash if a resource is not handled.', () => {
-			apiClient.applyOperation( apiSpec.operations.read, [ 'thing:12' ], { data: true } );
+		it( 'should not crash if a resource is not handled.', async () => {
+			await apiClient.applyOperation( apiSpec.operations.read, [ 'thing:12' ], { data: true } );
 		} );
 
-		it( 'should call dataRequested for all resourceNames.', () => {
+		it( 'should call dataRequested for all resourceNames.', async () => {
 			const resourceNames = [ 'thing:1', 'thing:2', 'thing:3', 'type:1' ];
 			const data = { data: true };
 
 			apiClient.dataRequested = jest.fn();
-			apiClient.applyOperation( apiSpec.operations.read, resourceNames, data );
+			await apiClient.applyOperation( apiSpec.operations.read, resourceNames, data );
 			expect( apiClient.dataRequested ).toHaveBeenCalledTimes( 1 );
 			expect( apiClient.dataRequested ).toHaveBeenCalledWith( resourceNames );
 		} );
 
-		it( 'should call dataReceived for each resource received from either an object or promise.', () => {
+		it( 'should call dataReceived for each resource received from either an object or promise.', async () => {
 			const resourceNames = [ 'thing:2', 'thing:3', 'type:1' ];
 
 			apiClient.dataReceived = jest.fn();
-			apiClient.applyOperation( apiSpec.operations.read, resourceNames ).then( () => {
-				expect( apiClient.dataReceived ).toHaveBeenCalledTimes( 2 );
-				expect( apiClient.dataReceived ).toHaveBeenCalledWith( {
-					'type:1': { data: { attribute: 'some' } },
-				} );
-				expect( apiClient.dataReceived ).toHaveBeenCalledWith( {
-					'thing:2': { data: { color: 'blue' } },
-					'thing:3': { data: { color: 'green' } },
-				} );
+			await apiClient.applyOperation( apiSpec.operations.read, resourceNames );
+
+			expect( apiClient.dataReceived ).toHaveBeenCalledTimes( 2 );
+			expect( apiClient.dataReceived ).toHaveBeenCalledWith( {
+				'type:1': { data: { attribute: 'some' } },
+			} );
+			expect( apiClient.dataReceived ).toHaveBeenCalledWith( {
+				'thing:2': { data: { color: 'blue' } },
+				'thing:3': { data: { color: 'green' } },
 			} );
 		} );
 	} );
