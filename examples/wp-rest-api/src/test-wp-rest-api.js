@@ -1,30 +1,16 @@
 import { startsWith } from 'lodash';
-import qs from 'qs';
+import httpMethods from './http-fetch';
 
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
-export function createApiSpec( siteUrl, fetch = window.fetch ) {
-	return {
-		methods: {
-			get: ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
-				const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
-				const path = endpointPath.join( '/' );
-				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
-				const url = `${ baseUrl }/${ path }${ httpParams ? '?' + qs.stringify( httpParams ) : '' }`;
+export function createApiSpec( siteUrl, methods = httpMethods ) {
+	const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
+	const { get } = methods( baseUrl );
 
-				return fetch( url ).then( ( response ) => {
-					if ( ! response.ok ) {
-						throw new Error( `HTTP Error for ${ response.url }: ${ response.status }` );
-					}
-					return response.json().then( ( data ) => {
-						return data;
-					} );
-				} );
-			},
-		},
+	return {
 		operations: {
-			read: ( { get } ) => ( resourceNames ) => {
+			read: ( resourceNames ) => {
 				return readPostPages( get, resourceNames );
 			},
 		},
