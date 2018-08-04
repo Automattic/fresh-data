@@ -76,6 +76,7 @@
 		"jest": "^22.4.3",
 		"jest-environment-enzyme": "^6.0.2",
 		"jest-enzyme": "^6.0.2",
+		"lerna": "^3.0.0-rc.0",
 		"lodash": "^4.17.10",
 		"react": "^16.4.1",
 		"react-dom": "^16.4.1",
