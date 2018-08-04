@@ -2,7 +2,7 @@ import { mount } from 'enzyme';
 import React from 'react';
 import { startsWith } from 'lodash';
 import withApiClient from '../with-api-client';
-import ApiClient from '../../client';
+import { ApiClient } from '@fresh-data/framework';
 
 describe( 'withApiClient', () => {
 	let apiSpec;

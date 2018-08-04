@@ -8,12 +8,13 @@ const env = process.env.NODE_ENV;
 
 const config = {
 	input: 'src/index.js',
-	external: [ 'debug', 'lodash', 'prop-types', 'react', 'react-dom', 'react-redux', 'redux' ],
+	external: [ 'debug', '@fresh-data/framework', 'lodash', 'prop-types', 'react', 'react-dom', 'react-redux', 'redux' ],
 	output: {
 		format: 'umd',
-		name: 'FreshData',
+		name: 'FreshDataReactProvider',
 		globals: {
 			debug: 'Debug',
+			'@fresh-data/framework': 'FreshDataFramework',
 			lodash: '_',
 			'prop-types': 'PropTypes',
 			react: 'React',

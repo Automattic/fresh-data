@@ -1,6 +1,7 @@
 {
-	"name": "@fresh-data/framework",
+	"name": "fresh-data",
 	"version": "0.2.0",
+	"private": true,
 	"description": "Describe the data you need and simply use it in your app.",
 	"license": "GPL-2.0+",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -16,39 +17,15 @@
 		"redux"
 	],
 	"author": "Kevin Killingsworth <kevin.killingsworth@automattic.com> (https://github.com/coderkevin)",
-	"main": "lib/index.js",
-	"module": "es/index.js",
-	"files": [
-		"dist",
-		"es",
-		"lib",
-		"src"
-	],
 	"scripts": {
-		"clean": "rimraf lib dist es coverage",
-		"lint": "eslint .",
-		"test": "jest --runInBand",
-		"test:watch": "npm test -- --watch",
-		"coverage": "codecov",
-		"build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
-		"build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data.js",
-		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data.min.js",
-		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
-		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build",
-		"postinstall": "postinstall-build lib"
-	},
-	"peerDependencies": {
-		"debug": "^3.0.0-0",
-		"lodash": "^4.0.0-0",
-		"react": "^16.0.0-0",
-		"react-dom": "^16.0.0-0",
-		"react-redux": "^5.0.0-0",
-		"redux": "^3.0.0-0 || ^4.0.0-0"
-	},
-	"dependencies": {
-		"postinstall-build": "^5.0.1",
-		"prop-types": "^15.6.2"
+		"clean": "lerna run clean",
+		"bootstrap": "lerna bootstrap --hoist",
+		"lint": "lerna run lint",
+		"test": "lerna run test",
+		"test:watch": "lerna run test:watch",
+		"coverage": "lerna run coverage",
+		"build": "lerna run build",
+		"prepublishOnly": "npm run clean && npm run lint && npm run build && npm test"
 	},
 	"devDependencies": {
 		"babel-cli": "^6.26.0",
@@ -66,14 +43,14 @@
 		"debug": "^3.1.0",
 		"enzyme": "^3.3.0",
 		"enzyme-adapter-react-16": "^1.1.1",
-		"eslint": "^4.19.1",
+		"eslint": "^5.3.0",
 		"eslint-config-wordpress": "^2.0.0",
 		"eslint-plugin-jest": "^21.18.0",
 		"eslint-plugin-jsx-a11y": "^6.1.1",
 		"eslint-plugin-react": "^7.10.0",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
 		"identity-obj-proxy": "^3.0.0",
-		"jest": "^22.4.3",
+		"jest": "^23.4.2",
 		"jest-environment-enzyme": "^6.0.2",
 		"jest-enzyme": "^6.0.2",
 		"lerna": "^3.0.0-rc.0",
@@ -83,7 +60,7 @@
 		"react-redux": "^5.0.7",
 		"redux": "^4.0.0",
 		"rimraf": "^2.6.2",
-		"rollup": "^0.59.4",
+		"rollup": "^0.63.5",
 		"rollup-plugin-babel": "^3.0.7",
 		"rollup-plugin-commonjs": "^9.1.4",
 		"rollup-plugin-node-resolve": "^3.3.0",
@@ -127,6 +104,5 @@
 		"testPathIgnorePatterns": [
 			"/examples/"
 		]
-	},
-	"sideEffects": false
+	}
 }
