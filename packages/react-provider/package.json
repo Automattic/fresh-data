@@ -26,7 +26,6 @@
 	],
 	"scripts": {
 		"clean": "rimraf lib dist es coverage",
-		"lint": "eslint .",
 		"test": "jest --runInBand",
 		"test:watch": "npm test -- --watch",
 		"coverage": "codecov",

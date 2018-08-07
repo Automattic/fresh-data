@@ -20,7 +20,7 @@
 	"scripts": {
 		"clean": "lerna run clean",
 		"bootstrap": "lerna bootstrap --hoist",
-		"lint": "lerna run lint",
+		"lint": "eslint ./packages",
 		"test": "lerna run test",
 		"test:watch": "lerna run test:watch",
 		"coverage": "lerna run coverage",
