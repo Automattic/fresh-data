@@ -25,6 +25,7 @@
 		"test:watch": "npm run test:watch",
 		"coverage": "codecov",
 		"build": "lerna run build",
+		"build-ci": "lerna bootstrap --npm-ci-mode && lerna run build",
 		"prepublishOnly": "npm run clean && npm run lint && npm run build && npm test"
 	},
 	"devDependencies": {
