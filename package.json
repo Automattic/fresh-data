@@ -101,6 +101,7 @@
 			"**/packages/*/src/**/*.js",
 			"!**/node_modules/**"
 		],
+		"coverageDirectory": "./coverage",
 		"moduleNameMapper": {
 			"\\.(css)$": "identity-obj-proxy"
 		},
