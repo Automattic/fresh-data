@@ -21,9 +21,9 @@
 		"clean": "lerna run clean",
 		"bootstrap": "lerna bootstrap --hoist",
 		"lint": "eslint ./packages",
-		"test": "lerna run test",
-		"test:watch": "lerna run test:watch",
-		"coverage": "lerna run coverage",
+		"test": "jest --runInBand",
+		"test:watch": "npm run test:watch",
+		"coverage": "codecov",
 		"build": "lerna run build",
 		"prepublishOnly": "npm run clean && npm run lint && npm run build && npm test"
 	},
@@ -96,12 +96,17 @@
 	"jest": {
 		"verbose": true,
 		"collectCoverage": true,
+		"collectCoverageFrom": [
+			"**/packages/*/src/**/*.js",
+			"!**/node_modules/**"
+		],
 		"moduleNameMapper": {
 			"\\.(css)$": "identity-obj-proxy"
 		},
 		"setupTestFrameworkScriptFile": "jest-enzyme",
 		"testEnvironment": "enzyme",
 		"testPathIgnorePatterns": [
+			"/node_modules/",
 			"/examples/"
 		]
 	}

@@ -2,7 +2,7 @@
 	"name": "@fresh-data/react-provider",
 	"version": "0.2.0",
 	"description": "Provide fresh-data to your React app.",
-	"license": "MIT",
+	"license": "GPL-2.0+",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
 	"repository": "github:automattic/fresh-data",
 	"bugs": "https://github.com/automattic/fresh-data/issues",
@@ -26,9 +26,6 @@
 	],
 	"scripts": {
 		"clean": "rimraf lib dist es coverage",
-		"test": "jest --runInBand",
-		"test:watch": "npm test -- --watch",
-		"coverage": "codecov",
 		"build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
 		"build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
 		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data.js",
@@ -81,17 +78,5 @@
 				]
 			}
 		}
-	},
-	"jest": {
-		"verbose": true,
-		"collectCoverage": true,
-		"moduleNameMapper": {
-			"\\.(css)$": "identity-obj-proxy"
-		},
-		"setupTestFrameworkScriptFile": "jest-enzyme",
-		"testEnvironment": "enzyme",
-		"testPathIgnorePatterns": [
-			"/examples/"
-		]
 	}
 }
