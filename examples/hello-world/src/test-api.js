@@ -1,5 +1,3 @@
-import { FreshDataApi } from '@fresh-data/framework';
-
 const greetings = [
 	'Hello world!',
 	'¡Hola Mundo!',
@@ -33,39 +31,35 @@ const greetings = [
 // For demo purposes, track each request count and give an extra greeting each time.
 let requestCount = 0;
 
-export default class TestApi extends FreshDataApi {
-	methods = {
-		get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
-			return new Promise( ( resolve ) => {
-				requestCount++;
-				const valueCount = Math.min( requestCount, greetings.length );
-				const values = greetings.slice( 0, valueCount );
-				resolve( values );
-			} );
-		},
-	}
+export function fetchGreetings() {
+	return new Promise( ( resolve ) => {
+		requestCount++;
+		const valueCount = Math.min( requestCount, greetings.length );
+		const values = greetings.slice( 0, valueCount );
+		resolve( values );
+	} );
+}
 
-	operations = {
-		read: ( { get } ) => ( resourceNames ) => {
+export default {
+	operations: {
+		read: ( resourceNames ) => {
 			const requests = [];
 			resourceNames.forEach( resourceName => {
 				if ( 'greetings' === resourceName ) {
-					const request = get( [ 'greetings' ] )
-						.then( data => {
-							const resources = { greetings: { data } };
-							return resources;
-						} );
+					const request = fetchGreetings().then( data => {
+						const resources = { greetings: { data } };
+						return resources;
+					} );
 					requests.push( request );
 				}
 			} );
 			return requests;
 		}
-	}
-
-	selectors = {
+	},
+	selectors: {
 		getGreetings: ( getResource, requireResource ) => ( requirement ) => {
 			const resourceName = 'greetings';
 			return requireResource( requirement, resourceName ).data || [];
 		}
-	}
-}
+	},
+};

@@ -56,8 +56,4 @@ function mapSelectorsToProps( selectors ) {
 	};
 }
 
-function getClientKey( ownProps ) {
-	return ownProps.clientKey;
-}
-
-export default withApiClient( 'test', { mapSelectorsToProps, getClientKey } )( Message );
+export default withApiClient( { mapSelectorsToProps } )( Message );

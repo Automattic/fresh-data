@@ -1,37 +1,20 @@
 import { startsWith } from 'lodash';
-import { FreshDataApi } from '@fresh-data/framework';
-import qs from 'qs';
+import httpMethods from './http-fetch';
 
 const NAMESPACE = 'wp/v2';
 const API_URL_PREFIX = `wp-json/${ NAMESPACE }`;
 
-export function createApi( fetch = window.fetch ) {
-	class TestWPRestApi extends FreshDataApi {
-		methods = {
-			get: ( clientKey ) => ( endpointPath, params ) => { // eslint-disable-line no-unused-vars
-				const baseUrl = `${ clientKey }/${ API_URL_PREFIX }`;
-				const path = endpointPath.join( '/' );
-				const httpParams = { page: params.page, per_page: params.perPage }; // eslint-disable-line camelcase
-				const url = `${ baseUrl }/${ path }${ httpParams ? '?' + qs.stringify( httpParams ) : '' }`;
+export function createApiSpec( siteUrl, methods = httpMethods ) {
+	const baseUrl = `${ siteUrl }/${ API_URL_PREFIX }`;
+	const { get } = methods( baseUrl );
 
-				return fetch( url ).then( ( response ) => {
-					if ( ! response.ok ) {
-						throw new Error( `HTTP Error for ${ response.url }: ${ response.status }` );
-					}
-					return response.json().then( ( data ) => {
-						return data;
-					} );
-				} );
-			},
-		}
-
-		operations = {
-			read: ( { get } ) => ( resourceNames ) => {
+	return {
+		operations: {
+			read: ( resourceNames ) => {
 				return readPostPages( get, resourceNames );
 			},
-		}
-
-		selectors = {
+		},
+		selectors: {
 			getPostsPage: ( getResource, requireResource ) => ( requirement, params ) => {
 				const paramsString = JSON.stringify( params, Object.keys( params ).sort() );
 				const resourceName = 'posts-page:' + paramsString;
@@ -46,9 +29,8 @@ export function createApi( fetch = window.fetch ) {
 				const { data, lastRequested, lastReceived = -Infinity } = getResource( resourceName );
 				return ( ! data || ( lastRequested && lastRequested > lastReceived ) );
 			}
-		}
-	}
-	return TestWPRestApi;
+		},
+	};
 }
 
 export function readPostPages( get, resourceNames ) {
@@ -100,5 +82,3 @@ export function verifySiteUrl( siteUrl, fetch = window.fetch ) {
 		} );
 	} );
 }
-
-export default createApi();
