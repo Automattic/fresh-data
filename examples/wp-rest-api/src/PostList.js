@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { MINUTE, SECOND, withApiClient } from '@fresh-data/framework';
+import { MINUTE, SECOND } from '@fresh-data/framework';
+import { withApiClient } from '@fresh-data/react-provider';
 import HtmlToReact from 'html-to-react';
 
 function renderPostLine( post ) {

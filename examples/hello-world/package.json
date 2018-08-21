@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@fresh-data/framework": "^0.2.0",
+    "@fresh-data/react-provider": "^0.2.0",
     "ajv": "^6.5.2",
     "babel-polyfill": "^6.26.0",
     "debug": "^3.1.0",

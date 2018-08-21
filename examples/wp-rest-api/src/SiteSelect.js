@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { verifySiteUrl, createApiSpec } from './test-wp-rest-api';
-import { ApiProvider } from '@fresh-data/framework';
+import { ApiProvider } from '@fresh-data/react-provider';
 
 class SiteSelect extends Component {
 	static propTypes = {
