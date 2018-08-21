@@ -3,9 +3,9 @@ import FreshDataApi from '../index';
 
 describe( 'api', () => {
 	describe( '#constructor', () => {
-		it( 'should initialize clients map', () => {
+		it( 'should initialize client to null', () => {
 			const api = new FreshDataApi();
-			expect( api.clients ).toEqual( new Map() );
+			expect( api.client ).toBeNull();
 		} );
 
 		it( 'should initialize state', () => {
@@ -39,53 +39,10 @@ describe( 'api', () => {
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			const client = api.createClient( 'myKey' );
+			const client = api.createClient();
 
 			expect( client ).toBeInstanceOf( ApiClient );
-			expect( client.key ).toBe( 'myKey' );
-			expect( api.clients.size ).toBe( 1 );
-			expect( api.clients.get( 'myKey' ) ).toEqual( client );
-		} );
-
-		it( 'should not create a client if the key is null', () => {
-			class MyApi extends FreshDataApi {
-			}
-			const api = new MyApi();
-			const client = api.createClient( null );
-
-			expect( client ).toBeNull();
-		} );
-
-		it( 'should not create a client if the key is undefined', () => {
-			class MyApi extends FreshDataApi {
-			}
-			const api = new MyApi();
-			const client = api.createClient( undefined );
-
-			expect( client ).toBeNull();
-		} );
-	} );
-
-	describe( '#findClient', () => {
-		it( 'should find an existing client', () => {
-			class MyApi extends FreshDataApi {
-			}
-			const api = new MyApi();
-			const client = api.createClient( 'myKey' );
-			const foundClient = api.findClient( 'myKey' );
-
-			expect( foundClient ).toBe( client );
-		} );
-
-		it( 'should not find an existing client', () => {
-			class MyApi extends FreshDataApi {
-			}
-			const api = new MyApi();
-			const client = api.createClient( 'myKey' );
-			const foundClient = api.findClient( 'myKeey' );
-
-			expect( foundClient ).not.toBe( client );
-			expect( foundClient ).toBeNull();
+			expect( api.client ).toBe( client );
 		} );
 	} );
 
@@ -94,23 +51,21 @@ describe( 'api', () => {
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			const client = api.createClient( 'myKey' );
-			const foundClient = api.getClient( 'myKey' );
+			const client = api.createClient();
+			const foundClient = api.getClient();
 
 			expect( foundClient ).toBe( client );
-			expect( api.clients.size ).toBe( 1 );
+			expect( api.client ).toBe( client );
 		} );
 
 		it( 'should create a non-existing client', () => {
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			const client = api.getClient( 'myKey' );
+			const client = api.getClient();
 
 			expect( client ).toBeInstanceOf( ApiClient );
-			expect( client.key ).toBe( 'myKey' );
-			expect( api.clients.size ).toBe( 1 );
-			expect( api.clients.get( 'myKey' ) ).toEqual( client );
+			expect( api.client ).toBe( client );
 		} );
 	} );
 
@@ -126,76 +81,47 @@ describe( 'api', () => {
 			expect( api.state ).toBe( state );
 		} );
 
-		it( 'should update state for each client', () => {
-			const client1State = {};
-			const client2State = {};
-			const state = { client1: client1State, client2: client2State };
+		it( 'should update state for the client', () => {
+			const state = {};
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			const client1 = api.getClient( 'client1' );
-			const client2 = api.getClient( 'client2' );
+			const client = api.getClient();
 
 			api.updateState( state );
 
 			expect( api.state ).toBe( state );
-			expect( client1.state ).toBe( client1State );
-			expect( client2.state ).toBe( client2State );
+			expect( client.state ).toBe( state );
 		} );
 
-		it( 'should only set client state if state is not identical', () => {
-			const client1State = { client1: 1 };
-			const client1State2 = { client1: 2 };
-			const client2State = { client2: 1 };
-			const state = { client1: client1State, client2: client2State };
+		it( 'should only set state if state is not identical', () => {
+			const state1 = { value: 1 };
+			const state2 = { value: 1 };
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			const client1 = api.getClient( 'client1' );
-			const client2 = api.getClient( 'client2' );
-			api.updateState( state );
+			const client = api.getClient();
+			api.updateState( state1 );
 
-			client1.setState = jest.fn();
-			client2.setState = jest.fn();
-			api.updateState( state );
+			client.setState = jest.fn();
+			api.updateState( state1 );
 
-			expect( client1.setState ).not.toHaveBeenCalled();
-			expect( client2.setState ).not.toHaveBeenCalled();
+			expect( client.setState ).not.toHaveBeenCalled();
 
-			client1.setState = jest.fn();
-			client2.setState = jest.fn();
-			api.updateState( { client1: client1State2, client2: client2State } );
+			client.setState = jest.fn();
+			api.updateState( state2 );
 
-			expect( client1.setState ).toHaveBeenCalledTimes( 1 );
-			expect( client1.setState ).toHaveBeenCalledWith( client1State2 );
-			expect( client2.setState ).not.toHaveBeenCalled();
-		} );
-
-		it( 'should set default state for client', () => {
-			const client1State = {};
-			const state = { client1: client1State };
-			class MyApi extends FreshDataApi {
-			}
-			const api = new MyApi();
-			const client1 = api.getClient( 'client1' );
-			const client2 = api.getClient( 'client2' );
-
-			api.updateState( state );
-
-			expect( api.state ).toBe( state );
-			expect( client1.state ).toBe( client1State );
-			expect( client2.state ).toEqual( {} );
+			expect( client.setState ).toHaveBeenCalledTimes( 1 );
+			expect( client.setState ).toHaveBeenCalledWith( state2 );
 		} );
 	} );
 
 	describe( '#dataRequested', () => {
-		const clientKey = 'client1';
-
 		it( 'should do nothing if dataRequested is not set.', () => {
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			api.dataRequested( clientKey, [ 'thing:2' ] );
+			api.dataRequested( [ 'thing:2' ] );
 		} );
 
 		it( 'should call dataRequested', () => {
@@ -205,11 +131,11 @@ describe( 'api', () => {
 			}
 			const api = new MyApi();
 			api.setDataHandlers( { dataRequested, dataReceived } );
-			api.dataRequested( clientKey, [ 'thing:3', 'thing:4' ] );
+			api.dataRequested( [ 'thing:3', 'thing:4' ] );
 
 			expect( dataReceived ).not.toHaveBeenCalled();
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( api, clientKey, [ 'thing:3', 'thing:4' ] );
+			expect( dataRequested ).toHaveBeenCalledWith( [ 'thing:3', 'thing:4' ] );
 		} );
 
 		it( 'should return resourceNames given', () => {
@@ -222,18 +148,16 @@ describe( 'api', () => {
 			const api = new MyApi();
 			api.setDataHandlers( { dataRequested } );
 
-			expect( api.dataRequested( clientKey, resourceNames ) ).toBe( resourceNames );
+			expect( api.dataRequested( resourceNames ) ).toBe( resourceNames );
 		} );
 	} );
 
 	describe( '#dataReceived', () => {
-		const clientKey = 'client1';
-
 		it( 'should do nothing if dataReceived is not set.', () => {
 			class MyApi extends FreshDataApi {
 			}
 			const api = new MyApi();
-			api.dataReceived( clientKey, { 'thing:2': { data: { color: 'grey' } } } );
+			api.dataReceived( { 'thing:2': { data: { color: 'grey' } } } );
 		} );
 
 		it( 'should call dataReceived', () => {
@@ -243,14 +167,14 @@ describe( 'api', () => {
 			}
 			const api = new MyApi();
 			api.setDataHandlers( { dataRequested, dataReceived } );
-			api.dataReceived( clientKey, {
+			api.dataReceived( {
 				'thing:3': { data: { color: 'grey' } },
 				'thing:4': { error: { message: 'oops' } }
 			} );
 
 			expect( dataRequested ).not.toHaveBeenCalled();
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( api, clientKey, {
+			expect( dataReceived ).toHaveBeenCalledWith( {
 				'thing:3': { data: { color: 'grey' } },
 				'thing:4': { error: { message: 'oops' } },
 			} );
@@ -268,7 +192,7 @@ describe( 'api', () => {
 			};
 
 			api.setDataHandlers( { dataRequested, dataReceived } );
-			expect( api.dataReceived( clientKey, resources ) ).toBe( resources );
+			expect( api.dataReceived( resources ) ).toBe( resources );
 		} );
 	} );
 

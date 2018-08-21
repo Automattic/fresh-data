@@ -70,7 +70,7 @@ describe( 'ApiProvider', () => {
 					<span>Testing</span>
 				</ApiProvider>
 			);
-			expect( wrapper.instance().getApiClient( '123' ) ).toBeInstanceOf( ApiClient );
+			expect( wrapper.instance().getApiClient() ).toBeInstanceOf( ApiClient );
 		} );
 
 		it( 'should return already created api client.', () => {
@@ -85,8 +85,8 @@ describe( 'ApiProvider', () => {
 					<span>Testing</span>
 				</ApiProvider>
 			);
-			const apiClient = wrapper.instance().getApiClient( '123' );
-			expect( wrapper.instance().getApiClient( '123' ) ).toBe( apiClient );
+			const apiClient = wrapper.instance().getApiClient();
+			expect( wrapper.instance().getApiClient() ).toBe( apiClient );
 		} );
 
 		it( 'should return undefined if no api prop is set.', () => {
@@ -105,7 +105,7 @@ describe( 'ApiProvider', () => {
 					<span>Testing</span>
 				</ApiProviderOptionalPropTypes>
 			);
-			expect( wrapper.instance().getApiClient( '123' ) ).toBeUndefined();
+			expect( wrapper.instance().getApiClient() ).toBeUndefined();
 		} );
 	} );
 
@@ -208,10 +208,10 @@ describe( 'ApiProvider', () => {
 				</ApiProvider>
 			);
 
-			api.dataRequested( '123', [ 'thing:1', 'thing:2' ] );
+			api.dataRequested( [ 'thing:1', 'thing:2' ] );
 			expect( dataReceived ).not.toHaveBeenCalled();
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( 'test-api', '123', [ 'thing:1', 'thing:2' ] );
+			expect( dataRequested ).toHaveBeenCalledWith( 'test-api', [ 'thing:1', 'thing:2' ] );
 		} );
 	} );
 
@@ -232,13 +232,13 @@ describe( 'ApiProvider', () => {
 				</ApiProvider>
 			);
 
-			api.dataReceived( '123', {
+			api.dataReceived( {
 				'thing:1': { data: { color: 'blue' } },
 				'thing:2': { error: { message: 'oops!' } },
 			} );
 			expect( dataRequested ).not.toHaveBeenCalled();
 			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
-			expect( dataReceived ).toHaveBeenCalledWith( 'test-api', '123', {
+			expect( dataReceived ).toHaveBeenCalledWith( 'test-api', {
 				'thing:1': { data: { color: 'blue' } },
 				'thing:2': { error: { message: 'oops!' } },
 			} );

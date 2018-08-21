@@ -38,20 +38,20 @@ describe( 'ApiClient', () => {
 	};
 
 	it( 'should initialize to empty state', () => {
-		const apiClient = new ApiClient( emptyApi, '123' );
+		const apiClient = new ApiClient( emptyApi );
 		expect( apiClient.state ).toEqual( {} );
 	} );
 
 	it( 'should set state', () => {
 		const clientState = { resources: {} };
-		const apiClient = new ApiClient( emptyApi, '123' );
+		const apiClient = new ApiClient( emptyApi );
 		apiClient.setState( clientState );
 		expect( apiClient.state ).toBe( clientState );
 	} );
 
 	it( 'should update timer on set state', () => {
 		const clientState = { resources: {} };
-		const apiClient = new ApiClient( emptyApi, '123' );
+		const apiClient = new ApiClient( emptyApi );
 		apiClient.updateTimer = jest.fn();
 		apiClient.setState( clientState );
 		expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
@@ -59,7 +59,7 @@ describe( 'ApiClient', () => {
 
 	it( 'should not set state twice', () => {
 		const clientState = { resources: {} };
-		const apiClient = new ApiClient( emptyApi, '123' );
+		const apiClient = new ApiClient( emptyApi );
 		apiClient.updateTimer = jest.fn();
 		apiClient.setState( clientState );
 		expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
@@ -69,29 +69,17 @@ describe( 'ApiClient', () => {
 		expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 	} );
 
-	it( 'should map api methods to client key', () => {
-		const checkMethod = jest.fn();
+	it( 'should set api methods', () => {
 		class TestApi extends FreshDataApi {
 			methods = {
-				get: ( clientKey ) => ( endpointPath ) => ( params ) => {
-					checkMethod( 'get', clientKey, endpointPath, params );
-				},
-				post: ( clientKey ) => ( endpointPath ) => ( params ) => {
-					checkMethod( 'post', clientKey, endpointPath, params );
-				},
+				get: () => {},
+				post: () => {},
 			}
 		}
 		const api = new TestApi();
-		const apiClient = new ApiClient( api, '123' );
+		const apiClient = new ApiClient( api );
 
-		const thingsPath = [ 'things' ];
-		const pageParams = { page: 1, perPage: 3 };
-		apiClient.methods.get( thingsPath )( pageParams );
-		expect( checkMethod ).toHaveBeenCalledWith( 'get', '123', thingsPath, pageParams );
-
-		const thing2Path = [ 'things', 2 ];
-		apiClient.methods.post( thing2Path )();
-		expect( checkMethod ).toHaveBeenCalledWith( 'post', '123', thing2Path, undefined );
+		expect( apiClient.methods ).toBe( api.methods );
 	} );
 
 	it( 'should map operations to methods', () => {
@@ -108,7 +96,7 @@ describe( 'ApiClient', () => {
 			}
 		}
 		const api = new TestApi();
-		const apiClient = new ApiClient( api, '123' );
+		const apiClient = new ApiClient( api );
 
 		apiClient.operations.read( [ 'thing:1' ], { color: 'red' } );
 		expect( checkOperation ).toHaveBeenCalledWith( apiClient.methods, [ 'thing:1' ], { color: 'red' } );
@@ -126,7 +114,7 @@ describe( 'ApiClient', () => {
 		}
 
 		const api = new TestApi();
-		const apiClient = new ApiClient( api, '123' );
+		const apiClient = new ApiClient( api );
 
 		expect( createThing ).toHaveBeenCalledTimes( 1 );
 		expect( createThing ).toHaveBeenCalledWith( apiClient.operations );
@@ -138,7 +126,7 @@ describe( 'ApiClient', () => {
 			selectors = thingSelectors;
 		}
 		const api = new TestApi();
-		const apiClient = new ApiClient( api, '123' );
+		const apiClient = new ApiClient( api );
 		apiClient.setState( thing1ClientState );
 
 		const dataThing1 = apiClient.getResource( 'thing:1' ).data;
@@ -155,7 +143,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			expect( apiClient.getResource( 'nonexistentResource:1' ) ).toEqual( {} );
 		} );
 
@@ -163,7 +151,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.getResource( 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
 		} );
@@ -174,7 +162,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			expect( apiClient.requireResource( [] )( {}, 'nonexistentResource:1' ) ).toEqual( {} );
 		} );
 
@@ -182,7 +170,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.requireResource( [] )( {}, 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
 		} );
@@ -191,7 +179,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			const requirement = { freshness: 5 * SECOND };
 			const componentRequirements = [];
 			apiClient.requireResource( componentRequirements )( requirement, 'thing:1' );
@@ -202,7 +190,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			const api = new TestApi();
-			const apiClient = new ApiClient( api, '123' );
+			const apiClient = new ApiClient( api );
 			const requirement = { freshness: 5 * SECOND };
 			const componentRequirements = [ { freshness: 2 * SECOND, resourceName: 'thing:1' } ];
 			apiClient.requireResource( componentRequirements )( requirement, 'thing:1' );
@@ -223,7 +211,7 @@ describe( 'ApiClient', () => {
 		let apiClient = null;
 
 		beforeEach( () => {
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 		} );
 
 		afterEach( () => {
@@ -298,7 +286,7 @@ describe( 'ApiClient', () => {
 			const setTimer = jest.fn();
 			setTimer.mockReturnValue( 5 ); // return a timeout id.
 			const clearTimer = jest.fn();
-			const apiClient = new ApiClient( emptyApi, '123', setTimer, clearTimer );
+			const apiClient = new ApiClient( emptyApi, setTimer, clearTimer );
 			apiClient.updateTimer( now, 5000 );
 
 			expect( apiClient.timeoutId ).toBe( 5 );
@@ -315,7 +303,7 @@ describe( 'ApiClient', () => {
 			const setTimer = jest.fn();
 			setTimer.mockReturnValue( 5 ); // return a timeout id.
 			const clearTimer = jest.fn();
-			const apiClient = new ApiClient( api, '123', setTimer, clearTimer );
+			const apiClient = new ApiClient( api, setTimer, clearTimer );
 
 			const component = () => {};
 			apiClient.setComponentData( component, ( selectors ) => {
@@ -335,7 +323,7 @@ describe( 'ApiClient', () => {
 			const setTimer = jest.fn();
 			setTimer.mockReturnValue( 5 ); // return a timeout id.
 			const clearTimer = jest.fn();
-			const apiClient = new ApiClient( emptyApi, '123', setTimer, clearTimer );
+			const apiClient = new ApiClient( emptyApi, setTimer, clearTimer );
 
 			apiClient.updateTimer( now );
 
@@ -355,7 +343,7 @@ describe( 'ApiClient', () => {
 		let apiClient = null;
 
 		beforeEach( () => {
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 			apiClient.setState( thing1ClientState );
 		} );
 
@@ -381,7 +369,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should handle an empty state.', () => {
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 			apiClient.operations.read = jest.fn();
 			apiClient.setComponentData( component, ( selectors ) => {
 				selectors.getThing( { freshness: 90 * SECOND }, 3 );
@@ -490,7 +478,7 @@ describe( 'ApiClient', () => {
 				}
 			}
 			api = new TestApi();
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 		} );
 
 		it( 'should call the corresponding api operation handlers.', () => {
@@ -504,7 +492,7 @@ describe( 'ApiClient', () => {
 				}
 			}
 			api = new TestApi();
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 
 			apiClient.applyOperation( 'read', [ 'thing:1' ], { data: true } );
 			expect( readFunc ).toHaveBeenCalledWith( api.methods, [ 'thing:1' ], { data: true } );
@@ -514,7 +502,7 @@ describe( 'ApiClient', () => {
 			class TestApi extends FreshDataApi {
 			}
 			api = new TestApi();
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 
 			expect( () => apiClient.applyOperation( 'read', [ 'thing:1' ] ) ).toThrowError();
 		} );
@@ -528,7 +516,7 @@ describe( 'ApiClient', () => {
 				}
 			}
 			api = new TestApi();
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 
 			apiClient.applyOperation( 'read', [ 'thing:1' ] );
 		} );
@@ -545,7 +533,7 @@ describe( 'ApiClient', () => {
 			api.dataRequested = dataRequested;
 			apiClient.applyOperation( 'read', resourceNames, data );
 			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
-			expect( dataRequested ).toHaveBeenCalledWith( '123', resourceNames );
+			expect( dataRequested ).toHaveBeenCalledWith( resourceNames );
 		} );
 
 		it( 'should call dataReceived for each resource received from either an object or promise.', () => {
@@ -555,10 +543,10 @@ describe( 'ApiClient', () => {
 			api.dataReceived = dataReceived;
 			apiClient.applyOperation( 'read', resourceNames ).then( () => {
 				expect( dataReceived ).toHaveBeenCalledTimes( 2 );
-				expect( dataReceived ).toHaveBeenCalledWith( '123', {
+				expect( dataReceived ).toHaveBeenCalledWith( {
 					'type:1': { data: { attribute: 'some' } },
 				} );
-				expect( dataReceived ).toHaveBeenCalledWith( '123', {
+				expect( dataReceived ).toHaveBeenCalledWith( {
 					'thing:2': { data: { color: 'blue' } },
 					'thing:3': { data: { color: 'green' } },
 				} );
@@ -574,14 +562,14 @@ describe( 'ApiClient', () => {
 				}
 			}
 			api = new TestApi();
-			apiClient = new ApiClient( api, '123' );
+			apiClient = new ApiClient( api );
 			const unhandled = jest.fn();
 
 			api.unhandledErrorReceived = unhandled;
 			apiClient.applyOperation( 'read', [ 'thing:1' ] ).then( () => {
 			} ).catch( ( error ) => {
 				expect( unhandled ).toHaveBeenCalledTimes( 1 );
-				expect( unhandled ).toHaveBeenCalledWith( '123', 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
+				expect( unhandled ).toHaveBeenCalledWith( 'read', [ 'thing:1' ], new Error( 'BOOM!' ) );
 				expect( error ).toEqual( new Error( 'BOOM!' ) );
 			} );
 		} );
@@ -613,7 +601,7 @@ describe( 'ApiClient', () => {
 	describe( '#subscribe', () => {
 		it( 'should add a callback to the subscription list.', () => {
 			const dummyApi = new FreshDataApi();
-			const apiClient = new ApiClient( dummyApi, '123' );
+			const apiClient = new ApiClient( dummyApi );
 			const callback = jest.fn();
 
 			expect( apiClient.subscriptionCallbacks.size ).toBe( 0 );
@@ -627,7 +615,7 @@ describe( 'ApiClient', () => {
 
 		it( 'should not add a callback multiple times.', () => {
 			const dummyApi = new FreshDataApi();
-			const apiClient = new ApiClient( dummyApi, '123' );
+			const apiClient = new ApiClient( dummyApi );
 			const callback = jest.fn();
 
 			expect( apiClient.subscribe( callback ) ).toBe( callback );
@@ -639,7 +627,7 @@ describe( 'ApiClient', () => {
 
 		it( 'should remove a callback to the subscription list.', () => {
 			const dummyApi = new FreshDataApi();
-			const apiClient = new ApiClient( dummyApi, '123' );
+			const apiClient = new ApiClient( dummyApi );
 			const callback = jest.fn();
 
 			apiClient.subscribe( callback );
@@ -651,7 +639,7 @@ describe( 'ApiClient', () => {
 
 		it( 'should not attempt remove a callback twice.', () => {
 			const dummyApi = new FreshDataApi();
-			const apiClient = new ApiClient( dummyApi, '123' );
+			const apiClient = new ApiClient( dummyApi );
 			const callback = jest.fn();
 
 			apiClient.subscribe( callback );
@@ -663,7 +651,7 @@ describe( 'ApiClient', () => {
 
 		it( 'should call the callback whenever state is set on the client.', () => {
 			const dummyApi = new FreshDataApi();
-			const apiClient = new ApiClient( dummyApi, '123' );
+			const apiClient = new ApiClient( dummyApi );
 			const callback = jest.fn();
 			const state = {};
 

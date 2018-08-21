@@ -8,16 +8,13 @@ const _subReducers = [
 ];
 
 export default function reducer( state = _defaultState, action, subReducers = _subReducers ) {
-	const { apiName, clientKey } = action;
+	const { apiName } = action;
 
-	if ( apiName && clientKey ) {
-		const apiState = state[ apiName ] || {};
+	if ( apiName ) {
+		const newApiState = subReducers.reduce( ( apiState, subReducer ) => {
+			return subReducer( apiState, action );
+		}, state[ apiName ] || {} );
 
-		const newClientState = subReducers.reduce( ( clientState, subReducer ) => {
-			return subReducer( clientState, action );
-		}, apiState[ clientKey ] );
-
-		const newApiState = { ...apiState, [ clientKey ]: newClientState };
 		const newState = { ...state, [ apiName ]: newApiState };
 		return newState;
 	}

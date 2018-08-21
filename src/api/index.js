@@ -11,7 +11,7 @@ export default class FreshDataApi {
 
 	constructor() {
 		// TODO: Validate methods, operations, mutations, and selectors?
-		this.clients = new Map();
+		this.client = null;
 		this.state = {};
 		this.dataHandlers = null;
 		this.readOperationName = 'read';
@@ -21,78 +21,63 @@ export default class FreshDataApi {
 		this.dataHandlers = { dataRequested, dataReceived };
 	}
 
-	getClient( clientKey ) {
-		return this.findClient( clientKey ) || this.createClient( clientKey );
+	getClient() {
+		return this.client || this.createClient();
 	}
 
-	findClient( clientKey ) {
-		return this.clients.get( clientKey ) || null;
-	}
-
-	createClient( clientKey ) {
-		if ( ! clientKey ) {
-			return null;
-		}
-
-		const client = new ApiClient( this, clientKey );
-		this.clients.set( clientKey, client );
-		client.setState( this.state );
-		return client;
+	createClient() {
+		this.client = new ApiClient( this );
+		this.client.setState( this.state );
+		return this.client;
 	}
 
 	updateState( state ) {
 		if ( this.state !== state ) {
-			this.clients.forEach( ( client, clientKey ) => {
-				const clientState = state[ clientKey ] || {};
-				if ( client.state !== clientState ) {
-					client.setState( clientState );
-				}
-			} );
+			if ( this.client ) {
+				this.client.setState( state );
+			}
 			this.state = state;
 		}
 	}
 
 	/**
 	 * Sets requested data states for resources.
-	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {Array} resourceNames Array of resourceName.
 	 * @return {Array} The resourceNames given.
 	 */
-	dataRequested( clientKey, resourceNames ) {
+	dataRequested( resourceNames ) {
 		if ( ! this.dataHandlers ) {
 			debug( 'Data requested before dataHandlers set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataRequested( this, clientKey, resourceNames );
+		this.dataHandlers.dataRequested( resourceNames );
 		return resourceNames;
 	}
 
 	/**
 	 * Sets received data states for resources.
-	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {Object} resources Data keyed by resourceName.
 	 * @return {Object} The resources given.
 	 */
-	dataReceived( clientKey, resources ) {
+	dataReceived( resources ) {
 		if ( ! this.dataHandlers ) {
 			debug( 'Data received before dataHandlers set. Disregarding.' );
 			return;
 		}
-		this.dataHandlers.dataReceived( this, clientKey, resources );
+		this.dataHandlers.dataReceived( resources );
 		return resources;
 	}
 
 	/**
 	 * Logs an unhandled error from an operation.
-	 * @param {string} clientKey The clientKey for the api instance.
 	 * @param {string} operationName The name of the operation attempted.
 	 * @param {Array} resourceNames The names of resources requested.
 	 * @param {any} error The error returned from the operation.
 	 * @return {any} The error received.
 	 */
-	unhandledErrorReceived( clientKey, operationName, resourceNames, error ) {
+	unhandledErrorReceived( operationName, resourceNames, error ) {
 		debug(
-			`Unhandled error for client "${ clientKey }", operation "${ operationName }":`,
+			`Unhandled error for client operation "${ operationName }":`,
 			' resourceNames:', resourceNames,
 			' error:', error
 		);

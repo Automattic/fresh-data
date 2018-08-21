@@ -14,13 +14,12 @@ function _clearTimer( id ) {
 }
 
 export default class ApiClient {
-	constructor( api, key, setTimer = _setTimer, clearTimer = _clearTimer ) {
+	constructor( api, setTimer = _setTimer, clearTimer = _clearTimer ) {
 		this.api = api;
-		this.key = key;
 		this.subscriptionCallbacks = new Set();
 		this.requirementsByComponent = new Map();
 		this.requirementsByResource = {};
-		this.methods = mapFunctions( api.methods, key );
+		this.methods = api.methods;
 		this.operations = this.mapOperations( api.operations );
 		this.mutations = mapFunctions( api.mutations, this.operations );
 		this.minUpdate = DEFAULT_MIN_UPDATE;
@@ -29,7 +28,7 @@ export default class ApiClient {
 		this.clearTimer = clearTimer;
 		this.timeoutId = null;
 		this.state = {};
-		debug( 'New ApiClient "' + key + '" for api: ', api );
+		debug( 'New ApiClient for api: ', api );
 	}
 
 	mapOperations = ( apiOperations ) => {
@@ -160,7 +159,7 @@ export default class ApiClient {
 	 * @return {Promise} Root promise of operation. Resolves when all requests have resolved.
 	 */
 	applyOperation = ( operationName, resourceNames, data ) => {
-		this.api.dataRequested( this.key, resourceNames );
+		this.api.dataRequested( resourceNames );
 
 		const apiOperation = this.api.operations[ operationName ];
 		if ( ! apiOperation ) {
@@ -177,8 +176,8 @@ export default class ApiClient {
 					const promise = Promise.resolve().then( () => value );
 
 					return promise
-						.then( ( resources ) => this.api.dataReceived( this.key, resources ) )
-						.catch( error => this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error ) );
+						.then( ( resources ) => this.api.dataReceived( resources ) )
+						.catch( error => this.api.unhandledErrorReceived( operationName, resourceNames, error ) );
 				} );
 
 				// TODO: Maybe some monitoring of promises to ensure they all resolve?
@@ -186,7 +185,7 @@ export default class ApiClient {
 				resolve( all );
 				//resolve( Promise.all( requests ) );
 			} catch ( error ) {
-				this.api.unhandledErrorReceived( this.key, operationName, resourceNames, error );
+				this.api.unhandledErrorReceived( operationName, resourceNames, error );
 				reject( error );
 			}
 		} );

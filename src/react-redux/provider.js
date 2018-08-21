@@ -70,27 +70,25 @@ export class ApiProvider extends Component {
 		}
 	}
 
-	getApiClient = ( clientKey ) => {
+	getApiClient = () => {
 		const { api } = this.props;
 		if ( ! api ) {
 			debug( 'No api prop set' );
 			return undefined;
 		}
-		return api.getClient( clientKey );
+		return api.getClient();
 	}
 
-	// TODO: Remove unused api param.
-	dataRequested = ( api, clientKey, resourceNames ) => {
+	dataRequested = ( resourceNames ) => {
 		const { apiName } = this.props;
 		const { dataRequested } = this.props;
-		dataRequested( apiName, clientKey, resourceNames );
+		dataRequested( apiName, resourceNames );
 	}
 
-	// TODO: Remove unused api param.
-	dataReceived = ( api, clientKey, resources ) => {
+	dataReceived = ( resources ) => {
 		const { apiName } = this.props;
 		const { dataReceived } = this.props;
-		dataReceived( apiName, clientKey, resources );
+		dataReceived( apiName, resources );
 	};
 
 	render() {
