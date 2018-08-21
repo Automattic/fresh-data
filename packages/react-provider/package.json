@@ -31,6 +31,8 @@
 		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data-react-provider.js",
 		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data-react-provider.min.js",
 		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
+		"lint": "eslint src",
+		"test": "jest --runInBand src",
 		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
@@ -76,5 +78,18 @@
 				]
 			}
 		}
+	},
+	"jest": {
+		"verbose": true,
+		"testURL": "http://localhost/",
+		"moduleNameMapper": {
+			"\\.(css)$": "identity-obj-proxy"
+		},
+		"setupTestFrameworkScriptFile": "jest-enzyme",
+		"testEnvironment": "enzyme",
+		"testPathIgnorePatterns": [
+			"/node_modules/",
+			"/examples/"
+		]
 	}
 }
