@@ -1,26 +1,27 @@
 import { mount } from 'enzyme';
 import React from 'react';
 import { startsWith } from 'lodash';
-import FreshDataApi from '../../api';
 import withApiClient from '../with-api-client';
+import ApiClient from '../../client';
 
 describe( 'withApiClient', () => {
-	class TestApi extends FreshDataApi {
-		selectors = {
-			getThing: () => () => {
-				return { id: 1, color: 'red' };
-			},
-		}
-	}
-
-	let api;
+	let apiSpec;
+	let apiClient;
 	let Component;
 	let mapSelectorsToProps;
 	let mapMutationsToProps;
 	let getApiClient;
 
 	beforeEach( () => {
-		api = new TestApi();
+		apiSpec = {
+			selectors: {
+				getThing: () => () => {
+					return { id: 1, color: 'red' };
+				},
+			},
+		};
+
+		apiClient = new ApiClient( apiSpec );
 
 		Component = () => {
 			return (
@@ -31,36 +32,36 @@ describe( 'withApiClient', () => {
 		mapSelectorsToProps = () => ( {} );
 
 		getApiClient = () => {
-			return api.getClient();
+			return apiClient;
 		};
 	} );
 
 	it( 'should render wrapped component.', () => {
-		const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+		const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 		const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 		expect( wrapper.find( '.test-span' ) ).toHaveLength( 1 );
 	} );
 
 	it( 'should set displayName for wrapped component with displayName.', () => {
 		Component.displayName = 'TestDisplayName';
-		const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+		const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 		expect( ComponentWithApiClient.displayName ).toBe( 'ApiClientConnect( TestDisplayName )' );
 	} );
 
 	it( 'should set displayName for wrapped component without displayName.', () => {
 		Component.displayName = null;
-		const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+		const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 		expect( ComponentWithApiClient.displayName ).toBe( 'ApiClientConnect( ' + Component.name + ' )' );
 	} );
 
 	it( 'should render wrapped component even without getApiClient in context.', () => {
-		const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+		const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 		const wrapper = mount( <ComponentWithApiClient /> );
 		expect( wrapper.find( '.test-span' ) ).toHaveLength( 1 );
 	} );
 
 	it( 'should return null if wrapped component is not valid.', () => {
-		const result = withApiClient( 'test', { mapSelectorsToProps } )( '' );
+		const result = withApiClient( { mapSelectorsToProps } )( '' );
 		expect( result ).toBeNull();
 	} );
 
@@ -68,7 +69,7 @@ describe( 'withApiClient', () => {
 		it( 'should call getApiClient on mount.', () => {
 			const mockGetApiClient = jest.fn();
 			mockGetApiClient.mockReturnValue( getApiClient() );
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			mount(
 				<ComponentWithApiClient />,
 				{ context: { getApiClient: mockGetApiClient } }
@@ -78,7 +79,7 @@ describe( 'withApiClient', () => {
 		} );
 
 		it( 'should set client in state.', () => {
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			wrapper.instance().updateClient( {}, {} );
@@ -88,10 +89,9 @@ describe( 'withApiClient', () => {
 		} );
 
 		it( 'should subscribe to the ApiClient on mount.', () => {
-			const apiClient = getApiClient();
 			apiClient.subscribe = jest.fn();
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 			const handleSubscriptionChange = wrapper.instance().handleSubscriptionChange;
 			const state = wrapper.instance().state;
@@ -102,10 +102,9 @@ describe( 'withApiClient', () => {
 		} );
 
 		it( 'should unsubscribe from the ApiClient on unmount.', () => {
-			const apiClient = getApiClient();
 			apiClient.unsubscribe = jest.fn();
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			const handleSubscriptionChange = wrapper.instance().handleSubscriptionChange;
@@ -116,35 +115,27 @@ describe( 'withApiClient', () => {
 		} );
 
 		it( 'should unsubscribe from the ApiClient if a different api is set.', () => {
-			const api1 = new TestApi();
-			api1.getClient().unsubscribe = jest.fn();
+			const apiClient1 = new ApiClient( apiSpec );
+			const apiClient2 = new ApiClient( apiSpec );
 
-			const api2 = new TestApi();
-			api2.getClient().unsubscribe = jest.fn();
+			apiClient1.unsubscribe = jest.fn();
+			apiClient2.unsubscribe = jest.fn();
 
-			const getApiClient1 = jest.fn();
-			getApiClient1.mockReturnValue( api1.getClient() );
-
-			const getApiClient2 = jest.fn();
-			getApiClient2.mockReturnValue( api2.getClient() );
-
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
-			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient: getApiClient1 } } );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
+			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient: () => ( apiClient1 ) } } );
 			const handleSubscriptionChange = wrapper.instance().handleSubscriptionChange;
 
-			wrapper.setContext( { getApiClient: getApiClient2 } );
+			wrapper.setContext( { getApiClient: () => ( apiClient2 ) } );
 
-			expect( api1.getClient().unsubscribe ).toHaveBeenCalledTimes( 1 );
-			expect( api1.getClient().unsubscribe ).toHaveBeenCalledWith( handleSubscriptionChange );
-			expect( api2.getClient().unsubscribe ).not.toHaveBeenCalled();
+			expect( apiClient1.unsubscribe ).toHaveBeenCalledTimes( 1 );
+			expect( apiClient1.unsubscribe ).toHaveBeenCalledWith( handleSubscriptionChange );
+			expect( apiClient2.unsubscribe ).not.toHaveBeenCalled();
 		} );
 	} );
 
 	describe( '#handleSubscriptionChange', () => {
 		it( 'should update when ApiClient state changes.', () => {
-			const apiClient = getApiClient();
-
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			const clientState = {
@@ -156,9 +147,7 @@ describe( 'withApiClient', () => {
 		} );
 
 		it( 'should not update when ApiClient state is identical.', () => {
-			const apiClient = getApiClient();
-
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			const wrapper = mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			const clientState = {
@@ -177,7 +166,7 @@ describe( 'withApiClient', () => {
 		it( 'should call mapSelectorsToProps if present.', () => {
 			mapSelectorsToProps = jest.fn();
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			expect( mapSelectorsToProps ).toHaveBeenCalledTimes( 1 );
@@ -202,7 +191,7 @@ describe( 'withApiClient', () => {
 				return <span className="test-span">Testing</span>;
 			};
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapSelectorsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapSelectorsToProps } )( Component );
 			mount( <ComponentWithApiClient testProp="testValue" />, { context: { getApiClient } } );
 		} );
 	} );
@@ -211,7 +200,7 @@ describe( 'withApiClient', () => {
 		it( 'should call mapMutationsToProps if present.', () => {
 			mapMutationsToProps = jest.fn();
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapMutationsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapMutationsToProps } )( Component );
 			mount( <ComponentWithApiClient />, { context: { getApiClient } } );
 
 			expect( mapMutationsToProps ).toHaveBeenCalledTimes( 1 );
@@ -222,13 +211,13 @@ describe( 'withApiClient', () => {
 			const putFunc = jest.fn();
 			const updateFunc = jest.fn();
 
-			class MutationsTestApi extends FreshDataApi {
-				methods = {
+			apiSpec = {
+				methods: {
 					put: ( path, data ) => {
 						putFunc( path, data );
 					},
-				}
-				operations = {
+				},
+				operations: {
 					update: ( { put } ) => ( resourceNames, resourceData ) => {
 						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
 						return filteredNames.reduce( ( requests, name ) => {
@@ -238,17 +227,17 @@ describe( 'withApiClient', () => {
 							return requests;
 						}, {} );
 					},
-				}
-				mutations = {
+				},
+				mutations: {
 					updateThing: ( operations ) => ( id, data ) => {
 						updateFunc( id, data );
 						const resourceName = `thing:${ id }`;
 						operations.update( [ resourceName ], { [ resourceName ]: data } );
 					},
-				}
-			}
+				},
+			};
+			apiClient = new ApiClient( apiSpec );
 
-			api = new MutationsTestApi();
 			let expectedProps = { testProp: 'testValue' };
 			let mutationProps = null;
 
@@ -267,7 +256,7 @@ describe( 'withApiClient', () => {
 				return <span className="test-span">Testing</span>;
 			};
 
-			const ComponentWithApiClient = withApiClient( 'test', { mapMutationsToProps } )( Component );
+			const ComponentWithApiClient = withApiClient( { mapMutationsToProps } )( Component );
 			mount( <ComponentWithApiClient testProp="testValue" />, { context: { getApiClient } } );
 
 			expect( updateFunc ).not.toHaveBeenCalled();
@@ -281,7 +270,7 @@ describe( 'withApiClient', () => {
 	} );
 
 	it( 'should render without options.', () => {
-		const ComponentWithApiClient = withApiClient( 'test', {} )( Component );
+		const ComponentWithApiClient = withApiClient( {} )( Component );
 
 		const doRender = () => {
 			mount( <ComponentWithApiClient />, { context: { getApiClient } } );

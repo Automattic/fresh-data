@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 
 const debug = debugFactory( 'fresh-data:with-api-client' );
 
-export default function withApiClient( apiName, options ) {
+export default function withApiClient( options ) {
 	const { mapSelectorsToProps, mapMutationsToProps } = options;
 
 	return function connectWithApiClient( WrappedComponent ) {
@@ -43,8 +43,10 @@ export default function withApiClient( apiName, options ) {
 			}
 
 			componentWillUnmount() {
-				if ( this.state.client ) {
-					this.state.client.unsubscribe( this.handleSubscriptionChange );
+				const { client } = this.state;
+				if ( client ) {
+					client.unsubscribe( this.handleSubscriptionChange );
+					client.setComponentData( this );
 				}
 			}
 
