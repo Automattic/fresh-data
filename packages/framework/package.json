@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/framework",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Describe the data you need and simply use it in your app.",
 	"license": "GPL-2.0+",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -39,8 +39,6 @@
 	},
 	"devDependencies": {
 		"cross-env": "^5.2.0",
-		"eslint": "^5.3.0",
-		"jest": "^23.4.2",
 		"rimraf": "^2.6.2",
 		"rollup": "^0.63.5"
 	},
