@@ -5,12 +5,12 @@
   "dependencies": {
     "@fresh-data/framework": "^0.3.0",
     "@fresh-data/react-provider": "^0.3.0",
-    "ajv": "^6.5.2",
+    "ajv": "^6.5.3",
     "babel-polyfill": "^6.26.0",
     "debug": "^3.1.0",
     "lodash": "^4.17.10",
-    "react": "^16.4.1",
-    "react-dom": "^16.4.1",
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2",
     "react-redux": "^5.0.7",
     "react-scripts": "1.1.4",
     "redux": "^3.7.2"
