@@ -4,7 +4,7 @@ import debugFactory from 'debug';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import * as actions from './actions';
-import ApiClient from '../client';
+import { ApiClient } from '@fresh-data/framework';
 
 const debug = debugFactory( 'fresh-data:api-provider' );
 

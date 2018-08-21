@@ -1,0 +1,73 @@
+{
+	"name": "@fresh-data/framework",
+	"version": "0.2.0",
+	"description": "Describe the data you need and simply use it in your app.",
+	"license": "GPL-2.0+",
+	"homepage": "https://github.com/automattic/fresh-data#readme",
+	"repository": "github:automattic/fresh-data",
+	"bugs": "https://github.com/automattic/fresh-data/issues",
+	"keywords": [
+		"javascript",
+		"api",
+		"data",
+		"functional",
+		"reducer",
+		"react",
+		"redux"
+	],
+	"author": "Kevin Killingsworth <kevin.killingsworth@automattic.com> (https://github.com/coderkevin)",
+	"main": "lib/index.js",
+	"module": "es/index.js",
+	"files": [
+		"dist",
+		"es",
+		"lib",
+		"src"
+	],
+	"scripts": {
+		"clean": "rimraf lib dist es coverage",
+		"build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
+		"build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
+		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data-framework.js",
+		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data-framework.min.js",
+		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
+		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
+	},
+	"dependencies": {
+		"debug": "^3.1.0",
+		"lodash": "^4.17.10"
+	},
+	"devDependencies": {
+		"cross-env": "^5.2.0",
+		"eslint": "^5.3.0",
+		"jest": "^23.4.2",
+		"rimraf": "^2.6.2",
+		"rollup": "^0.63.5"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"babel": {
+		"presets": [
+			"env",
+			"react",
+			"stage-2"
+		],
+		"env": {
+			"test": {},
+			"es": {
+				"ignore": [
+					"**/__tests__/**"
+				]
+			},
+			"commonjs": {
+				"ignore": [
+					"**/__tests__/**"
+				],
+				"plugins": [
+					"transform-es2015-modules-commonjs"
+				]
+			}
+		}
+	}
+}
