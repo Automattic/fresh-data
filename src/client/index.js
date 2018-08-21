@@ -15,14 +15,13 @@ function _clearTimer( id ) {
 
 export default class ApiClient {
 	constructor( apiSpec, setTimer = _setTimer, clearTimer = _clearTimer ) {
-		const { methods, operations, mutations, selectors } = apiSpec;
+		const { operations, mutations, selectors } = apiSpec;
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
 
 		this.uid = uniqueId();
 		this.debug = debugFactory( `fresh-data:api-client[${ this.uid }]` );
 		this.debug( 'New ApiClient for apiSpec: ', apiSpec );
 
-		this.methods = methods;
 		this.operations = operations && this.mapOperations( operations );
 		this.mutations = mutations && mapFunctions( mutations, this.operations );
 		this.selectors = selectors;
@@ -182,7 +181,7 @@ export default class ApiClient {
 		try {
 			this.dataRequested( resourceNames );
 
-			const operationResult = apiOperation( this.methods )( resourceNames, data ) || [];
+			const operationResult = apiOperation( resourceNames, data ) || [];
 			const values = isArray( operationResult ) ? operationResult : [ operationResult ];
 
 			const requests = values.map( async ( value ) => {

@@ -212,18 +212,13 @@ describe( 'withApiClient', () => {
 			const updateFunc = jest.fn();
 
 			apiSpec = {
-				methods: {
-					put: ( path, data ) => {
-						putFunc( path, data );
-					},
-				},
 				operations: {
-					update: ( { put } ) => ( resourceNames, resourceData ) => {
+					update: ( resourceNames, resourceData ) => {
 						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
 						return filteredNames.reduce( ( requests, name ) => {
 							const id = name.substr( name.indexOf( ':' ) + 1 );
 							const data = resourceData[ name ];
-							requests[ name ] = put( [ 'things', id ], { data } );
+							requests[ name ] = putFunc( [ 'things', id ], { data } );
 							return requests;
 						}, {} );
 					},
