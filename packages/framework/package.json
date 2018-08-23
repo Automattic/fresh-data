@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/framework",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Describe the data you need and simply use it in your app.",
 	"license": "GPL-2.0+",
 	"homepage": "https://github.com/automattic/fresh-data#readme",

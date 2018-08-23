@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/react-provider",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Provide fresh-data to your React app.",
 	"license": "GPL-2.0+",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -48,7 +48,7 @@
 		"prop-types": "^15.6.2"
 	},
 	"devDependencies": {
-		"@fresh-data/framework": "^0.3.0",
+		"@fresh-data/framework": "^0.3.1",
 		"cross-env": "^5.2.0",
 		"rimraf": "^2.6.2",
 		"rollup": "^0.63.5"

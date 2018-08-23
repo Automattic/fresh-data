@@ -1,10 +1,10 @@
 {
   "name": "hello-world",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "private": true,
   "dependencies": {
-    "@fresh-data/framework": "^0.3.0",
-    "@fresh-data/react-provider": "^0.3.0",
+    "@fresh-data/framework": "^0.3.1",
+    "@fresh-data/react-provider": "^0.3.1",
     "ajv": "^6.5.3",
     "babel-polyfill": "^6.26.0",
     "debug": "^3.1.0",
