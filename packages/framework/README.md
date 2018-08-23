@@ -1,10 +1,6 @@
-# Fresh Data
+# Fresh Data Framework
 
-Fresh Data is a declarative data API framework for JavaScript apps.
-
-Fresh Data isn't an API. It's *your* API made easier to use!
-It offers a single integration point between APIs and your application.
-The application simply declares the data it needs and the Fresh APIs ensure that the data it receives stays fresh.
+Fresh Data Framework is a declarative data API framework for JavaScript apps.
 
 [![Build Status](https://travis-ci.org/Automattic/fresh-data.svg?branch=master)](https://travis-ci.org/Automattic/fresh-data)
 [![Test Coverage](https://img.shields.io/codecov/c/github/Automattic/fresh-data.svg)](https://travis-ci.org/Automattic/fresh-data)
@@ -34,28 +30,6 @@ npm install --save @fresh-data/framework
 2. APIs define the way data is stored and accessed.
 
 There is support for [React](https://github.com/facebook/react) applications using [Redux](https://github.com/reduxjs/redux) for an internal cache available from `@fresh-data/react-redux`
-
-## Application Component
-
-Here's how you define the API data you need for a React Component.
-
-```js
-function mapSelectorsToProps( selectors, ownProps, state ) {
-	const { getThing } = selectors;
-	const { thingId } = ownProps;
-
-	const thing = getThing( { freshness: 90 * SECOND }, thingId );
-
-	return {
-		thing,
-	};
-}
-
-export default withApiClient( { mapSelectorsToProps } )( MyReactComponent );
-```
-
-The `withApiClient` Higher Order Component works much like `connect` from [React Redux](https://github.com/reduxjs/react-redux).
-The above code will handle the initial fetching of your data and will re-fetch every time the freshness time is exceeded.
 
 ## Creating a Fresh Data API Module
 
@@ -129,26 +103,6 @@ Your own API depends on the operations, methods, and selectors you define.
 - Operations: The operations you can perform on your data (e.g. read, update, create, delete )
 - Mutations: Functions you provide to application developers can call to perform operations on your data.
 - Selectors: Functions you provide to application developers to access data in their preferred format.
-
-## Integrating Fresh Data APIs into your React application
-
-The Fresh Data ApiProvider holds a created API Spec available to your application and provides it to your connected data components:
-
-```js
-import apiSpec from 'my-api-spec';
-
-export default MyApp = () => {
-	return (
-		<ReduxProvider store={ store }>
-			<FreshDataProvider apiSpec={ apiSpec }>
-				<div classname="App">
-					<DataForm myApiUri="https://example.com" />
-				</div>
-			</FreshDataProvider>
-		</ReduxProvider>
-	);
-};
-```
 
 ## Still to be completed
 
