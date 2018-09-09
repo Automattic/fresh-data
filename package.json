@@ -29,6 +29,7 @@
 		"prepublishOnly": "npm run clean && npm run lint && npm run build && npm test"
 	},
 	"devDependencies": {
+		"ajv": "^6.5.3",
 		"babel-cli": "^6.26.0",
 		"babel-core": "^6.26.3",
 		"babel-eslint": "^8.2.6",
@@ -36,40 +37,41 @@
 		"babel-loader": "^7.1.5",
 		"babel-plugin-external-helpers": "^6.22.0",
 		"babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+		"babel-polyfill": "^6.26.0",
 		"babel-preset-env": "^1.7.0",
 		"babel-preset-react": "^6.24.1",
 		"babel-preset-stage-2": "^6.24.1",
-		"codecov": "^3.0.4",
+		"codecov": "^3.1.0",
 		"cross-env": "^5.2.0",
 		"debug": "^3.1.0",
-		"enzyme": "^3.4.4",
-		"enzyme-adapter-react-16": "^1.2.0",
-		"eslint": "^5.4.0",
+		"enzyme": "^3.6.0",
+		"enzyme-adapter-react-16": "^1.5.0",
+		"eslint": "^5.5.0",
 		"eslint-config-wordpress": "^2.0.0",
-		"eslint-plugin-jest": "^21.21.0",
+		"eslint-plugin-jest": "^21.22.0",
 		"eslint-plugin-jsx-a11y": "^6.1.1",
 		"eslint-plugin-react": "^7.11.1",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
 		"identity-obj-proxy": "^3.0.0",
 		"jest": "^23.5.0",
-		"jest-environment-enzyme": "^6.0.3",
-		"jest-enzyme": "^6.0.3",
-		"lerna": "^3.1.2",
+		"jest-environment-enzyme": "^6.0.4",
+		"jest-enzyme": "^6.0.4",
+		"lerna": "^3.3.0",
 		"lodash": "^4.17.10",
-		"react": "^16.4.2",
-		"react-dom": "^16.4.2",
+		"react": "^16.5.0",
+		"react-dom": "^16.5.0",
 		"react-redux": "^5.0.7",
 		"redux": "^4.0.0",
 		"rimraf": "^2.6.2",
 		"rollup": "^0.63.5",
 		"rollup-plugin-babel": "^3.0.7",
-		"rollup-plugin-commonjs": "^9.1.5",
-		"rollup-plugin-node-resolve": "^3.3.0",
+		"rollup-plugin-commonjs": "^9.1.6",
+		"rollup-plugin-node-resolve": "^3.4.0",
 		"rollup-plugin-replace": "^2.0.0",
 		"rollup-plugin-uglify": "^4.0.0",
-		"webpack": "^4.17.0",
+		"webpack": "^4.17.2",
 		"webpack-cli": "^2.1.5",
-		"webpack-dev-server": "^3.1.5"
+		"webpack-dev-server": "^3.1.8"
 	},
 	"babel": {
 		"presets": [
@@ -111,5 +113,8 @@
 			"/node_modules/",
 			"/examples/"
 		]
+	},
+	"dependencies": {
+		"human-date": "^1.4.0"
 	}
 }
