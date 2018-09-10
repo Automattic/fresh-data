@@ -1,4 +1,5 @@
 import React from 'react';
+import UserSelect from './UserSelect';
 import './App.css';
 
 class App extends React.Component {
@@ -11,9 +12,9 @@ class App extends React.Component {
 				<header className="GH-header">
 					<h2><a className="GH-title" href="https://developer.github.com/v3">GitHub REST API</a></h2>
 				</header>
-				<p>
-					Hello!
-				</p>
+				<UserSelect>
+					{ ( userName ) => <p>Show data for <code>{ userName }</code> here!</p> }
+				</UserSelect>
 			</div>
 		);
 	}

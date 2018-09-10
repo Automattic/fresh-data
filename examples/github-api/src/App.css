@@ -21,3 +21,20 @@
 .GH-header a {
 	color: white;
 }
+
+.user-select {
+	font-size: large;
+	padding: 20px;
+}
+
+.user-select input {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
+
+.user-select button {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
