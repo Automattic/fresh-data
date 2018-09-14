@@ -1,7 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { ApiProvider } from '@fresh-data/react-provider';
+import restApi from './api-spec/github-rest-api';
 
-class UserSelect extends React.Component {
+const apiName = 'GitHub-REST';
+const apiSpec = restApi;
+
+class UserSelect extends React.PureComponent {
 	constructor() {
 		super( ...arguments );
 		this.state = {
@@ -12,35 +17,37 @@ class UserSelect extends React.Component {
 	handleSubmit = ( event ) => {
 		const { userName } = this.state;
 		if ( userName ) {
-			this.setState( () => ( { userName, isSubmitted: true } ) );
+			this.setState( { isSubmitted: true } );
 		}
 		event.preventDefault();
 	}
 
 	handleChange = ( event ) => {
 		const userName = event.target.value.trim();
-		this.setState( () => ( { userName, isSubmitted: false } ) );
+		this.setState( { userName, isSubmitted: false } );
 	}
 
 	render() {
 		const { isSubmitted, userName } = this.state;
 
 		return (
-			<div className="user-select">
-				<form onSubmit={ this.handleSubmit }>
-					<label htmlFor="userName">
-						Enter user name:
-						<input
-							id="userName"
-							type="text"
-							value={ userName }
-							onChange={ this.handleChange }
-						/>
-					</label>
-					<button type="submit">Go!</button>
-				</form>
-				{ isSubmitted && this.props.children( userName ) }
-			</div>
+			<ApiProvider apiName={ apiName } apiSpec={ apiSpec }>
+				<div className="user-select">
+					<form onSubmit={ this.handleSubmit }>
+						<label htmlFor="userName">
+							Enter user name:
+							<input
+								id="userName"
+								type="text"
+								value={ userName }
+								onChange={ this.handleChange }
+							/>
+						</label>
+						<button type="submit">Go!</button>
+					</form>
+					{ isSubmitted && this.props.children( userName ) }
+				</div>
+			</ApiProvider>
 		);
 	}
 }
