@@ -2,6 +2,14 @@
   "packages": [
     "examples/*",
     "packages/*"
-  ],
+	],
+	"command": {
+		"run": {
+			"ignore": "example_*"
+		},
+		"publish": {
+			"ignoreChanges": "examples/*"
+		}
+	},
   "version": "0.3.1"
 }
