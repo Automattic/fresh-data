@@ -3,7 +3,8 @@ language: node_js
 node_js:
   - "8"
 script:
-  - npm run build-ci
+  - npm run build
+  - npm run bootstrap
   - npm run lint
   - npm test
 after_success:

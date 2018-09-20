@@ -1,5 +1,5 @@
 {
-  "name": "hello-world",
+  "name": "example_hello-world",
   "version": "0.3.1",
   "private": true,
   "dependencies": {
@@ -8,11 +8,16 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm install && react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-scripts": "^1.1.5"
+    "ajv": "^6.5.3",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "react-redux": "^5.0.7",
+    "react-scripts": "^1.1.5",
+    "redux": "^4.0.0"
   }
 }
