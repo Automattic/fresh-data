@@ -20,9 +20,10 @@
 	"scripts": {
 		"clean": "lerna run clean",
 		"bootstrap": "lerna bootstrap --hoist",
+		"linkLocal": "lerna link --force-local",
 		"lint": "eslint ./packages",
 		"test": "jest --runInBand",
-		"test:watch": "npm run test:watch",
+		"test:watch": "jest --runInBand --watchAll",
 		"coverage": "codecov",
 		"build": "lerna run build",
 		"prepublishOnly": "npm run clean && npm run lint && npm run build && npm test"
