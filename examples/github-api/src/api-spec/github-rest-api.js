@@ -16,21 +16,31 @@ export function createApiSpec( fetch = window.fetch ) {
 		selectors: {
 			isLoadingUser: ( getResource ) => ( userName ) => {
 				const resourceName = getResourceName( 'user', userName );
-				const resource = getResource( resourceName );
-				return ( ! resource.data ) && resource.lastRequested;
+				const { lastRequested, lastReceived, lastError } = getResource( resourceName );
+				return lastRequested && lastRequested > lastReceived && lastRequested > lastError;
 			},
 
 			getUser: ( getResource, requireResource ) => ( requirement, userName ) => {
 				const resourceName = getResourceName( 'user', userName );
-				const resource = requireResource( requirement, resourceName );
-				return resource.data || null;
+				const { data } = requireResource( requirement, resourceName );
+				return data || null;
+			},
+
+			getUserError: ( getResource ) => ( userName ) => {
+				const { error } = getResource( getResourceName( 'user', userName ) );
+				return error ? error.message : null;
 			},
 
 			getUserStars: ( getResource, requireResource ) => ( requirement, userName ) => {
 				const resourceName = getResourceName( 'user-stars', userName );
-				const resource = requireResource( requirement, resourceName );
-				return resource.data || null;
-			}
+				const { data } = requireResource( requirement, resourceName );
+				return data || null;
+			},
+
+			getUserStarsError: ( getResource ) => ( requirement, userName ) => {
+				const { error } = getResource( requirement, getResourceName( 'user-stars', userName ) );
+				return error ? error.message : null;
+			},
 		},
 	};
 }
@@ -44,6 +54,9 @@ function readUser( resourceName, fetch ) {
 	const userName = getResourceIdentifier( resourceName );
 
 	return httpGet( fetch, [ 'users', userName ] ).then( ( data ) => {
+		if ( data.message ) {
+			return { [ resourceName ]: { error: data } };
+		}
 		return { [ resourceName ]: { data } };
 	} );
 }
@@ -57,6 +70,9 @@ function readUserStars( resourceName, fetch ) {
 	const userName = getResourceIdentifier( resourceName );
 
 	return httpGet( fetch, [ 'users', userName, 'starred' ] ).then( ( data ) => {
+		if ( data.message ) {
+			return { [ resourceName ]: { error: data } };
+		}
 		return { [ resourceName ]: { data } };
 	} );
 }

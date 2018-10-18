@@ -3,38 +3,64 @@ import PropTypes from 'prop-types';
 import { MINUTE, withApiClient } from '@fresh-data/react-provider';
 import UserStars from './UserStars';
 
-function UserInfo( { isLoading, user, userName } ) {
-	const userInfo = user && (
-		<div>
-			<p>Bio: { user.bio }</p>
-			<p>Location: { user.location }</p>
-			<p>Following: { user.following }</p>
-			<p>Followers: { user.followers }</p>
-		</div>
-	);
-
+function renderLoading( userName ) {
 	return (
 		<div>
-			<h3>{ userName }{ ! user || isLoading ? '...' : '' }</h3>
-			{ userInfo }
-			{ user && <UserStars userName={ userName } /> }
+			<h3>{ userName }...</h3>
 		</div>
 	);
 }
 
+function renderError( userName, message ) {
+	return (
+		<div>
+			<h3>Error retrieving &quot;{ userName }&quot;</h3>
+			<p>{ message }</p>
+		</div>
+	);
+}
+
+function renderUser( userName, user ) {
+	return (
+		<div>
+			<h3>{ userName }</h3>
+			<div>
+				<p>Bio: { user.bio }</p>
+				<p>Location: { user.location }</p>
+				<p>Following: { user.following }</p>
+				<p>Followers: { user.followers }</p>
+			</div>
+			<UserStars userName={ userName } />
+		</div>
+	);
+}
+
+function UserInfo( { error, user, userName } ) {
+	if ( user ) {
+		return renderUser( userName, user );
+	} else if ( error ) {
+		return renderError( userName, error );
+	} else if ( userName ) {
+		return renderLoading( userName );
+	}
+	return null;
+}
+
 UserInfo.propTypes = {
 	userName: PropTypes.string.isRequired,
+	error: PropTypes.string,
+	user: PropTypes.object,
 };
 
 function mapSelectorsToProps( selectors, ownProps ) {
 	const { userName } = ownProps;
-	const { isLoadingUser, getUser } = selectors;
+	const { getUserError, getUser } = selectors;
 
-	const isLoading = isLoadingUser( userName );
+	const error = getUserError( userName );
 	const user = getUser( { freshness: 5 * MINUTE }, userName );
 
 	return {
-		isLoading,
+		error,
 		user,
 	};
 }
