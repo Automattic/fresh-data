@@ -1,7 +1,7 @@
 {
   "name": "example_github-api",
-  "version": "0.1.0",
-	"license": "MIT",
+  "version": "0.4.0",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "react-scripts start",
@@ -13,7 +13,7 @@
     "react-scripts": "^1.1.5"
   },
   "dependencies": {
-    "@fresh-data/framework": "^0.3.1",
-    "@fresh-data/react-provider": "^0.3.1"
+    "@fresh-data/framework": "^0.4.0",
+    "@fresh-data/react-provider": "^0.4.0"
   }
 }
