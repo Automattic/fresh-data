@@ -50,6 +50,8 @@
 	"devDependencies": {
 		"@fresh-data/framework": "^0.4.0",
 		"cross-env": "^5.2.0",
+		"eslint": "^5.7.0",
+		"jest": "^23.6.0",
 		"rimraf": "^2.6.2",
 		"rollup": "^0.63.5"
 	},
