@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import debugFactory from 'debug';
 import { get } from 'lodash';
@@ -8,7 +8,7 @@ import { ApiClient } from '@fresh-data/framework';
 
 const debug = debugFactory( 'fresh-data:api-provider' );
 
-export class ApiProvider extends Component {
+export class ApiProvider extends React.Component {
 	static propTypes = {
 		children: PropTypes.node,
 		apiName: PropTypes.string.isRequired,
@@ -33,6 +33,7 @@ export class ApiProvider extends Component {
 	constructor( props ) {
 		super( ...arguments );
 		this.apiClient = null;
+		this.lastRootData = null;
 		this.update( props );
 	}
 
@@ -46,11 +47,6 @@ export class ApiProvider extends Component {
 
 	componentDidUpdate() {
 		this.update( this.props );
-	}
-
-	shouldComponentUpdate( nextProps ) {
-		const { apiSpec, rootData } = nextProps;
-		return ( this.lastApi !== apiSpec || this.lastRootData !== rootData );
 	}
 
 	update( props ) {
@@ -90,7 +86,11 @@ export class ApiProvider extends Component {
 	};
 
 	render() {
-		return this.props.children;
+		return (
+			<div>
+				{ this.props.children }
+			</div>
+		);
 	}
 }
 
