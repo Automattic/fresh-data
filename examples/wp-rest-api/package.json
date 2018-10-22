@@ -1,6 +1,7 @@
 {
   "name": "example_wp-rest-api",
   "version": "0.3.1",
+	"license": "MIT",
   "private": true,
   "dependencies": {
     "@fresh-data/framework": "^0.3.1",

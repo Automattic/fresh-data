@@ -2,7 +2,7 @@
 	"name": "@fresh-data/react-provider",
 	"version": "0.3.1",
 	"description": "Provide fresh-data to your React app.",
-	"license": "GPL-2.0+",
+	"license": "MIT",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
 	"repository": "github:automattic/fresh-data",
 	"bugs": "https://github.com/automattic/fresh-data/issues",

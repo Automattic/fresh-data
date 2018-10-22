@@ -1,6 +1,7 @@
 {
   "name": "example_hello-world",
   "version": "0.3.1",
+	"license": "MIT",
   "private": true,
   "dependencies": {
     "@fresh-data/framework": "^0.3.1",
