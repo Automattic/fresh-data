@@ -1,11 +1,11 @@
 {
   "name": "example_wp-rest-api",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@fresh-data/framework": "^0.4.0",
-    "@fresh-data/react-provider": "^0.4.0",
+    "@fresh-data/framework": "^0.4.1",
+    "@fresh-data/react-provider": "^0.4.1",
     "html-to-react": "^1.3.3",
     "qs": "^6.5.2"
   },
