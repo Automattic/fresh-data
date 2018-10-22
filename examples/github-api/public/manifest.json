@@ -1,0 +1,8 @@
+{
+  "short_name": "Fresh Data - GitHub API",
+  "name": "Fresh Data Example - GitHub API",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

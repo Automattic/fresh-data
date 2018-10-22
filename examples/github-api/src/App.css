@@ -1,0 +1,40 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+	background-color: rgb(57, 184, 99);
+  padding: 20px;
+  color: white;
+}
+
+.App-title {
+  font-size: 1.75rem;
+}
+
+.GH-header {
+  background-color: #24292e;
+  padding: 5px;
+  color: white;
+}
+
+.GH-header a {
+	color: white;
+}
+
+.user-select {
+	font-size: large;
+	padding: 20px;
+}
+
+.user-select input {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
+
+.user-select button {
+	font-size: large;
+	padding: 5px;
+	margin: 5px;
+}
