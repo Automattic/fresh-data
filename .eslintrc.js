@@ -41,6 +41,11 @@ module.exports = {
 		'jsx-a11y',
 		'jest',
 	],
+	settings: {
+		react: {
+			version: "16.0",
+		},
+	},
 	rules: {
 		'comma-dangle': 'off',
 		'jsx-a11y/media-has-caption': 'off',

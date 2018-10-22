@@ -19,8 +19,8 @@
 	"author": "Kevin Killingsworth <kevin.killingsworth@automattic.com> (https://github.com/coderkevin)",
 	"scripts": {
 		"clean": "lerna run clean",
-		"bootstrap": "lerna bootstrap --hoist",
 		"linkLocal": "lerna link --force-local",
+		"bootstrap": "lerna bootstrap",
 		"lint": "eslint ./packages",
 		"test": "jest --runInBand",
 		"test:watch": "jest --runInBand --watchAll",
