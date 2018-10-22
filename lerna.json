@@ -8,7 +8,10 @@
 			"ignore": "example_*"
 		},
 		"publish": {
-			"ignoreChanges": "examples/*"
+			"ignoreChanges": [
+				"examples/*",
+				"*.md"
+			]
 		}
 	},
   "version": "0.3.1"
