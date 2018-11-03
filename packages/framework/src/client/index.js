@@ -96,17 +96,33 @@ export default class ApiClient {
 		return this.mutations;
 	}
 
+	getSelectors = ( componentRequirements ) => {
+		return mapFunctions( this.selectors, this.getResource, this.requireResource( componentRequirements ) );
+	}
+
+	clearComponentRequirements = ( component, now = new Date() ) => {
+		this.requirementsByComponent.clear( component );
+		this.updateRequirementsByResource( now );
+	}
+
+	setComponentRequirements = ( component, componentRequirements, now = new Date() ) => {
+		this.requirementsByComponent.set( component, componentRequirements );
+		this.updateRequirementsByResource( now );
+	}
+
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
 		if ( selectorFunc ) {
 			const componentRequirements = [];
-			const selectors = mapFunctions( this.selectors, this.getResource, this.requireResource( componentRequirements ) );
+			const selectors = this.getSelectors( componentRequirements );
 			selectorFunc( selectors );
 
-			this.requirementsByComponent.set( component, componentRequirements );
+			this.setComponentRequirements( component, componentRequirements, now );
 		} else {
-			this.requirementsByComponent.clear( component );
+			this.clearComponentRequirements( component, now );
 		}
+	}
 
+	updateRequirementsByResource = ( now = new Date() ) => {
 		// TODO: Consider using a reducer style function for resource requirements so we don't
 		// have to do a deep equals check.
 		const requirementsByResource = combineComponentRequirements( this.requirementsByComponent );
@@ -114,7 +130,7 @@ export default class ApiClient {
 			this.requirementsByResource = requirementsByResource;
 			this.updateTimer( now );
 		}
-	};
+	}
 
 	updateRequirementsData = async ( now ) => {
 		const { requirementsByComponent, requirementsByResource, state, minUpdate, maxUpdate } = this;
