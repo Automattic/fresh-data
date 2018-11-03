@@ -36,7 +36,7 @@
 		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
-		"@fresh-data/framework": "^0.3.0",
+		"@fresh-data/framework": "^0.4.0",
 		"react": "^16.0.0-0",
 		"react-dom": "^16.0.0-0",
 		"react-redux": "^5.0.0-0",
