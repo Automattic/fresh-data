@@ -3,22 +3,21 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
 import commonjs from 'rollup-plugin-commonjs';
 import { uglify } from 'rollup-plugin-uglify';
+import pkg from './package.json';
 
 const env = process.env.NODE_ENV;
 
 const config = {
 	input: 'src/index.js',
-	external: [ 'debug', '@fresh-data/framework', 'lodash', 'prop-types', 'react', 'react-dom', 'react-redux', 'redux' ],
+	external: Object.keys( pkg.peerDependencies || {} ),
 	output: {
 		format: 'umd',
 		name: 'FreshDataReactProvider',
 		globals: {
-			debug: 'Debug',
 			'@fresh-data/framework': 'FreshDataFramework',
+			debug: 'Debug',
 			lodash: '_',
-			'prop-types': 'PropTypes',
 			react: 'React',
-			'react-dom': 'ReactDom',
 			'react-redux': 'ReactRedux',
 			redux: 'Redux',
 		},
@@ -26,16 +25,8 @@ const config = {
 	plugins: [
 		nodeResolve(),
 		babel( {
-			babelrc: false,
 			exclude: '**/node_modules/**',
-			presets: [
-				[ 'env', { modules: false } ],
-				'react',
-				'stage-2',
-			],
-			plugins: [
-				'external-helpers',
-			],
+			runtimeHelpers: true,
 		} ),
 		replace( {
 			'process.env.NODE_ENV': JSON.stringify( env ),

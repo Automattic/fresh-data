@@ -33,57 +33,72 @@
 		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
 		"lint": "eslint src",
 		"test": "jest --runInBand src",
+		"test:watch": "jest --runInBand --watchAll src",
 		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
-		"@fresh-data/framework": "^0.4.0",
+		"@fresh-data/framework": "^0.4.1",
+		"debug": "^3.1.0",
+		"lodash": "^4.17.10",
 		"react": "^16.0.0-0",
 		"react-dom": "^16.0.0-0",
 		"react-redux": "^5.0.0-0",
 		"redux": "^3.0.0-0 || ^4.0.0-0"
 	},
 	"dependencies": {
-		"debug": "^3.1.0",
-		"lodash": "^4.17.10",
+		"@babel/runtime": "^7.1.2",
 		"prop-types": "^15.6.2"
 	},
 	"devDependencies": {
-		"@fresh-data/framework": "^0.4.1",
+		"@babel/cli": "^7.1.2",
+		"@babel/core": "^7.1.2",
+		"@babel/plugin-proposal-class-properties": "^7.1.0",
+		"@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+		"@babel/plugin-transform-react-jsx": "^7.0.0",
+		"@babel/plugin-transform-runtime": "^7.1.0",
+		"@babel/preset-env": "^7.1.0",
+		"@fresh-data/framework": "file:../framework",
+		"ajv": "^6.5.3",
+		"babel-core": "^7.0.0-bridge.0",
+		"babel-eslint": "^10.0.1",
+		"babel-jest": "^23.4.2",
+		"codecov": "^3.1.0",
 		"cross-env": "^5.2.0",
+		"debug": "^3.1.0",
+		"enzyme": "^3.6.0",
+		"enzyme-adapter-react-16": "^1.5.0",
 		"eslint": "^5.7.0",
+		"eslint-config-wordpress": "^2.0.0",
+		"eslint-plugin-jest": "^21.22.0",
+		"eslint-plugin-jsx-a11y": "^6.1.1",
+		"eslint-plugin-react": "^7.11.1",
+		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
+		"identity-obj-proxy": "^3.0.0",
 		"jest": "^23.6.0",
+		"jest-environment-enzyme": "^6.0.4",
+		"jest-enzyme": "^6.0.4",
+		"lerna": "^3.3.0",
+		"lodash": "^4.17.10",
+		"react": "^16.5.2",
+		"react-dom": "^16.5.2",
+		"react-redux": "^5.0.7",
+		"redux": "^4.0.0",
 		"rimraf": "^2.6.2",
-		"rollup": "^0.63.5"
+		"rollup": "^0.63.5",
+		"rollup-plugin-babel": "^4.0.3",
+		"rollup-plugin-commonjs": "^9.1.6",
+		"rollup-plugin-node-resolve": "^3.3.0",
+		"rollup-plugin-replace": "^2.0.0",
+		"rollup-plugin-uglify": "^4.0.0"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
-	"babel": {
-		"presets": [
-			"env",
-			"react",
-			"stage-2"
-		],
-		"env": {
-			"test": {},
-			"es": {
-				"ignore": [
-					"**/__tests__/**"
-				]
-			},
-			"commonjs": {
-				"ignore": [
-					"**/__tests__/**"
-				],
-				"plugins": [
-					"transform-es2015-modules-commonjs"
-				]
-			}
-		}
-	},
 	"jest": {
-		"verbose": true,
 		"testURL": "http://localhost/",
+		"verbose": true,
+		"collectCoverage": true,
+		"coverageDirectory": "../../coverage",
 		"moduleNameMapper": {
 			"\\.(css)$": "identity-obj-proxy"
 		},
@@ -93,6 +108,5 @@
 			"/node_modules/",
 			"/examples/"
 		]
-	},
-	"gitHead": "f1be30c6631736ef4d84edffc6c1459ddb8c0a2d"
+	}
 }
