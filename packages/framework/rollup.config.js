@@ -3,38 +3,26 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
 import commonjs from 'rollup-plugin-commonjs';
 import { uglify } from 'rollup-plugin-uglify';
+import pkg from './package.json';
 
 const env = process.env.NODE_ENV;
 
 const config = {
 	input: 'src/index.js',
-	external: [ 'debug', 'lodash' ],
+	external: Object.keys( pkg.peerDependencies || {} ),
 	output: {
 		format: 'umd',
 		name: 'FreshDataFramework',
 		globals: {
 			debug: 'Debug',
 			lodash: '_',
-			'prop-types': 'PropTypes',
-			react: 'React',
-			'react-dom': 'ReactDom',
-			'react-redux': 'ReactRedux',
-			redux: 'Redux',
 		},
 	},
 	plugins: [
 		nodeResolve(),
 		babel( {
-			babelrc: false,
 			exclude: '**/node_modules/**',
-			presets: [
-				[ 'env', { modules: false } ],
-				'react',
-				'stage-2',
-			],
-			plugins: [
-				'external-helpers',
-			],
+			runtimeHelpers: true,
 		} ),
 		replace( {
 			'process.env.NODE_ENV': JSON.stringify( env ),
@@ -52,6 +40,7 @@ if ( 'production' === env ) {
 				unsafe_comps: true, // eslint-disable-line camelcase
 				warnings: false,
 			},
+			sourceMap: false,
 		} )
 	);
 }

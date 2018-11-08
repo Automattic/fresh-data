@@ -3,12 +3,6 @@
   "version": "0.4.1",
   "license": "MIT",
   "private": true,
-  "dependencies": {
-    "@fresh-data/framework": "^0.4.1",
-    "@fresh-data/react-provider": "^0.4.1",
-    "html-to-react": "^1.3.3",
-    "qs": "^6.5.2"
-  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -16,11 +10,19 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "ajv": "^6.5.3",
-    "react": "^16.5.2",
-    "react-dom": "^16.5.2",
-    "react-redux": "^5.0.7",
+    "html-to-react": "^1.3.3",
     "react-scripts": "^1.1.5",
-    "redux": "^4.0.0"
+    "qs": "^6.5.2"
+  },
+  "dependencies": {
+    "@fresh-data/framework": "file:../../packages/framework",
+    "@fresh-data/react-provider": "file:../../packages/react-provider",
+    "ajv": "^6.5.5",
+    "debug": "^3.1.0",
+    "lodash": "^4.17.11",
+    "react": "^16.6.1",
+    "react-dom": "^16.6.1",
+    "react-redux": "^5.1.0",
+    "redux": "^4.0.1"
   }
 }

@@ -13,7 +13,14 @@
     "react-scripts": "^1.1.5"
   },
   "dependencies": {
-    "@fresh-data/framework": "^0.4.1",
-    "@fresh-data/react-provider": "^0.4.1"
+    "@fresh-data/framework": "file:../../packages/framework",
+    "@fresh-data/react-provider": "file:../../packages/react-provider",
+    "ajv": "^6.5.5",
+    "debug": "^3.1.0",
+    "lodash": "^4.17.11",
+    "react": "^16.6.1",
+    "react-dom": "^16.6.1",
+    "react-redux": "^5.1.0",
+    "redux": "^4.0.1"
   }
 }

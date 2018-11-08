@@ -27,57 +27,64 @@
 	"scripts": {
 		"clean": "rimraf lib dist es coverage",
 		"build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
-		"build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-		"build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/fresh-data-framework.js",
-		"build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/fresh-data-framework.min.js",
+		"build:es": "babel src --out-dir es",
+		"build:umd": "cross-env NODE_ENV=development rollup -c -o dist/fresh-data-framework.js",
+		"build:umd:min": "cross-env NODE_ENV=production rollup -c -o dist/fresh-data-framework.min.js",
 		"build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
 		"lint": "eslint .",
-		"test": "jest --runInBand src",
+		"test": "jest --verbose --runInBand src",
+		"test:watch": "jest --runInBand --watchAll src",
 		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
 	},
-	"dependencies": {
+	"peerDependencies": {
 		"debug": "^3.1.0",
 		"lodash": "^4.17.10"
 	},
+	"dependencies": {
+		"@babel/runtime": "^7.1.5"
+	},
 	"devDependencies": {
+		"@babel/cli": "^7.1.2",
+		"@babel/core": "^7.1.2",
+		"@babel/plugin-proposal-class-properties": "^7.1.0",
+		"@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+		"@babel/plugin-transform-async-to-generator": "^7.1.0",
+		"@babel/plugin-transform-react-jsx": "^7.0.0",
+		"@babel/plugin-transform-runtime": "^7.1.0",
+		"@babel/preset-env": "^7.1.0",
+		"babel-core": "^7.0.0-bridge.0",
+		"babel-eslint": "^10.0.1",
+		"codecov": "^3.1.0",
 		"cross-env": "^5.2.0",
+		"debug": "^3.1.0",
 		"eslint": "^5.7.0",
+		"eslint-config-wordpress": "^2.0.0",
+		"eslint-plugin-jest": "^21.22.0",
+		"eslint-plugin-jsx-a11y": "^6.1.1",
+		"eslint-plugin-react": "^7.11.1",
+		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
+		"identity-obj-proxy": "^3.0.0",
 		"jest": "^23.6.0",
+		"lerna": "^3.3.0",
+		"lodash": "^4.17.10",
 		"rimraf": "^2.6.2",
-		"rollup": "^0.63.5"
+		"rollup": "^0.63.5",
+		"rollup-plugin-babel": "^4.0.3",
+		"rollup-plugin-commonjs": "^9.1.6",
+		"rollup-plugin-node-resolve": "^3.3.0",
+		"rollup-plugin-replace": "^2.0.0",
+		"rollup-plugin-uglify": "^4.0.0"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
-	"babel": {
-		"presets": [
-			"env",
-			"react",
-			"stage-2"
-		],
-		"env": {
-			"test": {},
-			"es": {
-				"ignore": [
-					"**/__tests__/**"
-				]
-			},
-			"commonjs": {
-				"ignore": [
-					"**/__tests__/**"
-				],
-				"plugins": [
-					"transform-es2015-modules-commonjs"
-				]
-			}
-		}
-	},
 	"jest": {
-		"verbose": true,
 		"testURL": "http://localhost",
+		"verbose": true,
+		"collectCoverage": true,
+		"coverageDirectory": "../../coverage",
 		"testPathIgnorePatterns": [
 			"/node_modules/"
 		]
-	},
-	"gitHead": "f1be30c6631736ef4d84edffc6c1459ddb8c0a2d"
+	}
 }
