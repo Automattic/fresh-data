@@ -41,7 +41,7 @@
 		"lodash": "^4.17.10"
 	},
 	"dependencies": {
-		"@babel/runtime": "^7.1.5"
+		"@babel/runtime-corejs2": "^7.1.5"
 	},
 	"devDependencies": {
 		"@babel/cli": "^7.1.2",
@@ -49,11 +49,11 @@
 		"@babel/plugin-proposal-class-properties": "^7.1.0",
 		"@babel/plugin-proposal-object-rest-spread": "^7.0.0",
 		"@babel/plugin-transform-async-to-generator": "^7.1.0",
-		"@babel/plugin-transform-react-jsx": "^7.0.0",
 		"@babel/plugin-transform-runtime": "^7.1.0",
 		"@babel/preset-env": "^7.1.0",
 		"babel-core": "^7.0.0-bridge.0",
 		"babel-eslint": "^10.0.1",
+		"babel-jest": "^23.6.0",
 		"codecov": "^3.1.0",
 		"cross-env": "^5.2.0",
 		"debug": "^3.1.0",
