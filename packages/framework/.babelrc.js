@@ -4,14 +4,16 @@ const cjs = 'commonjs' === BABEL_ENV;
 const loose = true;
 
 module.exports = {
-	presets: [ [ '@babel/env', { loose } ] ],
+	presets: [ [ '@babel/env', { loose, modules: false } ] ],
 	plugins: [
 		[ '@babel/plugin-proposal-class-properties', { loose } ],
 		[ '@babel/plugin-proposal-object-rest-spread', { loose } ],
 		[ '@babel/plugin-transform-async-to-generator' ],
-		'@babel/plugin-transform-react-jsx',
-		cjs && [ '@babel/plugin-transform-modules-commonjs', { loose } ],
-		[ '@babel/plugin-transform-runtime', { useESModules: ! ( cjs || test ) } ],
+		( cjs || test ) && [ '@babel/plugin-transform-modules-commonjs', { loose } ],
+		[
+			'@babel/plugin-transform-runtime',
+			{ corejs: '2', useESModules: ! ( cjs || test ) },
+		],
 	].filter( Boolean ),
 	ignore: [
 		! test && '**/__tests__/**',
