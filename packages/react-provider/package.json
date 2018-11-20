@@ -38,7 +38,7 @@
 	},
 	"peerDependencies": {
 		"@fresh-data/framework": "^0.4.1",
-		"debug": "^3.1.0",
+		"debug": "^3.1.0 || ^4.0.0",
 		"lodash": "^4.17.10",
 		"react": "^16.0.0-0",
 		"react-dom": "^16.0.0-0",
@@ -64,7 +64,7 @@
 		"babel-jest": "^23.4.2",
 		"codecov": "^3.1.0",
 		"cross-env": "^5.2.0",
-		"debug": "^3.1.0",
+		"debug": "4.1.0",
 		"enzyme": "^3.6.0",
 		"enzyme-adapter-react-16": "^1.5.0",
 		"eslint": "^5.7.0",
