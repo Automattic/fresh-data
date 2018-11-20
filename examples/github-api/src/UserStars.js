@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { MINUTE, withApiClient } from '@fresh-data/react-provider';
+import { MINUTE } from '@fresh-data/framework';
+import { withApiClient } from '@fresh-data/react-provider';
 
 function renderStarLi( repo ) {
 	return (
