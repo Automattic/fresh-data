@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/framework",
-	"version": "0.4.1",
+	"version": "0.5.0",
 	"description": "Describe the data you need and simply use it in your app.",
 	"license": "MIT",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -86,5 +86,6 @@
 		"testPathIgnorePatterns": [
 			"/node_modules/"
 		]
-	}
+	},
+	"gitHead": "0795783615cf86eb5bdc831ffad43ec829eb45ab"
 }
