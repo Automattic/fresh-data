@@ -1,6 +1,6 @@
 {
   "name": "example_wp-rest-api",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
   },
   "devDependencies": {
     "html-to-react": "^1.3.3",
-    "react-scripts": "^1.1.5",
-    "qs": "^6.5.2"
+    "qs": "^6.5.2",
+    "react-scripts": "^1.1.5"
   },
   "dependencies": {
     "@fresh-data/framework": "file:../../packages/framework",
