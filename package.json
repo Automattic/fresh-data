@@ -29,15 +29,15 @@
 	},
 	"devDependencies": {
 		"@fresh-data/framework": "file:./packages/framework",
-		"codecov": "^3.1.0",
-		"cross-env": "^5.2.0",
-		"eslint": "^5.7.0",
-		"eslint-config-wordpress": "^2.0.0",
-		"eslint-plugin-jest": "^21.22.0",
-		"eslint-plugin-jsx-a11y": "^6.1.1",
-		"eslint-plugin-react": "^7.11.1",
+		"codecov": "3.1.0",
+		"cross-env": "5.2.0",
+		"eslint": "5.7.0",
+		"eslint-config-wordpress": "2.0.0",
+		"eslint-plugin-jest": "21.25.1",
+		"eslint-plugin-jsx-a11y": "6.1.2",
+		"eslint-plugin-react": "7.11.1",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
-		"lerna": "^3.3.0",
-		"rimraf": "^2.6.2"
+		"lerna": "3.4.3",
+		"rimraf": "2.6.2"
 	}
 }
