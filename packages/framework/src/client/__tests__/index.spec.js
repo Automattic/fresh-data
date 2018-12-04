@@ -147,6 +147,87 @@ describe( 'ApiClient', () => {
 		} );
 	} );
 
+	describe( '#setComponentRequirements', () => {
+		const apiSpec = {
+			selectors: thingSelectors,
+		};
+
+		const component = () => {};
+		const requirements = [];
+		let apiClient = null;
+
+		beforeEach( () => {
+			apiClient = new ApiClient( apiSpec );
+		} );
+
+		afterEach( () => {
+			apiClient.clearComponentRequirements( component );
+		} );
+
+		it( 'sets component requirements when none were set before', () => {
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( undefined );
+			apiClient.setComponentRequirements( component, requirements );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements );
+		} );
+
+		it( 'sets component requirements when some were set before', () => {
+			const requirements2 = [];
+
+			apiClient.setComponentRequirements( component, requirements );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements );
+
+			apiClient.setComponentRequirements( component, requirements2 );
+			expect( apiClient.requirementsByComponent.get( component ) ).not.toBe( requirements );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements2 );
+		} );
+
+		it( 'sets multiple component requirements', () => {
+			const component2 = () => {};
+			const requirements2 = [];
+
+			apiClient.setComponentRequirements( component, requirements );
+			apiClient.setComponentRequirements( component2, requirements2 );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements );
+			expect( apiClient.requirementsByComponent.get( component2 ) ).toBe( requirements2 );
+		} );
+	} );
+
+	describe( '#clearComponentRequirements', () => {
+		const apiSpec = {
+			selectors: thingSelectors,
+		};
+
+		const component = () => {};
+		const requirements = [];
+		let apiClient = null;
+
+		beforeEach( () => {
+			apiClient = new ApiClient( apiSpec );
+		} );
+
+		it( 'clears component requirements', () => {
+			apiClient.setComponentRequirements( component, requirements );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements );
+
+			apiClient.clearComponentRequirements( component );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( undefined );
+		} );
+
+		it( 'clears only the component given', () => {
+			const component2 = () => {};
+			const requirements2 = [];
+
+			apiClient.setComponentRequirements( component, requirements );
+			apiClient.setComponentRequirements( component2, requirements2 );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( requirements );
+			expect( apiClient.requirementsByComponent.get( component2 ) ).toBe( requirements2 );
+
+			apiClient.clearComponentRequirements( component );
+			expect( apiClient.requirementsByComponent.get( component ) ).toBe( undefined );
+			expect( apiClient.requirementsByComponent.get( component2 ) ).toBe( requirements2 );
+		} );
+	} );
+
 	describe( '#setComponentData', () => {
 		const apiSpec = {
 			selectors: thingSelectors,

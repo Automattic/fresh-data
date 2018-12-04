@@ -101,7 +101,7 @@ export default class ApiClient {
 	}
 
 	clearComponentRequirements = ( component, now = new Date() ) => {
-		this.requirementsByComponent.clear( component );
+		this.requirementsByComponent.delete( component );
 		this.updateRequirementsByResource( now );
 	}
 
