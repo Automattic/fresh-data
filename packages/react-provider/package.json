@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/react-provider",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"description": "Provide fresh-data to your React app.",
 	"license": "MIT",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -109,5 +109,5 @@
 			"/examples/"
 		]
 	},
-	"gitHead": "0795783615cf86eb5bdc831ffad43ec829eb45ab"
+	"gitHead": "81ce15478927f29c79b7f07e460332c23f11544b"
 }
