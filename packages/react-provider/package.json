@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/react-provider",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"description": "Provide fresh-data to your React app.",
 	"license": "MIT",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
