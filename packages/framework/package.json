@@ -68,7 +68,7 @@
 		"lerna": "3.13.0",
 		"lodash": "4.17.11",
 		"rimraf": "2.6.3",
-		"rollup": "1.0.2",
+		"rollup": "1.4.0",
 		"rollup-plugin-babel": "4.2.0",
 		"rollup-plugin-commonjs": "9.2.0",
 		"rollup-plugin-node-resolve": "4.0.1",
