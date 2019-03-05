@@ -58,7 +58,7 @@
 		"@babel/plugin-transform-runtime": "7.3.4",
 		"@babel/preset-env": "7.3.4",
 		"@fresh-data/framework": "file:../framework",
-		"ajv": "6.9.2",
+		"ajv": "6.10.0",
 		"babel-core": "7.0.0-bridge.0",
 		"babel-eslint": "10.0.1",
 		"babel-jest": "24.1.0",
