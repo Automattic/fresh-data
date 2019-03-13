@@ -10,17 +10,23 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-scripts": "^1.1.5"
+    "react-scripts": "^2.1.8"
   },
   "dependencies": {
-    "@fresh-data/framework": "file:../../packages/framework",
-    "@fresh-data/react-provider": "file:../../packages/react-provider",
-    "ajv": "^6.5.5",
-    "debug": "^3.1.0",
+    "@fresh-data/framework": "0.5.1",
+    "@fresh-data/react-provider": "0.5.1",
+    "ajv": "^6.10.0",
+    "debug": "^4.1.1",
     "lodash": "^4.17.11",
-    "react": "^16.6.1",
-    "react-dom": "^16.6.1",
-    "react-redux": "^5.1.0",
+    "react": "^16.8.4",
+    "react-dom": "^16.8.4",
+    "react-redux": "^6.0.1",
     "redux": "^4.0.1"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
