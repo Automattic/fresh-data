@@ -6,14 +6,11 @@ const loose = true;
 module.exports = {
 	presets: [ [ '@babel/env', { loose, modules: false } ] ],
 	plugins: [
-		[ '@babel/plugin-proposal-class-properties', { loose } ],
-		[ '@babel/plugin-proposal-object-rest-spread', { loose } ],
-		[ '@babel/plugin-transform-async-to-generator' ],
-		( cjs || test ) && [ '@babel/plugin-transform-modules-commonjs', { loose } ],
-		[
-			'@babel/plugin-transform-runtime',
-			{ corejs: '2', useESModules: ! ( cjs || test ) },
-		],
+		[ '@babel/proposal-class-properties', { loose } ],
+		[ '@babel/proposal-object-rest-spread', { loose } ],
+		[ '@babel/transform-async-to-generator' ],
+		( cjs || test ) && [ '@babel/transform-modules-commonjs', { loose } ],
+		[ '@babel/transform-runtime', { useESModules: ! ( cjs || test ) } ],
 	].filter( Boolean ),
 	ignore: [
 		! test && '**/__tests__/**',

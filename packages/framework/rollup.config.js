@@ -2,7 +2,7 @@ import babel from 'rollup-plugin-babel';
 import nodeResolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
 import commonjs from 'rollup-plugin-commonjs';
-import { uglify } from 'rollup-plugin-uglify';
+import { terser } from 'rollup-plugin-terser';
 import pkg from './package.json';
 
 const env = process.env.NODE_ENV;
@@ -33,14 +33,13 @@ const config = {
 
 if ( 'production' === env ) {
 	config.plugins.push(
-		uglify( {
+		terser( {
 			compress: {
 				pure_getters: true, // eslint-disable-line camelcase
 				unsafe: true,
 				unsafe_comps: true, // eslint-disable-line camelcase
-				warnings: false,
-			},
-			sourceMap: false,
+				warnings: false
+			}
 		} )
 	);
 }

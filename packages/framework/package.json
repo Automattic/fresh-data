@@ -41,7 +41,7 @@
 		"lodash": "^4.17.10"
 	},
 	"dependencies": {
-		"@babel/runtime-corejs2": "^7.1.5"
+		"@babel/runtime": "^7.4.2"
 	},
 	"devDependencies": {
 		"@babel/cli": "7.2.3",
@@ -73,7 +73,7 @@
 		"rollup-plugin-commonjs": "9.2.1",
 		"rollup-plugin-node-resolve": "4.0.1",
 		"rollup-plugin-replace": "2.1.0",
-		"rollup-plugin-uglify": "4.0.0"
+		"rollup-plugin-terser": "^4.0.4"
 	},
 	"publishConfig": {
 		"access": "public"
