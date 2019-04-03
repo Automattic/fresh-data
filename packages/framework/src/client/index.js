@@ -1,6 +1,7 @@
 import debugFactory from 'debug';
 import { isArray, isEqual, isEmpty, uniqueId } from 'lodash';
 import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
+import { updateDevInfo } from '../devinfo';
 import { combineComponentRequirements } from './requirements';
 
 const DEFAULT_READ_OPERATION = 'read';
@@ -19,6 +20,7 @@ export default class ApiClient {
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
 
 		this.uid = uniqueId();
+		this.name = apiSpec.name;
 		this.debug = debugFactory( `fresh-data:api-client[${ this.uid }]` );
 		this.debug( 'New ApiClient for apiSpec: ', apiSpec );
 
@@ -37,6 +39,12 @@ export default class ApiClient {
 		this.clearTimer = clearTimer;
 		this.timeoutId = null;
 		this.state = {};
+
+		updateDevInfo( this );
+	}
+
+	getName = () => {
+		return this.name || ( 'UID_' + this.uid );
 	}
 
 	mapOperations = ( apiOperations ) => {
@@ -58,6 +66,7 @@ export default class ApiClient {
 			this.state = state;
 			this.updateTimer( now );
 			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
+			updateDevInfo( this );
 		}
 	}
 
@@ -139,6 +148,7 @@ export default class ApiClient {
 		const componentCount = requirementsByComponent.size;
 		const resourceCount = Object.keys( requirementsByResource ).length;
 		this.debug( `Updating requirements for ${ componentCount } components and ${ resourceCount } resources.` );
+		updateDevInfo( this );
 
 		if ( ! isEmpty( requirementsByResource ) ) {
 			const { nextUpdate, updates } =
@@ -155,9 +165,11 @@ export default class ApiClient {
 			}
 
 			this.debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
+			updateDevInfo( this );
 			this.updateTimer( now, nextUpdate );
 		} else if ( this.timeoutId ) {
 			this.debug( 'Unscheduling future updates' );
+			updateDevInfo( this );
 			this.updateTimer( now, null );
 		}
 	}
