@@ -86,6 +86,5 @@
 		"testPathIgnorePatterns": [
 			"/node_modules/"
 		]
-	},
-	"gitHead": "81ce15478927f29c79b7f07e460332c23f11544b"
+	}
 }
