@@ -41,6 +41,7 @@ export function fetchGreetings() {
 }
 
 export default {
+	name: 'helloWorld',
 	operations: {
 		read: ( resourceNames ) => {
 			const requests = [];

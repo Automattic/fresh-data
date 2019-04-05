@@ -9,6 +9,7 @@ export function createApiSpec( siteUrl, methods = httpMethods ) {
 	const { get } = methods( baseUrl );
 
 	return {
+		name: 'wpRestApi',
 		operations: {
 			read: ( resourceNames ) => {
 				return readPostPages( get, resourceNames );
