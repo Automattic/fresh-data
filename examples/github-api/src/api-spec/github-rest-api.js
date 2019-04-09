@@ -5,6 +5,7 @@ const BASE_URL = 'https://api.github.com/';
 
 export function createApiSpec( fetch = window.fetch ) {
 	return {
+		name: 'github',
 		operations: {
 			read( resourceNames ) {
 				return [
