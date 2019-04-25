@@ -1,6 +1,6 @@
 {
 	"name": "@fresh-data/react-provider",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"description": "Provide fresh-data to your React app.",
 	"license": "MIT",
 	"homepage": "https://github.com/automattic/fresh-data#readme",
@@ -57,7 +57,7 @@
 		"@babel/plugin-transform-react-jsx": "7.3.0",
 		"@babel/plugin-transform-runtime": "7.4.3",
 		"@babel/preset-env": "7.4.3",
-		"@fresh-data/framework": "^0.6.0",
+		"@fresh-data/framework": "^0.6.1",
 		"ajv": "6.10.0",
 		"babel-core": "7.0.0-bridge.0",
 		"babel-eslint": "10.0.1",
