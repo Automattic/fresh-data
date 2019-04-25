@@ -34,7 +34,7 @@
 		"lint": "eslint src",
 		"test": "jest --runInBand src",
 		"test:watch": "jest --runInBand --watchAll src",
-		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
+		"prepublishOnly": "npm run clean && npm install && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
 		"@fresh-data/framework": "^0.6.0",
@@ -108,5 +108,6 @@
 			"/node_modules/",
 			"/examples/"
 		]
-	}
+	},
+	"gitHead": "db18a5daf09ba6bcebbb424c1489b6c12986b782"
 }

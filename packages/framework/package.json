@@ -34,7 +34,7 @@
 		"lint": "eslint .",
 		"test": "jest --verbose --runInBand src",
 		"test:watch": "jest --runInBand --watchAll src",
-		"prepublishOnly": "npm run clean && npm run lint && npm test && npm run build"
+		"prepublishOnly": "npm run clean && npm install && npm run lint && npm test && npm run build"
 	},
 	"peerDependencies": {
 		"debug": "^3.1.0 || ^4.0.0",
@@ -86,5 +86,6 @@
 		"testPathIgnorePatterns": [
 			"/node_modules/"
 		]
-	}
+	},
+	"gitHead": "db18a5daf09ba6bcebbb424c1489b6c12986b782"
 }
