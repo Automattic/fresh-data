@@ -25,7 +25,7 @@
 		"src"
 	],
 	"scripts": {
-		"clean": "rimraf lib dist es coverage",
+		"clean": "rimraf lib dist es coverage node_modules",
 		"build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
 		"build:es": "babel src --out-dir es",
 		"build:umd": "cross-env NODE_ENV=development rollup -c -o dist/fresh-data-framework.js",
@@ -65,7 +65,7 @@
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
 		"identity-obj-proxy": "3.0.0",
 		"jest": "24.7.1",
-		"lerna": "3.13.3",
+		"lerna": "^3.13.4",
 		"lodash": "4.17.11",
 		"rimraf": "2.6.3",
 		"rollup": "1.10.1",
