@@ -1,9 +1,8 @@
 import { mount } from 'enzyme';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ApiClient } from '@fresh-data/framework';
+import { ApiClient, actions } from '@fresh-data/framework';
 import { ApiProvider, mapStateToProps } from '../provider';
-import * as actions from '../actions';
 
 describe( 'ApiProvider', () => {
 	let apiSpec;

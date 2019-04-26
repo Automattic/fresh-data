@@ -3,8 +3,7 @@ import { connect } from 'react-redux';
 import debugFactory from 'debug';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
-import * as actions from './actions';
-import { ApiClient } from '@fresh-data/framework';
+import { ApiClient, actions } from '@fresh-data/framework';
 
 const debug = debugFactory( 'fresh-data:api-provider' );
 
