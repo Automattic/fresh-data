@@ -48,6 +48,27 @@ describe( 'ApiClient', () => {
 		expect( apiClient.state ).toBe( clientState );
 	} );
 
+	it( 'should make a default read operation that throws', () => {
+		const apiClient = new ApiClient( emptyApiSpec );
+
+		const callRead = () => apiClient.scheduler.fetch( [ 'a', 'b' ] );
+
+		expect( callRead ).toThrow();
+	} );
+
+	it( 'should set a read operation', () => {
+		const read = jest.fn();
+		const apiSpec = {
+			operations: { read },
+		};
+		const apiClient = new ApiClient( apiSpec );
+
+		apiClient.scheduler.fetch( [ 'a', 'b' ], 'data' );
+
+		expect( read ).toHaveBeenCalledWith( [ 'a', 'b' ], 'data' );
+	} );
+
+	/*
 	it( 'should update timer on set state', () => {
 		const clientState = { resources: {} };
 		const apiClient = new ApiClient( emptyApiSpec );
@@ -55,7 +76,9 @@ describe( 'ApiClient', () => {
 		apiClient.setState( clientState );
 		expect( apiClient.updateTimer ).toHaveBeenCalledTimes( 1 );
 	} );
+	*/
 
+	/*
 	it( 'should not set state twice', () => {
 		const clientState = { resources: {} };
 		const apiClient = new ApiClient( emptyApiSpec );
@@ -67,6 +90,7 @@ describe( 'ApiClient', () => {
 		apiClient.setState( clientState );
 		expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 	} );
+	*/
 
 	it( 'should map mutations to operations', () => {
 		const createThing = jest.fn();
@@ -97,10 +121,12 @@ describe( 'ApiClient', () => {
 		expect( dataThing1 ).toBe( thing1 );
 	} );
 
+	/*
 	it( 'should start with no timeoutId', () => {
 		const apiClient = new ApiClient( emptyApiSpec );
 		expect( apiClient.timeoutId ).toBeNull();
 	} );
+	*/
 
 	describe( '#getResource', () => {
 		it( 'should return an empty object if the resource does not yet exist.', () => {
@@ -147,6 +173,7 @@ describe( 'ApiClient', () => {
 		} );
 	} );
 
+	/*
 	describe( '#setComponentRequirements', () => {
 		const apiSpec = {
 			selectors: thingSelectors,
@@ -191,7 +218,9 @@ describe( 'ApiClient', () => {
 			expect( apiClient.requirementsByComponent.get( component2 ) ).toBe( requirements2 );
 		} );
 	} );
+	*/
 
+	/*
 	describe( '#clearComponentRequirements', () => {
 		const apiSpec = {
 			selectors: thingSelectors,
@@ -227,7 +256,9 @@ describe( 'ApiClient', () => {
 			expect( apiClient.requirementsByComponent.get( component2 ) ).toBe( requirements2 );
 		} );
 	} );
+	*/
 
+	/*
 	describe( '#setComponentData', () => {
 		const apiSpec = {
 			selectors: thingSelectors,
@@ -306,7 +337,9 @@ describe( 'ApiClient', () => {
 			expect( apiClient.updateTimer ).not.toHaveBeenCalled();
 		} );
 	} );
+	*/
 
+	/*
 	describe( '#updateTimer', () => {
 		it( 'should accept and use nextUpdate when given.', () => {
 			const setTimer = jest.fn();
@@ -358,7 +391,9 @@ describe( 'ApiClient', () => {
 			expect( clearTimer ).not.toHaveBeenCalled();
 		} );
 	} );
+	*/
 
+	/*
 	describe( '#updateRequirementsData', () => {
 		const component = () => {};
 		let apiSpec;
@@ -510,6 +545,7 @@ describe( 'ApiClient', () => {
 			expect( apiClient.clearTimer ).not.toHaveBeenCalled();
 		} );
 	} );
+	*/
 
 	describe( '#applyOperation', () => {
 		let apiSpec;

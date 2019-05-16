@@ -1,21 +1,12 @@
 import debugFactory from 'debug';
-import { isArray, isEqual, isEmpty, uniqueId } from 'lodash';
-import calculateUpdates, { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
-import { updateDevInfo } from '../devinfo';
-import { combineComponentRequirements } from './requirements';
+import { get, isArray, uniqueId } from 'lodash';
+import { DEFAULT_MIN_UPDATE, DEFAULT_MAX_UPDATE } from './calculate-updates';
+import Scheduler from './scheduler';
 
 const DEFAULT_READ_OPERATION = 'read';
 
-function _setTimer( callback, delay ) {
-	return window.setTimeout( callback, delay );
-}
-
-function _clearTimer( id ) {
-	return window.clearTimeout( id );
-}
-
 export default class ApiClient {
-	constructor( apiSpec, setTimer = _setTimer, clearTimer = _clearTimer ) {
+	constructor( apiSpec, /*setTimer = _setTimer, clearTimer = _clearTimer*/ ) {
 		const { operations, mutations, selectors } = apiSpec;
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
 
@@ -27,20 +18,22 @@ export default class ApiClient {
 		this.operations = operations && this.mapOperations( operations );
 		this.mutations = mutations && mapFunctions( mutations, this.operations );
 		this.selectors = selectors;
-		this.readOperationName = readOperationName;
+
+		if ( this.operations && this.operations[ readOperationName ] ) {
+			this.scheduler = new Scheduler( this.operations[ readOperationName ] );
+		} else {
+			this.scheduler = new Scheduler( () => {
+				throw new Error( `Operation "${ readOperationName }" not found.` );
+			} );
+		}
 
 		this.dataHandlers = null;
 		this.subscriptionCallbacks = new Set();
-		this.requirementsByComponent = new Map();
-		this.requirementsByResource = {};
 		this.minUpdate = DEFAULT_MIN_UPDATE;
 		this.maxUpdate = DEFAULT_MAX_UPDATE;
-		this.setTimer = setTimer;
-		this.clearTimer = clearTimer;
-		this.timeoutId = null;
 		this.state = {};
 
-		updateDevInfo( this );
+		//updateDevInfo( this );
 	}
 
 	getName = () => {
@@ -64,9 +57,9 @@ export default class ApiClient {
 	setState = ( state, now = new Date() ) => {
 		if ( this.state !== state ) {
 			this.state = state;
-			this.updateTimer( now );
+			//this.updateTimer( now );
 			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
-			updateDevInfo( this );
+			//updateDevInfo( this );
 		}
 	}
 
@@ -110,13 +103,15 @@ export default class ApiClient {
 	}
 
 	clearComponentRequirements = ( component, now = new Date() ) => {
-		this.requirementsByComponent.delete( component );
-		this.updateRequirementsByResource( now );
+		console.log( '************ clearComponentRequirements: ', component );
 	}
 
 	setComponentRequirements = ( component, componentRequirements, now = new Date() ) => {
-		this.requirementsByComponent.set( component, componentRequirements );
-		this.updateRequirementsByResource( now );
+		componentRequirements.forEach( ( componentRequirement ) => {
+			const { resourceName, ...requirement } = componentRequirement;
+			const resourceState = get( this.state, [ 'resources', resourceName ], {} );
+			this.scheduler.scheduleRequest( resourceName, requirement, resourceState, now );
+		} );
 	}
 
 	setComponentData = ( component, selectorFunc, now = new Date() ) => {
@@ -126,75 +121,6 @@ export default class ApiClient {
 			selectorFunc( selectors );
 
 			this.setComponentRequirements( component, componentRequirements, now );
-		} else {
-			this.clearComponentRequirements( component, now );
-		}
-	}
-
-	updateRequirementsByResource = ( now = new Date() ) => {
-		// TODO: Consider using a reducer style function for resource requirements so we don't
-		// have to do a deep equals check.
-		const requirementsByResource = combineComponentRequirements( this.requirementsByComponent );
-		if ( ! isEqual( this.requirementsByResource, requirementsByResource ) ) {
-			this.requirementsByResource = requirementsByResource;
-			this.updateTimer( now );
-		}
-	}
-
-	updateRequirementsData = async ( now ) => {
-		const { requirementsByComponent, requirementsByResource, state, minUpdate, maxUpdate } = this;
-		const resourceState = state.resources || {};
-
-		const componentCount = requirementsByComponent.size;
-		const resourceCount = Object.keys( requirementsByResource ).length;
-		this.debug( `Updating requirements for ${ componentCount } components and ${ resourceCount } resources.` );
-		updateDevInfo( this );
-
-		if ( ! isEmpty( requirementsByResource ) ) {
-			const { nextUpdate, updates } =
-				calculateUpdates( requirementsByResource, resourceState, minUpdate, maxUpdate, now );
-
-			if ( updates && updates.length > 0 ) {
-				const readOperationName = this.readOperationName;
-				const readOperation = this.operations[ readOperationName ];
-				if ( ! readOperation ) {
-					throw new Error( `Operation "${ readOperationName }" not found.` );
-				}
-
-				await this.operations[ readOperationName ]( updates );
-			}
-
-			this.debug( `Scheduling next update for ${ nextUpdate / 1000 } seconds.` );
-			updateDevInfo( this );
-			this.updateTimer( now, nextUpdate );
-		} else if ( this.timeoutId ) {
-			this.debug( 'Unscheduling future updates' );
-			updateDevInfo( this );
-			this.updateTimer( now, null );
-		}
-	}
-
-	updateTimer = ( now, nextUpdate = undefined ) => {
-		const { requirementsByResource, state, minUpdate, maxUpdate } = this;
-		const resourceState = state.resources || {};
-
-		if ( undefined === nextUpdate ) {
-			nextUpdate = calculateUpdates(
-				requirementsByResource,
-				resourceState,
-				minUpdate,
-				maxUpdate,
-				now
-			).nextUpdate;
-		}
-
-		if ( this.timeoutId ) {
-			this.clearTimer( this.timeoutId );
-			this.timeoutId = null;
-		}
-
-		if ( nextUpdate ) {
-			this.timeoutId = this.setTimer( this.updateRequirementsData, nextUpdate );
 		}
 	}
 
