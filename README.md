@@ -79,6 +79,7 @@ const put( endpointPath, params ) => {
 }
 
 const apiSpec = {
+	name: "example",
 	operations: {
 		read: ( resourceNames ) => {
 			return compact( resourceNames.map( resourceName => {
@@ -140,7 +141,7 @@ import apiSpec from 'my-api-spec';
 export default MyApp = () => {
 	return (
 		<ReduxProvider store={ store }>
-			<FreshDataProvider apiSpec={ apiSpec }>
+			<FreshDataProvider apiName="example" apiSpec={ apiSpec }>
 				<div classname="App">
 					<DataForm myApiUri="https://example.com" />
 				</div>
