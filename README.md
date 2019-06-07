@@ -35,7 +35,35 @@ npm install --save @fresh-data/framework
 
 There is support for [React](https://github.com/facebook/react) applications using [Redux](https://github.com/reduxjs/redux) for an internal cache available from `@fresh-data/react-redux`
 
-## Application Component
+## Using Fresh Data in your React and Redux application
+
+To use `fresh-data` with your React and Redux app, you'll want to follow these steps:
+
+1. Add fresh data to the Redux state tree
+2. Specify what data your components need
+3. Create an API Specification
+4. Use the Fresh Data Provider in your app
+
+These steps are explained in more detail below. You can also find sample code in the `examples` subdirectory of this project.
+
+### 1. Redux State Tree
+
+You can add `fresh-data` to the Redux state tree like so:
+
+```
+// reducers.js
+
+import { combineReducers } from 'redux';
+import { reducer as freshData } from '@fresh-data/react-provider';
+
+const reducers = {
+	freshData,
+};
+
+export default combineReducers( reducers );
+```
+
+### 2. Application Component
 
 Here's how you define the API data you need for a React Component.
 
@@ -57,7 +85,7 @@ export default withApiClient( { mapSelectorsToProps } )( MyReactComponent );
 The `withApiClient` Higher Order Component works much like `connect` from [React Redux](https://github.com/reduxjs/react-redux).
 The above code will handle the initial fetching of your data and will re-fetch every time the freshness time is exceeded.
 
-## Creating a Fresh Data API Module
+### 3. Creating a Fresh Data API Module
 
 Each API Specification can be kept in your application or a separate module.
 
@@ -131,7 +159,7 @@ Your own API depends on the operations, methods, and selectors you define.
 - Mutations: Functions you provide to application developers can call to perform operations on your data.
 - Selectors: Functions you provide to application developers to access data in their preferred format.
 
-## Integrating Fresh Data APIs into your React application
+### 4. Integrating Fresh Data APIs into your React application
 
 The Fresh Data ApiProvider holds a created API Spec available to your application and provides it to your connected data components:
 
