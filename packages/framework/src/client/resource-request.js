@@ -1,4 +1,5 @@
 import debugFactory from 'debug';
+import { isEqual, isNil } from 'lodash';
 import { isDateEarlier } from '../utils/dates';
 import { SECOND } from '../utils/constants';
 
@@ -15,9 +16,20 @@ export const STATUS = {
 };
 
 export default class ResourceRequest {
-	constructor( resourceName, requirement, resourceState, now = new Date() ) {
-		this.debug = debugFactory( 'fresh-data:request(' + resourceName + ')' );
+	/**
+	 * Creates a new Resource Request object.
+	 * @param {Object} requirement The requirement for this request (e.g. freshness/timeout)
+	 * @param {Object} resourceState The current state of this request
+	 * @param {string} resourceName The name of the resource
+	 * @param {string} operation The name of the operation to be performed
+	 * @param {Object} data Data to be sent for the operation
+	 * @param {Date} now The current time
+	 */
+	constructor( requirement, resourceState, resourceName, operation, data, now = new Date() ) {
+		this.debug = debugFactory( 'fresh-data:request(' + resourceName + ' ' + operation + ')' );
 		this.resourceName = resourceName;
+		this.operation = operation;
+		this.data = isNil( data ) ? undefined : data;
 		this.time = calculateRequestTime( requirement, resourceState, now );
 		this.timeout = requirement.timeout || DEFAULT_TIMEOUT;
 		this.promise = null;
@@ -31,7 +43,20 @@ export default class ResourceRequest {
 		}
 	}
 
-	addRequirement( requirement, resourceState, now = new Date() ) {
+	/**
+	 * Append to the current request
+	 * @param {Object} requirement Any additional requirements to combine with the current request
+	 * @param {Object} resourceState The current state for this resource
+	 * @param {Object} data Data to be appended over the current data for this request
+	 * @param {Date} now The current time
+	 * @Return {boolean} True if successful, false if not
+	 */
+	append = ( requirement, resourceState, data, now = new Date() ) => {
+		return this.appendRequirement( requirement, resourceState, now ) &&
+			this.appendData( data );
+	}
+
+	appendRequirement = ( requirement, resourceState, now = new Date() ) => {
 		const status = this.getStatus( now );
 		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
 			const requestTime = calculateRequestTime( requirement, resourceState, now );
@@ -45,6 +70,25 @@ export default class ResourceRequest {
 		}
 		this.debug( `Cannot add requirement to request with "${ this.getStatus( now ) }" status` );
 		return false;
+	}
+
+	hasData = ( data ) => {
+		if ( ! data || this.data === data ) {
+			return true;
+		} else if ( isNil( this.data ) ) {
+			return false;
+		}
+
+		return Object.keys( data ).reduce( ( match, name ) => {
+			return match && isEqual( this.data[ name ], data[ name ] );
+		}, true );
+	}
+
+	appendData = ( data ) => {
+		if ( ! this.hasData( data ) ) {
+			this.data = { ...this.data, ...data };
+		}
+		return true;
 	}
 
 	getStatus = ( now = new Date() ) => {
@@ -73,11 +117,25 @@ export default class ResourceRequest {
 		return this.time.getTime() - now.getTime();
 	}
 
+	/**
+	 * Checks if a request is ready.
+	 * @param {Date} now The current time.
+	 * @return {boolean} True if the request is ready to be sent, false otherwise.
+	 */
+	isReady = ( now = new Date() ) => {
+		const status = this.getStatus();
+		if ( STATUS.scheduled == status || STATUS.overdue == status ) {
+			const timeLeft = this.getTimeLeft( now );
+			return ( timeLeft <= 0 );
+		}
+		return false;
+	};
+
 	requested = ( promise, now = new Date() ) => {
 		this.debug( `Request for ${ this.resourceName } submitted...` );
 		this.timeRequested = now;
 		this.promise = promise;
-		this.promise.then( this.requestComplete, this.requestFailed );
+		return this.promise.then( this.requestComplete, this.requestFailed );
 	}
 
 	requestComplete = () => {

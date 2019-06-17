@@ -1,16 +1,25 @@
 import debugFactory from 'debug';
-import { find } from 'lodash';
 import ResourceRequest, { STATUS } from './resource-request';
+import { find, isEmpty, isEqual, isNil, uniq } from 'lodash';
 
 const debug = debugFactory( 'fresh-data:scheduler' );
 
+const DEFAULT_READ_OPERATION = 'read';
+
 export default class Scheduler {
+	/**
+	 * Creates a new Scheduler
+	 * @param {Object} operations The mapping of operation names to functions
+	 * @param {number} timerInterval Milliseconds between timer iterations (defaults to 500)
+	 * @param {function} setInterval The function to set an interval timer (defaults to window.setInterval)
+	 * @param {function} clearInterval The function to clear an internal timer by id (defaults to window.setInterval)
+	 */
 	constructor(
-		fetch,
+		operations,
 		setTimeout = window.setTimeout,
 		clearTimeout = window.clearTimeout,
 	) {
-		this.fetch = fetch;
+		this.operations = operations;
 		this.requests = [];
 		this.setTimeout = setTimeout;
 		this.clearTimeout = clearTimeout;
@@ -81,89 +90,107 @@ export default class Scheduler {
 
 	/**
 	 * Finds a request that is either scheduled or overdue.
-	 * @param {string} resourceName The name of the resource to be read
-	 * @param {Date} now The current time
+	 * @param {string} resourceName The name of the resource for the operation
+	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {Date} now The current time.
 	 * @return {ResourceRequest} The scheduled request, or null if none found
 	 */
-	getScheduledRequest = ( resourceName, now = new Date() ) => {
+	getScheduledRequest = ( resourceName, operation = DEFAULT_READ_OPERATION, now = new Date() ) => {
 		return find( this.requests, ( r ) => {
-			if ( resourceName === r.resourceName ) {
-				const status = r.getStatus( now );
-				return STATUS.scheduled === status || STATUS.overdue === status;
-			}
-			return false;
+			const status = r.getStatus( now );
+			return (
+				resourceName === r.resourceName &&
+				operation === r.operation &&
+				( STATUS.scheduled === status || STATUS.overdue === status )
+			);
 		} );
 	};
 
 	/**
 	 * Finds requests that are in flight by resourceName
 	 * @param {string} resourceName The name of the resource to check
-	 * @param {Date} now The current time
+	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {Date} now The current time.
 	 * @return {Array} Any requests for the given resource which are currently in flight.
 	 */
-	getInFlightRequests = ( resourceName, now = new Date() ) => {
+	getInFlightRequests = ( resourceName, operation = DEFAULT_READ_OPERATION, now = new Date() ) => {
 		return this.requests.filter( ( r ) => {
-			return ( resourceName === r.resourceName && STATUS.inFlight === r.getStatus( now ) );
+			return (
+				resourceName === r.resourceName &&
+				operation === r.operation &&
+				STATUS.inFlight === r.getStatus( now )
+			);
 		} );
 	};
 
 	/**
-	 * Schedule a read of a resource name according to the requirement set given.
-	 * @param {string} resourceName The name of the resource to be read
+	 * Schedule a operation on a resource name according to the requirement set given.
 	 * @param {Object} requirement The set of requirements (freshness, timeout)
 	 * @param {Object} resourceState The current snapshot of resource state
+	 * @param {string} resourceName The name of the resource for the operation
+	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {Object} data The data to be sent for the operation (defaults to null)
 	 * @param {Date} now The current time.
 	 */
-	scheduleRequest = ( resourceName, requirement, resourceState, now = new Date() ) => {
-		if ( this.getInFlightRequests( resourceName, now ).length > 0 ) {
-			// Do nothing, there's already a request in flight.
+	scheduleRequest = (
+		requirement,
+		resourceState,
+		resourceName,
+		operation = DEFAULT_READ_OPERATION,
+		data = null,
+		now = new Date()
+	) => {
+		if ( this.getInFlightRequests( resourceName, operation, now ).reduce( ( request ) => {
+			return request || isEqual( request.data, data ) || ( isNil( request.data ) && isNil( data ) );
+		}, false ) ) {
+			// Do nothing, there's already an identical request in flight.
 			return;
 		}
 
-		const existingRequest = this.getScheduledRequest( resourceName, now );
+		const existingRequest = this.getScheduledRequest( resourceName, operation, now );
 		if ( existingRequest ) {
-			existingRequest.addRequirement( requirement, resourceState, now );
+			existingRequest.append( requirement, resourceState, data, now );
 		} else {
-			this.requests.push( new ResourceRequest( resourceName, requirement, resourceState, now ) );
+			this.requests.push( new ResourceRequest( requirement, resourceState, resourceName, operation, data, now ) );
 		}
 		this.updateDelay( now );
 	};
 
 	/**
-	 * Send a list of requests.
-	 * @param {Array} requests The list of requests to send.
+	 * Send a specific list of requests.
+	 * @param {Array} requests The requests to send.
 	 * @param {Date} now The current time.
-	 * @return {Promise} A promise returned from the fetch call.
+	 * @return {Promise} A promise returned from the operation call.
 	 */
 	sendRequests = ( requests, now ) => {
-		if ( requests.length > 0 ) {
-			const promise = this.fetch( requests.map( request => request.resourceName ) );
+		// Split the requests up by operation, so we can send one of each operation.
+		const requestsByOperation = getRequestsByOperation( requests, now );
+		const promises = [];
 
-			requests.forEach( ( request ) => {
-				request.requested( promise, now );
-			} );
-			return promise;
-		}
-		// No requests to send.
-		return Promise.resolve();
+		Object.keys( requestsByOperation ).forEach( ( operationName ) => {
+			// Send one operation, and associate all requests for it
+			const operationFunc = this.operations[ operationName ];
+			promises.push( sendOperation( operationFunc, requests ) );
+		} );
+
+		// Return a list of operation promises
+		return Promise.all( promises );
 	};
 
 	/**
-	 * Send any scheduled requests that are ready to be sent.
+	 * Send any scheduled requests that are ready.
 	 * @param {Date} now The current time.
-	 * @return {Promise} A promise returned from the fetch call.
+	 * @return {Promise} A promise returned from the operation call.
 	 */
 	sendReadyRequests = ( now = new Date() ) => {
-		const readyRequests = this.requests.filter( ( request ) => {
-			return this.isRequestReady( request, now );
-		} );
+		const readyRequests = this.requests.filter( ( request ) => request.isReady() );
 		return this.sendRequests( readyRequests, now );
-	};
+	}
 
 	/**
 	 * Send any scheduled requests that are timed out.
 	 * @param {Date} now The current time.
-	 * @return {Promise} A promise returned from the fetch call.
+	 * @return {Promise} A promise returned from the operation call.
 	 */
 	resendTimeouts = ( now = new Date() ) => {
 		const timedOutRequests = this.requests.filter( ( request ) => {
@@ -182,19 +209,52 @@ export default class Scheduler {
 			return STATUS.complete !== status && STATUS.failed !== status;
 		} );
 	};
+}
 
-	/**
-	 * Checks if a request is ready.
-	 * @param {ResourceRequest} request The request to check.
-	 * @param {Date} now The current time.
-	 * @return {boolean} True if the request is ready to be sent, false otherwise.
-	 */
-	isRequestReady = ( request, now = new Date() ) => {
-		const status = request.getStatus( now );
-		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
-			const timeLeft = request.getTimeLeft( now );
-			return ( timeLeft <= 0 );
+/**
+ * Sorts an array of requests by operation name
+ * @param {Array} requests An array of requests to be sorted
+ * @param {Date} now The current time
+ * @return {Object} The same requests as given, but in an object keyed by operation name
+ */
+export function getRequestsByOperation( requests ) {
+	return requests.reduce( ( requestsByOperation, request ) => {
+		const requestsForOperation = requestsByOperation[ request.operation ] || [];
+		requestsForOperation.push( request );
+		requestsByOperation[ request.operation ] = requestsForOperation;
+		return requestsByOperation;
+	}, {} );
+}
+
+/**
+ * Sends an operation for a set of given operation requests
+ * @param {Promise} operation The actual operation promise from the apiSpec
+ * @param {Array} requests An array of requests for the given operation
+ * @param {Date} now The current time
+ * @return {Promise} The promise returned from the operation
+ */
+export function sendOperation( operation, requests, now ) {
+	const resourceNames = uniq( requests.map( request => request.resourceName ) );
+	const data = combineRequestData( requests );
+	const promise = Promise.resolve( operation( resourceNames, data ) );
+
+	requests.forEach( ( request ) => {
+		request.requested( promise, now );
+	} );
+	return promise;
+}
+
+/**
+ * Combines the request data from multiple requests for one operation call
+ * @param {Array} requests An array of requests for a given operation call
+ * @return {Object} The combined data from the requests, or undefined if none
+ */
+export function combineRequestData( requests ) {
+	const combinedData = requests.reduce( ( data, request ) => {
+		if ( data[ request.resourceName ] || request.data ) {
+			data[ request.resourceName ] = { ...data[ request.resourceName ], ...request.data };
 		}
-		return false;
-	};
+		return data;
+	}, {} );
+	return isEmpty( combinedData ) ? undefined : combinedData;
 }
