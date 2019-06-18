@@ -131,7 +131,7 @@ export default class Scheduler {
 	 */
 	isRequestReady = ( request, now = new Date() ) => {
 		const status = request.getStatus();
-		if ( STATUS.scheduled == status || STATUS.overdue == status ) {
+		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
 			const timeLeft = request.getTimeLeft( now );
 			return ( timeLeft <= 0 );
 		}
