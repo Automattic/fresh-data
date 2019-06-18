@@ -24,7 +24,7 @@ describe( 'isDateEarlier', () => {
 
 	it( 'returns false for one millisecond later', () => {
 		const now = new Date();
-		const earlier = new Date( now.getTime() + 1 );
-		expect( isDateEarlier( now, earlier ) ).toBe( false );
+		const later = new Date( now.getTime() + 1 );
+		expect( isDateEarlier( now, later ) ).toBe( false );
 	} );
 } );
