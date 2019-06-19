@@ -1,5 +1,7 @@
 import { find, union } from 'lodash';
+/* TODO: Update devinfo
 import { getFreshnessLeft, getTimeoutLeft } from '../client/calculate-updates';
+*/
 
 /**
  * Possible statuses of a resource.
