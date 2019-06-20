@@ -5,7 +5,7 @@ describe( 'devinfo', () => {
     describe( 'isDevInfoEnabled', () => {
         it( 'should be disabled by default', () => {
             expect( isDevInfoEnabled() ).toBeFalsy();
-        } )
+        } );
 
         it( 'should enable when the window global is true', () => {
             global.window.__FRESH_DATA_DEV_INFO__ = true;
@@ -52,6 +52,15 @@ describe( 'devinfo', () => {
 
             updateDevInfo( client );
             expect( global.window.freshData ).toBe( devInfo );
+        } );
+
+        it( 'should link the requests from the scheduler', () => {
+            global.window.__FRESH_DATA_DEV_INFO__ = true;
+
+            const apiSpec = { name: 'myapi' };
+            const client = new ApiClient( apiSpec );
+
+            expect( global.window.freshData.myapi.requests ).toBe( client.scheduler.requests );
         } );
     } );
 } );

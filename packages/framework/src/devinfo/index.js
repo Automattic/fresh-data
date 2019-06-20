@@ -27,8 +27,7 @@ export function updateDevInfo( client ) {
  */
 function generateDevInfo( client ) {
 	const info = {
-		// TODO: Re-add info based on scheduler data.
-		name: client.getName(),
+		requests: client.scheduler.requests,
 	};
 
 	return info;
