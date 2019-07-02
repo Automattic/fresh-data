@@ -81,10 +81,9 @@ describe( 'ResourceRequest', () => {
 
 			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
 			request.requested( Promise.resolve(), now );
+			request.requestComplete();
 
-			return request.promise.then( () => {
-				expect( request.getStatus( now ) ).toBe( STATUS.complete );
-			} );
+			expect( request.getStatus( now ) ).toBe( STATUS.complete );
 		} );
 
 		it( 'shows failed', () => {
@@ -92,12 +91,11 @@ describe( 'ResourceRequest', () => {
 			const resourceState = { lastReceived: sixMinutesAgo };
 
 			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
-			request.requested( Promise.reject( 'error message' ), now );
+			request.requested( Promise.resolve(), now );
+			request.requestFailed( 'error message' );
 
-			return request.promise.catch( () => {
-				expect( request.getStatus( now ) ).toBe( STATUS.failed );
-				expect( request.error ).toBe( 'error message' );
-			} );
+			expect( request.getStatus( now ) ).toBe( STATUS.failed );
+			expect( request.error ).toBe( 'error message' );
 		} );
 
 		it( 'shows timed out', () => {
@@ -198,49 +196,6 @@ describe( 'ResourceRequest', () => {
 			const request1 = new ResourceRequest( {}, {}, 'resource1', 'read', { one: 1 } );
 
 			expect( request1.hasData( { one: 2 } ) ).toBeFalsy();
-		} );
-	} );
-
-	describe( 'requested', () => {
-		it( 'progresses through success flow correctly', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, tenSecondsAgo );
-
-			expect( request.getStatus( now ) ).toBe( STATUS.overdue );
-
-			let promiseResolve;
-			const promise = new Promise( ( resolve ) => {
-				promiseResolve = resolve;
-			} );
-
-			request.requested( promise );
-			expect( request.getStatus() ).toBe( STATUS.inFlight );
-
-			promiseResolve();
-
-			return promise.then( () => {
-				expect( request.getStatus() ).toBe( STATUS.complete );
-			} );
-		} );
-
-		it( 'progresses through error flow correctly', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, tenSecondsAgo );
-
-			expect( request.getStatus( now ) ).toBe( STATUS.overdue );
-
-			let promiseReject;
-			const promise = new Promise( ( resolve, reject ) => {
-				promiseReject = reject;
-			} );
-
-			request.requested( promise, now );
-			expect( request.getStatus( now ) ).toBe( STATUS.inFlight );
-
-			promiseReject( 'error message' );
-
-			return promise.catch( () => {
-				expect( request.getStatus( now ) ).toBe( STATUS.failed );
-				expect( request.error ).toBe( 'error message' );
-			} );
 		} );
 	} );
 

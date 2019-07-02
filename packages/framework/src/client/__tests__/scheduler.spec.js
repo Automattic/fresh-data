@@ -101,13 +101,8 @@ describe( 'sendOperation', () => {
 		expect( request1b.timeRequested ).toBe( now );
 		expect( request2.timeRequested ).toBe( now );
 
-		return promise.then( ( response ) => {
+		return promise.then( () => {
 			expect( operation ).toHaveBeenCalledWith( [ 'resource1', 'resource2' ], undefined );
-
-			expect( response ).toEqual( [ {
-				resource1: { data: 1 },
-				resource2: { data: 2 },
-			} ] );
 
 			expect( dataReceived ).toHaveBeenCalledWith( {
 				resource1: { data: 1 },
@@ -145,7 +140,7 @@ describe( 'sendOperation', () => {
 		expect( request1b.timeRequested ).toBe( now );
 		expect( request2.timeRequested ).toBe( now );
 
-		return promise.then( ( response ) => {
+		return promise.then( () => {
 			expect( operation ).toHaveBeenCalledWith(
 				[ 'resource1', 'resource2' ],
 				{
@@ -153,11 +148,6 @@ describe( 'sendOperation', () => {
 					resource2: { two: 2 }
 				}
 			);
-
-			expect( response ).toEqual( [ {
-				resource1: { data: { oneA: 1, oneB: 1 } },
-				resource2: { data: { two: 2 } },
-			} ] );
 
 			expect( dataReceived ).toHaveBeenCalledWith( {
 				resource1: { data: { oneA: 1, oneB: 1 } },

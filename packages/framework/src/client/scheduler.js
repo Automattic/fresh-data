@@ -268,12 +268,21 @@ export async function sendOperation( operation, requests, dataReceived, now ) {
 	const data = combineRequestData( requests );
 	const operationResult = operation( resourceNames, data );
 	const operationResultArray = isArray( operationResult ) ? operationResult : [ operationResult ];
+	const resourceSets = [];
 
 	const promise = Promise.all( operationResultArray.map( async ( result ) => {
-		const resources = await result;
-		dataReceived( resources );
-		return resources;
-	} ) );
+		resourceSets.push( await result );
+	} ) ).then( () => {
+		requests.forEach( ( request ) => {
+			request.requestComplete();
+		} );
+		resourceSets.forEach( ( resources ) => dataReceived( resources ) );
+	} ).catch( ( error ) => {
+		requests.forEach( ( request ) => {
+			request.requestFailed( error );
+		} );
+		resourceSets.forEach( ( resources ) => dataReceived( resources ) );
+	} );
 
 	requests.forEach( ( request ) => {
 		request.requested( promise, now );

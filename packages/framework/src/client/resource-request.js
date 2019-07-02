@@ -135,7 +135,6 @@ export default class ResourceRequest {
 		this.debug( `Request for ${ this.resourceName } submitted...` );
 		this.timeRequested = now;
 		this.promise = promise;
-		return this.promise.then( this.requestComplete, this.requestFailed );
 	}
 
 	requestComplete = () => {
