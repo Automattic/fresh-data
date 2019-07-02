@@ -71,26 +71,48 @@ describe( 'sendOperation', () => {
 	const now = new Date();
 	const oneSecondAgo = new Date( now.getTime() - ( 1 * SECOND ) );
 
+	it ( 'should not swallow throw errors thrown by the oepration', () => {
+		const errorRequest = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, oneSecondAgo );
+		const operation = () => {
+			throw { error: true };
+		};
+
+		const promise = sendOperation( operation, [ errorRequest ], () => {}, now );
+
+		return promise.catch( ( thrownError ) => {
+			expect( thrownError ).toEqual( { error: true } );
+		} );
+	} );
+
 	it ( 'should send an operation without data', () => {
 		const request1a = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, oneSecondAgo );
 		const request1b = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, oneSecondAgo );
 		const request2 = new ResourceRequest( {}, {}, 'resource2', 'read', undefined, oneSecondAgo );
 		const operation = jest.fn();
-		operation.mockReturnValue( { response: true } );
+		const dataReceived = jest.fn();
+		operation.mockReturnValue( {
+			resource1: { data: 1 },
+			resource2: { data: 2 }
+		} );
 
-		const promise = sendOperation( operation, [ request1a, request1b, request2 ], now );
+		const promise = sendOperation( operation, [ request1a, request1b, request2 ], dataReceived, now );
 
-		expect( request1a.promise ).toBe( promise );
 		expect( request1a.timeRequested ).toBe( now );
-		expect( request1b.promise ).toBe( promise );
 		expect( request1b.timeRequested ).toBe( now );
-		expect( request2.promise ).toBe( promise );
 		expect( request2.timeRequested ).toBe( now );
 
 		return promise.then( ( response ) => {
 			expect( operation ).toHaveBeenCalledWith( [ 'resource1', 'resource2' ], undefined );
 
-			expect( response ).toEqual( { response: true } );
+			expect( response ).toEqual( [ {
+				resource1: { data: 1 },
+				resource2: { data: 2 },
+			} ] );
+
+			expect( dataReceived ).toHaveBeenCalledWith( {
+				resource1: { data: 1 },
+				resource2: { data: 2 },
+			} );
 
 			expect( request1a.getStatus() ).toBe( STATUS.complete );
 			expect( request1a.promise ).toBeFalsy();
@@ -111,15 +133,16 @@ describe( 'sendOperation', () => {
 		const request1b = new ResourceRequest( {}, {}, 'resource1', 'write', { oneB: 1 }, oneSecondAgo );
 		const request2 = new ResourceRequest( {}, {}, 'resource2', 'write', { two: 2 }, oneSecondAgo );
 		const operation = jest.fn();
-		operation.mockReturnValue( { response: true } );
+		const dataReceived = jest.fn();
+		operation.mockReturnValue( {
+			resource1: { data: { oneA: 1, oneB: 1 } },
+			resource2: { data: { two: 2 } },
+		} );
 
-		const promise = sendOperation( operation, [ request1a, request1b, request2 ], now );
+		const promise = sendOperation( operation, [ request1a, request1b, request2 ], dataReceived, now );
 
-		expect( request1a.promise ).toBe( promise );
 		expect( request1a.timeRequested ).toBe( now );
-		expect( request1b.promise ).toBe( promise );
 		expect( request1b.timeRequested ).toBe( now );
-		expect( request2.promise ).toBe( promise );
 		expect( request2.timeRequested ).toBe( now );
 
 		return promise.then( ( response ) => {
@@ -131,7 +154,15 @@ describe( 'sendOperation', () => {
 				}
 			);
 
-			expect( response ).toEqual( { response: true } );
+			expect( response ).toEqual( [ {
+				resource1: { data: { oneA: 1, oneB: 1 } },
+				resource2: { data: { two: 2 } },
+			} ] );
+
+			expect( dataReceived ).toHaveBeenCalledWith( {
+				resource1: { data: { oneA: 1, oneB: 1 } },
+				resource2: { data: { two: 2 } },
+			} );
 
 			expect( request1a.getStatus() ).toBe( STATUS.complete );
 			expect( request1a.promise ).toBeFalsy();
@@ -341,7 +372,7 @@ describe( 'Scheduler', () => {
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests.push(
-				new ResourceRequest(  {}, {}, 'resource2', null, now )
+				new ResourceRequest( {}, {}, 'resource2', null, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -397,18 +428,20 @@ describe( 'Scheduler', () => {
 		} );
 	} );
 
-	describe( 'scheduleRequest', () => {
-		it( 'uses read operation by default', () => {
-			const operations = {
-				read: jest.fn(),
-			};
-			const scheduler = new Scheduler( operations, () => {}, () => {} );
+	describe( 'setDataHandlers', () => {
+		it( 'sets the data handler functions', () => {
+			const dataRequested = () => {};
+			const dataReceived = () => {};
 
-			scheduler.scheduleRequest( {}, {}, 'resource1' );
+			const scheduler = new Scheduler( {}, () => {}, () => {} );
+			scheduler.setDataHandlers( dataRequested, dataReceived );
 
-			expect( scheduler.requests[ 0 ].operation ).toBe( 'read' );
+			expect( scheduler.dataRequested ).toBe( dataRequested );
+			expect( scheduler.dataReceived ).toBe( dataReceived );
 		} );
+	} );
 
+	describe( 'scheduleRequest', () => {
 		it( 'creates an overdue request when no existing state exists', () => {
 			const operations = {
 				read: jest.fn(),
@@ -482,6 +515,40 @@ describe( 'Scheduler', () => {
 		} );
 	} );
 
+	describe( 'scheduleMutationOperation', () => {
+		it( 'schedules a single request with data', () => {
+			const scheduler = new Scheduler( () => {}, () => {}, () => {} );
+			scheduler.scheduleRequest = jest.fn();
+
+			scheduler.scheduleMutationOperation( 'write', [ 'resource1' ], { resource1: { one: 1 } }, now );
+
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledTimes( 1 );
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'resource1', 'write', { one: 1 }, now );
+		} );
+
+		it( 'schedules multiple requests with data', () => {
+			const scheduler = new Scheduler( () => {}, () => {}, () => {} );
+			scheduler.scheduleRequest = jest.fn();
+
+			scheduler.scheduleMutationOperation( 'write', [ 'resource1', 'resource2' ], { resource1: { one: 1 }, resource2: { two: 2 } }, now );
+
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledTimes( 2 );
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'resource1', 'write', { one: 1 }, now );
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'resource2', 'write', { two: 2 }, now );
+		} );
+
+		it( 'schedules multiple requests without data', () => {
+			const scheduler = new Scheduler( () => {}, () => {}, () => {} );
+			scheduler.scheduleRequest = jest.fn();
+
+			scheduler.scheduleMutationOperation( 'read', [ 'resource1', 'resource2' ], undefined, now );
+
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledTimes( 2 );
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'resource1', 'read', undefined, now );
+			expect( scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'resource2', 'read', undefined, now );
+		} );
+	} );
+
 	describe( 'getScheduledRequest', () => {
 		it( 'finds a scheduled request', () => {
 			const operations = {
@@ -492,7 +559,7 @@ describe( 'Scheduler', () => {
 			const resourceState = { lastReceived: threeMinutesAgo };
 
 			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null );
-			const request = scheduler.getScheduledRequest( 'resource1' );
+			const request = scheduler.getScheduledRequest( 'resource1', 'read' );
 			expect( request.resourceName ).toBe( 'resource1' );
 			expect( request.operation ).toBe( 'read' );
 			expect( request.getStatus() ).toBe( STATUS.scheduled );
@@ -503,13 +570,12 @@ describe( 'Scheduler', () => {
 				read: jest.fn(),
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
-			const resourceName = 'resource1';
 			const requirement1 = { freshness: 2 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, resourceName, 'read', null, now );
-			const request = scheduler.getScheduledRequest( resourceName );
-			expect( request.resourceName ).toBe( resourceName );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
+			const request = scheduler.getScheduledRequest( 'resource1', 'read' );
+			expect( request.resourceName ).toBe( 'resource1' );
 			expect( request.getStatus() ).toBe( STATUS.overdue );
 		} );
 	} );
@@ -520,17 +586,16 @@ describe( 'Scheduler', () => {
 				read: jest.fn(),
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
-			const resourceName = 'resource1';
 			const requirement1 = { freshness: 5 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, resourceName, 'read', null, now );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.inFlight;
 
-			const requests = scheduler.getInFlightRequests( resourceName );
+			const requests = scheduler.getInFlightRequests( 'resource1', 'read' );
 
 			expect( requests.length ).toBe( 1 );
-			expect( requests[ 0 ].resourceName ).toBe( resourceName );
+			expect( requests[ 0 ].resourceName ).toBe( 'resource1' );
 			expect( requests[ 0 ].getStatus() ).toBe( STATUS.inFlight );
 		} );
 	} );
@@ -541,6 +606,9 @@ describe( 'Scheduler', () => {
 				read: jest.fn(),
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			scheduler.setDataHandlers( dataRequested, dataReceived );
 
 			scheduler.scheduleRequest( {}, {}, 'inFlightResource', 'read', null, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.inFlight;
@@ -557,8 +625,11 @@ describe( 'Scheduler', () => {
 			scheduler.scheduleRequest( {}, {}, 'unnecessary', 'read', null, now );
 			scheduler.requests[ 4 ].getStatus = () => STATUS.unnecessary;
 
-			scheduler.sendReadyRequests( now );
-			expect( scheduler.requests.length ).toBe( 5 );
+			return scheduler.sendReadyRequests( now ).then( () => {
+				expect( scheduler.requests.length ).toBe( 5 );
+				expect( dataRequested ).not.toHaveBeenCalled();
+				expect( dataReceived ).not.toHaveBeenCalled();
+			} );
 		} );
 
 		it( 'calls read with resource names', () => {
@@ -719,6 +790,103 @@ describe( 'Scheduler', () => {
 				);
 			} );
 		} );
+
+		it( 'calls dataRequested with resource names', () => {
+			const operations = {
+				read: () => {
+					return Promise.resolve();
+				},
+				write: () => {
+					return Promise.resolve();
+				},
+			};
+			const scheduler = new Scheduler( operations, () => {}, () => {} );
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			scheduler.setDataHandlers( dataRequested, dataReceived );
+
+			scheduler.scheduleRequest(
+				{ freshness: 5 * MINUTE },
+				{},
+				'resource1',
+				'read',
+				null,
+				threeMinutesAgo
+			);
+
+			scheduler.scheduleRequest(
+				{},
+				{},
+				'resource2',
+				'write',
+				{},
+				threeMinutesAgo
+			);
+
+			const promise = scheduler.sendReadyRequests();
+
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( [ 'resource1', 'resource2' ] );
+
+			return promise;
+		} );
+
+		it( 'calls dataReceived with resource names and results', () => {
+			const operations = {
+				read: () => {
+					return Promise.resolve().then( () => {
+						return { resource1: { data: { one: 1 } } };
+					} );
+				},
+				write: () => {
+					return [
+						Promise.resolve().then( () => {
+							return { resource1: { data: { one: 'one' } } };
+						} ),
+						Promise.resolve().then( () => {
+							return { resource2: { data: { two: 'two' } } };
+						} ),
+					];
+				},
+			};
+			const scheduler = new Scheduler( operations, () => {}, () => {} );
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
+			scheduler.setDataHandlers( dataRequested, dataReceived );
+
+			scheduler.scheduleRequest(
+				{ freshness: 5 * MINUTE },
+				{},
+				'resource1',
+				'read',
+				null,
+				threeMinutesAgo
+			);
+
+			scheduler.scheduleRequest(
+				{},
+				{},
+				'resource2',
+				'write',
+				{},
+				threeMinutesAgo
+			);
+
+			const promise = scheduler.sendReadyRequests();
+
+			return promise.then( () => {
+				expect( dataReceived ).toHaveBeenCalledTimes( 3 );
+				expect( dataReceived ).toHaveBeenCalledWith(
+					{ resource1: { data: { one: 1 } } },
+				);
+				expect( dataReceived ).toHaveBeenCalledWith(
+					{ resource1: { data: { one: 'one' } } },
+				);
+				expect( dataReceived ).toHaveBeenCalledWith(
+					{ resource2: { data: { two: 'two' } } },
+				);
+			} );
+		} );
 	} );
 
 	describe( 'resendTimeouts', () => {
@@ -746,7 +914,7 @@ describe( 'Scheduler', () => {
 			const operations = {
 				read: jest.fn(),
 			};
-			const scheduler = new Scheduler( operations, () => {}, () =>  {} );
+			const scheduler = new Scheduler( operations, () => {}, () => {} );
 
 			scheduler.scheduleRequest(
 				{ freshness: 5 * MINUTE, timeout: 5 * SECOND },

@@ -1,29 +1,31 @@
 import debugFactory from 'debug';
+import { find, isArray, isEmpty, isEqual, isNil, uniq } from 'lodash';
 import ResourceRequest, { STATUS } from './resource-request';
-import { find, isEmpty, isEqual, isNil, uniq } from 'lodash';
 
 const debug = debugFactory( 'fresh-data:scheduler' );
-
-const DEFAULT_READ_OPERATION = 'read';
 
 export default class Scheduler {
 	/**
 	 * Creates a new Scheduler
 	 * @param {Object} operations The mapping of operation names to functions
-	 * @param {number} timerInterval Milliseconds between timer iterations (defaults to 500)
-	 * @param {function} setInterval The function to set an interval timer (defaults to window.setInterval)
-	 * @param {function} clearInterval The function to clear an internal timer by id (defaults to window.setInterval)
+	 * @param {function} setTimeout The function to set a time (defaults to window.setTimeout)
+	 * @param {function} clearTimeout The function to clear a timer by id (defaults to window.setTimeout)
 	 */
 	constructor(
 		operations,
 		setTimeout = window.setTimeout,
 		clearTimeout = window.clearTimeout,
 	) {
+		this.debug = debugFactory( 'fresh-data:scheduler' );
+
 		this.operations = operations;
 		this.requests = [];
 		this.setTimeout = setTimeout;
 		this.clearTimeout = clearTimeout;
 		this.timeoutId = null;
+
+		this.dataRequested = () => this.debug( 'warning: dataRequested called before setDataHandlers' );
+		this.dataReceived = () => this.debug( 'warning: dataReceived called before setDataHandlers' );
 	}
 
 	/**
@@ -89,13 +91,23 @@ export default class Scheduler {
 	};
 
 	/**
+	 * Sets the data handlers for the scheduler.
+	 * @param {Function} dataRequested The dispatch-wrapped function for the data requested action.
+	 * @param {Function} dataReceived The dispatch-wrapped function for the data received action.
+	 */
+	setDataHandlers = ( dataRequested, dataReceived ) => {
+		this.dataRequested = dataRequested;
+		this.dataReceived = dataReceived;
+	};
+
+	/**
 	 * Finds a request that is either scheduled or overdue.
 	 * @param {string} resourceName The name of the resource for the operation
 	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
 	 * @param {Date} now The current time.
 	 * @return {ResourceRequest} The scheduled request, or null if none found
 	 */
-	getScheduledRequest = ( resourceName, operation = DEFAULT_READ_OPERATION, now = new Date() ) => {
+	getScheduledRequest = ( resourceName, operation, now = new Date() ) => {
 		return find( this.requests, ( r ) => {
 			const status = r.getStatus( now );
 			return (
@@ -113,7 +125,7 @@ export default class Scheduler {
 	 * @param {Date} now The current time.
 	 * @return {Array} Any requests for the given resource which are currently in flight.
 	 */
-	getInFlightRequests = ( resourceName, operation = DEFAULT_READ_OPERATION, now = new Date() ) => {
+	getInFlightRequests = ( resourceName, operation, now = new Date() ) => {
 		return this.requests.filter( ( r ) => {
 			return (
 				resourceName === r.resourceName &&
@@ -136,7 +148,7 @@ export default class Scheduler {
 		requirement,
 		resourceState,
 		resourceName,
-		operation = DEFAULT_READ_OPERATION,
+		operation,
 		data = null,
 		now = new Date()
 	) => {
@@ -156,25 +168,42 @@ export default class Scheduler {
 		this.updateDelay( now );
 	};
 
+	// TODO: Remove this after mutations are updated to no longer use operations directly.
+	scheduleMutationOperation = (
+		operationName,
+		resourceNames,
+		resourceData,
+		now = new Date()
+	) => {
+		resourceNames.forEach( ( resourceName ) => {
+			const data = resourceData ? resourceData[ resourceName ] : undefined;
+			this.scheduleRequest( {}, {}, resourceName, operationName, data, now );
+		} );
+	}
+
 	/**
 	 * Send a specific list of requests.
 	 * @param {Array} requests The requests to send.
 	 * @param {Date} now The current time.
 	 * @return {Promise} A promise returned from the operation call.
 	 */
-	sendRequests = ( requests, now ) => {
+	sendRequests = async ( requests, now ) => {
 		// Split the requests up by operation, so we can send one of each operation.
 		const requestsByOperation = getRequestsByOperation( requests, now );
 		const promises = [];
 
+		if ( ! isEmpty( requests ) ) {
+			this.dataRequested( requests.map( ( request ) => request.resourceName ) );
+		}
+
 		Object.keys( requestsByOperation ).forEach( ( operationName ) => {
 			// Send one operation, and associate all requests for it
 			const operationFunc = this.operations[ operationName ];
-			promises.push( sendOperation( operationFunc, requests ) );
+			promises.push( sendOperation( operationFunc, requests, this.dataReceived ) );
 		} );
 
 		// Return a list of operation promises
-		return Promise.all( promises );
+		return await Promise.all( promises );
 	};
 
 	/**
@@ -185,7 +214,7 @@ export default class Scheduler {
 	sendReadyRequests = ( now = new Date() ) => {
 		const readyRequests = this.requests.filter( ( request ) => request.isReady() );
 		return this.sendRequests( readyRequests, now );
-	}
+	};
 
 	/**
 	 * Send any scheduled requests that are timed out.
@@ -230,13 +259,21 @@ export function getRequestsByOperation( requests ) {
  * Sends an operation for a set of given operation requests
  * @param {Promise} operation The actual operation promise from the apiSpec
  * @param {Array} requests An array of requests for the given operation
+ * @param {Function} dataReceived A function to be called when data is received from the operation
  * @param {Date} now The current time
  * @return {Promise} The promise returned from the operation
  */
-export function sendOperation( operation, requests, now ) {
+export async function sendOperation( operation, requests, dataReceived, now ) {
 	const resourceNames = uniq( requests.map( request => request.resourceName ) );
 	const data = combineRequestData( requests );
-	const promise = Promise.resolve( operation( resourceNames, data ) );
+	const operationResult = operation( resourceNames, data );
+	const operationResultArray = isArray( operationResult ) ? operationResult : [ operationResult ];
+
+	const promise = Promise.all( operationResultArray.map( async ( result ) => {
+		const resources = await result;
+		dataReceived( resources );
+		return resources;
+	} ) );
 
 	requests.forEach( ( request ) => {
 		request.requested( promise, now );
