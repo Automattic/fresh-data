@@ -141,7 +141,7 @@ export default class Scheduler {
 	 * @param {Object} resourceState The current snapshot of resource state
 	 * @param {string} resourceName The name of the resource for the operation
 	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
-	 * @param {Object} data The data to be sent for the operation (defaults to null)
+	 * @param {Object} data The data to be sent for the operation (defaults to undefined)
 	 * @param {Date} now The current time.
 	 */
 	scheduleRequest = (
@@ -149,7 +149,7 @@ export default class Scheduler {
 		resourceState,
 		resourceName,
 		operation,
-		data = null,
+		data = undefined,
 		now = new Date()
 	) => {
 		const identicalInFlightRequest = find(

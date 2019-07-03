@@ -35,7 +35,7 @@ describe( 'combineRequestData', () => {
 
 	it( 'should handle requests with no data', () => {
 		const request1a = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
-		const request1b = new ResourceRequest( {}, {}, 'resource1', 'read', null, now );
+		const request1b = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
 
 		const data = combineRequestData( [ request1a, request1b ] );
 
@@ -184,7 +184,7 @@ describe( 'Scheduler', () => {
 
 			expect( scheduler.getNextRequestDelay() ).toBeNull();
 
-			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', undefined, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.complete;
 
 			expect( scheduler.getNextRequestDelay( now ) ).toBeNull();
@@ -196,7 +196,7 @@ describe( 'Scheduler', () => {
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
 
-			scheduler.scheduleRequest( {}, {}, 'resource1', 'read', null, threeMinutesAgo );
+			scheduler.scheduleRequest( {}, {}, 'resource1', 'read', undefined, threeMinutesAgo );
 
 			expect( scheduler.getNextRequestDelay( now ) ).toBe( 0 );
 		} );
@@ -211,7 +211,7 @@ describe( 'Scheduler', () => {
 				{ freshness: 5 * MINUTE },
 				{ lastReceived: threeMinutesAgo },
 				'resource1',
-				null,
+				undefined,
 				now
 			);
 
@@ -228,10 +228,10 @@ describe( 'Scheduler', () => {
 				{ freshness: 5 * MINUTE },
 				{ lastReceived: threeMinutesAgo },
 				'resource1',
-				null,
+				undefined,
 				now
 			);
-			scheduler.scheduleRequest( {}, {}, 'resource1', null, now );
+			scheduler.scheduleRequest( {}, {}, 'resource1', undefined, now );
 
 			expect( scheduler.getNextRequestDelay( now ) ).toBe( 0 );
 		} );
@@ -246,7 +246,7 @@ describe( 'Scheduler', () => {
 				{ freshness: 5 * MINUTE },
 				{ lastReceived: threeMinutesAgo },
 				'resource1',
-				null,
+				undefined,
 				now
 			);
 			const delayBefore = scheduler.getNextRequestDelay( now );
@@ -255,7 +255,7 @@ describe( 'Scheduler', () => {
 				{ freshness: 30 * MINUTE },
 				{ lastReceived: fourMinutesAgo },
 				'resource1',
-				null,
+				undefined,
 				now
 			);
 			const delayAfter = scheduler.getNextRequestDelay( now );
@@ -281,7 +281,7 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, () => {} );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -295,7 +295,7 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, () => {} );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 2 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 2 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -309,14 +309,14 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, () => {} );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 4 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 4 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -331,14 +331,14 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, () => {} );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests.push(
-				new ResourceRequest( {}, {}, 'resource2', null, now )
+				new ResourceRequest( {}, {}, 'resource2', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -353,7 +353,7 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, () => {} );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: fourMinutesAgo }, 'resource1', null, threeMinutesAgo )
+				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: fourMinutesAgo }, 'resource1', undefined, threeMinutesAgo )
 			);
 			scheduler.updateDelay( threeMinutesAgo );
 
@@ -383,7 +383,7 @@ describe( 'Scheduler', () => {
 			const scheduler = new Scheduler( {}, setTimeout, clearTimeout );
 
 			scheduler.requests.push(
-				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', null, now )
+				new ResourceRequest( { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, 'resource1', undefined, now )
 			);
 			scheduler.updateDelay( now );
 
@@ -414,7 +414,7 @@ describe( 'Scheduler', () => {
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
 
-			scheduler.scheduleRequest( {}, {}, 'resource1', 'read', null, threeMinutesAgo );
+			scheduler.scheduleRequest( {}, {}, 'resource1', 'read', undefined, threeMinutesAgo );
 			const request = scheduler.requests[ 0 ];
 
 			expect( request ).not.toBe( undefined );
@@ -447,15 +447,15 @@ describe( 'Scheduler', () => {
 			const requirement3 = { freshness: 2 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', undefined, now );
 			expect( scheduler.requests[ 0 ].getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( scheduler.requests[ 0 ].getTimeLeft( now ) ).toBe( 2 * MINUTE );
 
-			scheduler.scheduleRequest( requirement2, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement2, resourceState, 'resource1', 'read', undefined, now );
 			expect( scheduler.requests[ 0 ].getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( scheduler.requests[ 0 ].getTimeLeft( now ) ).toBe( 1 * MINUTE );
 
-			scheduler.scheduleRequest( requirement3, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement3, resourceState, 'resource1', 'read', undefined, now );
 			expect( scheduler.requests[ 0 ].getStatus( now ) ).toBe( STATUS.overdue );
 			expect( scheduler.requests[ 0 ].getTimeLeft( now ) ).toBe( -( 1 * MINUTE ) );
 		} );
@@ -469,13 +469,13 @@ describe( 'Scheduler', () => {
 			const requirement2 = { freshness: 4 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', undefined, now );
 			expect( scheduler.requests.length ).toBe( 1 );
 			expect( scheduler.requests[ 0 ].getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( scheduler.requests[ 0 ].getTimeLeft( now ) ).toBe( 2 * MINUTE );
 
 			scheduler.requests[ 0 ].getStatus = () => STATUS.inFlight;
-			scheduler.scheduleRequest( requirement2, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement2, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( scheduler.requests.length ).toBe( 1 );
 		} );
@@ -524,7 +524,7 @@ describe( 'Scheduler', () => {
 			const requirement1 = { freshness: 5 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', undefined );
 			const request = scheduler.getScheduledRequest( 'resource1', 'read' );
 			expect( request.resourceName ).toBe( 'resource1' );
 			expect( request.operation ).toBe( 'read' );
@@ -539,7 +539,7 @@ describe( 'Scheduler', () => {
 			const requirement1 = { freshness: 2 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', undefined, now );
 			const request = scheduler.getScheduledRequest( 'resource1', 'read' );
 			expect( request.resourceName ).toBe( 'resource1' );
 			expect( request.getStatus() ).toBe( STATUS.overdue );
@@ -555,7 +555,7 @@ describe( 'Scheduler', () => {
 			const requirement1 = { freshness: 5 * MINUTE };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', null, now );
+			scheduler.scheduleRequest( requirement1, resourceState, 'resource1', 'read', undefined, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.inFlight;
 
 			const requests = scheduler.getInFlightRequests( 'resource1', 'read' );
@@ -576,19 +576,19 @@ describe( 'Scheduler', () => {
 			const dataReceived = jest.fn();
 			scheduler.setDataHandlers( dataRequested, dataReceived );
 
-			scheduler.scheduleRequest( {}, {}, 'inFlightResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'inFlightResource', 'read', undefined, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.inFlight;
 
-			scheduler.scheduleRequest( {}, {}, 'timedOutResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'timedOutResource', 'read', undefined, now );
 			scheduler.requests[ 1 ].getStatus = () => STATUS.timedOut;
 
-			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', undefined, now );
 			scheduler.requests[ 2 ].getStatus = () => STATUS.complete;
 
-			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', undefined, now );
 			scheduler.requests[ 3 ].getStatus = () => STATUS.failed;
 
-			scheduler.scheduleRequest( {}, {}, 'unnecessary', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'unnecessary', 'read', undefined, now );
 			scheduler.requests[ 4 ].getStatus = () => STATUS.unnecessary;
 
 			return scheduler.sendReadyRequests( now ).then( () => {
@@ -609,7 +609,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -618,7 +618,7 @@ describe( 'Scheduler', () => {
 				{ lastReceived: fourMinutesAgo },
 				'resource2',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -650,7 +650,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 			scheduler.scheduleRequest(
@@ -658,7 +658,7 @@ describe( 'Scheduler', () => {
 				{ lastReceived: fourMinutesAgo },
 				'resource2',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -682,7 +682,7 @@ describe( 'Scheduler', () => {
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
 
-			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
 
 			expect( scheduler.requests.length ).toBe( 1 );
@@ -699,13 +699,13 @@ describe( 'Scheduler', () => {
 			};
 			const scheduler = new Scheduler( operations, () => {}, () => {} );
 
-			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
 			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
 
-			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', undefined, now );
 			scheduler.requests[ 1 ].getStatus = () => STATUS.complete;
 
-			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', null, now );
+			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', undefined, now );
 			scheduler.requests[ 2 ].getStatus = () => STATUS.failed;
 
 			expect( scheduler.requests.length ).toBe( 3 );
@@ -776,7 +776,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -825,7 +825,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -867,7 +867,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 
@@ -887,7 +887,7 @@ describe( 'Scheduler', () => {
 				{},
 				'resource1',
 				'read',
-				null,
+				undefined,
 				threeMinutesAgo
 			);
 			scheduler.requests[ 0 ].getStatus = () => STATUS.timedOut;
