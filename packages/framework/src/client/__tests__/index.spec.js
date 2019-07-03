@@ -44,7 +44,6 @@ describe( 'ApiClient', () => {
 	it( 'should map mutations to operations', () => {
 		const write = jest.fn();
 		const createThing = ( operations ) => () => {
-			console.log( 'operations: ', operations );
 			operations.write(
 				[ 'resource1', 'resource2' ],
 				{ resource1: { one: 1 }, resource2: { two: 2 } },
@@ -76,11 +75,11 @@ describe( 'ApiClient', () => {
 	} );
 
 	it( 'should map selectors to getResource and requireResource', () => {
-		const getThing = ( getResource, requireResource ) => ( thingName ) => {
-			const resource1 = requireResource( { freshness: 30 * SECOND }, 'resource1', now );
-			const resource2 = getResource( 'resource2' );
-			return { resource1, resource2 };
-		}
+		const getThing = ( getResource, requireResource ) => ( thingName1, thingName2 ) => {
+			const resource1 = requireResource( { freshness: 30 * SECOND }, thingName1, now );
+			const resource2 = getResource( thingName2 );
+			return { [ thingName1 ]: resource1, [ thingName2 ]: resource2 };
+		};
 
 		const apiSpec = {
 			selectors: {
@@ -97,7 +96,7 @@ describe( 'ApiClient', () => {
 		} );
 		apiClient.scheduler.scheduleRequest = jest.fn();
 
-		expect( apiClient.getSelectors().getThing( 'thing' ) ).toEqual( {
+		expect( apiClient.getSelectors().getThing( 'resource1', 'resource2' ) ).toEqual( {
 			resource1: { data: { one: 1 } },
 			resource2: { data: { two: 2 } }
 		} );
@@ -127,7 +126,7 @@ describe( 'ApiClient', () => {
 		it ( 'should return the apiSpec name if avaialable', () => {
 			const apiSpec = {
 				name: 'apiname',
-			}
+			};
 
 			const apiClient = new ApiClient( apiSpec );
 
@@ -219,7 +218,7 @@ describe( 'ApiClient', () => {
 		it( 'should schedule a request for a resource that already exists.', () => {
 			const apiClient = new ApiClient( emptyApiSpec );
 			apiClient.scheduler.scheduleRequest = jest.fn();
-			apiClient.state = { resources: { [ 'thing:1' ]: { lastReceived: 2 * SECOND } } };
+			apiClient.state = { resources: { 'thing:1': { lastReceived: 2 * SECOND } } };
 
 			const requirement = { freshness: 5 * SECOND };
 

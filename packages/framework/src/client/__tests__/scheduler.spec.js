@@ -47,7 +47,7 @@ describe( 'sendOperation', () => {
 	const now = new Date();
 	const oneSecondAgo = new Date( now.getTime() - ( 1 * SECOND ) );
 
-	it ( 'should not swallow throw errors thrown by the oepration', () => {
+	it ( 'should not swallow errors thrown by the operation', () => {
 		const errorRequest = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, oneSecondAgo );
 		const operation = () => {
 			throw { error: true };

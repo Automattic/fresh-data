@@ -30,7 +30,7 @@ export default class ApiClient {
 		// TODO: Remove mutation operations altogether in favor of mutations returning operations to be scheduled.
 		const mutationOperations = operations && Object.keys( operations ).reduce(
 			( mappedOperations, operationName ) => {
-				mappedOperations[ operationName ] = ( names, data, now ) => {
+				mappedOperations[ operationName ] = ( names, data ) => {
 					this.scheduler.scheduleMutationOperation( operationName, names, data );
 				};
 				return mappedOperations;
