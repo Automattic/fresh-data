@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import { isEqual, isNil } from 'lodash';
+import { isEqual, isMatch, isNil } from 'lodash';
 import { isDateEarlier } from '../utils/dates';
 import { SECOND } from '../utils/constants';
 
@@ -29,7 +29,7 @@ export default class ResourceRequest {
 		this.debug = debugFactory( 'fresh-data:request(' + resourceName + ' ' + operation + ')' );
 		this.resourceName = resourceName;
 		this.operation = operation;
-		this.data = isNil( data ) ? undefined : data;
+		this.data = data;
 		this.time = calculateRequestTime( requirement, resourceState, now );
 		this.timeout = requirement.timeout || DEFAULT_TIMEOUT;
 		this.promise = null;
@@ -72,21 +72,19 @@ export default class ResourceRequest {
 		return false;
 	}
 
-	hasData = ( data ) => {
-		if ( ! data || this.data === data ) {
+	alreadyHasData = ( newData ) => {
+		if ( ! newData || this.data === newData ) {
 			return true;
 		} else if ( isNil( this.data ) ) {
 			return false;
 		}
 
-		return Object.keys( data ).reduce( ( match, name ) => {
-			return match && isEqual( this.data[ name ], data[ name ] );
-		}, true );
+		return isMatch( this.data, newData );
 	}
 
-	appendData = ( data ) => {
-		if ( ! this.hasData( data ) ) {
-			this.data = { ...this.data, ...data };
+	appendData = ( newData ) => {
+		if ( ! this.alreadyHasData( newData ) ) {
+			this.data = { ...this.data, ...newData };
 		}
 		return true;
 	}
@@ -124,7 +122,7 @@ export default class ResourceRequest {
 	 */
 	isReady = ( now = new Date() ) => {
 		const status = this.getStatus();
-		if ( STATUS.scheduled == status || STATUS.overdue == status ) {
+		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
 			const timeLeft = this.getTimeLeft( now );
 			return ( timeLeft <= 0 );
 		}

@@ -9,28 +9,6 @@ import { MINUTE, SECOND } from '../../utils/constants';
 
 // TODO: Handle timeouts
 
-describe( 'getRequestsByOperation', () => {
-	const now = new Date();
-
-	it( 'returns an empty object when no requests are given', () => {
-		const requestsByOperation = getRequestsByOperation( [] );
-		expect( isEmpty( requestsByOperation ) ).toBeTruthy();
-	} );
-
-	it( 'returns an object with requests sorted by operation', () => {
-		const read1 = new ResourceRequest( {}, {}, 'resource1', 'read', { one: 1 }, now );
-		const read2 = new ResourceRequest( {}, {}, 'resource2', 'read', { two: 2 }, now );
-		const write1 = new ResourceRequest( {}, {}, 'resource1', 'write', { one: 1 }, now );
-		const write2 = new ResourceRequest( {}, {}, 'resource2', 'write', { two: 2 }, now );
-
-		const requestsByOperation = getRequestsByOperation( [ read1, read2, write1, write2 ] );
-
-		expect( Object.keys( requestsByOperation ).length ).toBe( 2 );
-		expect( requestsByOperation.read ).toEqual( [ read1, read2 ] );
-		expect( requestsByOperation.write ).toEqual( [ write1, write2 ] );
-	} );
-} );
-
 describe( 'combineRequestData', () => {
 	const now = new Date();
 

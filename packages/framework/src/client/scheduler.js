@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import { find, isArray, isEmpty, isEqual, isNil, uniq } from 'lodash';
+import { find, groupBy, isArray, isEmpty, isEqual, isNil, uniq } from 'lodash';
 import ResourceRequest, { STATUS } from './resource-request';
 
 const debug = debugFactory( 'fresh-data:scheduler' );
@@ -152,9 +152,14 @@ export default class Scheduler {
 		data = null,
 		now = new Date()
 	) => {
-		if ( this.getInFlightRequests( resourceName, operation, now ).reduce( ( request ) => {
-			return request || isEqual( request.data, data ) || ( isNil( request.data ) && isNil( data ) );
-		}, false ) ) {
+		const identicalInFlightRequest = find(
+			this.getInFlightRequests( resourceName, operation, now ),
+			( request ) => {
+				return isEqual( request.data, data ) || ( isNil( request.data ) && isNil( data ) );
+			}
+		);
+
+		if ( identicalInFlightRequest ) {
 			// Do nothing, there's already an identical request in flight.
 			return;
 		}
@@ -189,7 +194,7 @@ export default class Scheduler {
 	 */
 	sendRequests = async ( requests, now ) => {
 		// Split the requests up by operation, so we can send one of each operation.
-		const requestsByOperation = getRequestsByOperation( requests, now );
+		const requestsByOperation = groupBy( requests, 'operation' );
 		const promises = [];
 
 		if ( ! isEmpty( requests ) ) {
@@ -238,21 +243,6 @@ export default class Scheduler {
 			return STATUS.complete !== status && STATUS.failed !== status;
 		} );
 	};
-}
-
-/**
- * Sorts an array of requests by operation name
- * @param {Array} requests An array of requests to be sorted
- * @param {Date} now The current time
- * @return {Object} The same requests as given, but in an object keyed by operation name
- */
-export function getRequestsByOperation( requests ) {
-	return requests.reduce( ( requestsByOperation, request ) => {
-		const requestsForOperation = requestsByOperation[ request.operation ] || [];
-		requestsForOperation.push( request );
-		requestsByOperation[ request.operation ] = requestsForOperation;
-		return requestsByOperation;
-	}, {} );
 }
 
 /**

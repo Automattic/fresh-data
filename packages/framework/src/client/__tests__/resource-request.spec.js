@@ -27,7 +27,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.time ).toEqual( twoMinutesFromNow );
@@ -37,7 +37,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.unnecessary );
 			expect( request.time ).toBe( null );
@@ -49,7 +49,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 		} );
@@ -58,7 +58,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: sixMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.overdue );
 		} );
@@ -67,7 +67,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: sixMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 			request.requested( Promise.resolve(), now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.inFlight );
@@ -79,7 +79,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: sixMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 			request.requested( Promise.resolve(), now );
 			request.requestComplete();
 
@@ -90,7 +90,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: sixMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 			request.requested( Promise.resolve(), now );
 			request.requestFailed( 'error message' );
 
@@ -102,7 +102,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: sixMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, tenSecondsAgo );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, tenSecondsAgo );
 			request.requested( Promise.resolve(), tenSecondsAgo );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.timedOut );
@@ -116,7 +116,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.getTimeLeft() ).toBeLessThan( 2 * MINUTE );
@@ -126,7 +126,7 @@ describe( 'ResourceRequest', () => {
 			const requirement = { freshness: 2 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( requirement, resourceState, 'resource1', 'read', undefined, now );
 
 			expect( request.getStatus( now ) ).toBe( STATUS.overdue );
 			expect( request.getTimeLeft( now ) ).toBe( -( 1 * MINUTE ) );
@@ -135,28 +135,28 @@ describe( 'ResourceRequest', () => {
 
 	describe( 'isReady', () => {
 		it( 'returns true if the scheduled request has zero time left', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
 			request.getTimeLeft = () => 0;
 
 			expect( request.isReady() ).toBeTruthy();
 		} );
 
 		it( 'returns true if the scheduled request has negative time left', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
 			request.getTimeLeft = () => -500;
 
 			expect( request.isReady() ).toBeTruthy();
 		} );
 
 		it( 'returns false if the scheduled request has time left', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
 			request.getTimeLeft = () => 500;
 
 			expect( request.isReady() ).toBeFalsy();
 		} );
 
 		it( 'returns false if the resource status is anything but scheduled or overdue', () => {
-			const request = new ResourceRequest( {}, {}, 'resource1', 'read', null, now );
+			const request = new ResourceRequest( {}, {}, 'resource1', 'read', undefined, now );
 
 			request.getStatus = () => STATUS.complete;
 			expect( request.isReady( request ) ).toBeFalsy();
@@ -175,27 +175,25 @@ describe( 'ResourceRequest', () => {
 		} );
 	} );
 
-	describe( 'hasData', () => {
+	describe( 'alreadyHasData', () => {
 		it( 'returns false if no data is set', () => {
 			const request1 = new ResourceRequest( {}, {}, 'resource1', 'read' );
 			const request2 = new ResourceRequest( {}, {}, 'resource1', 'read', undefined );
-			const request3 = new ResourceRequest( {}, {}, 'resource1', 'read', null );
 
-			expect( request1.hasData( { one: 1 } ) ).toBeFalsy();
-			expect( request2.hasData( { one: 1 } ) ).toBeFalsy();
-			expect( request3.hasData( { one: 1 } ) ).toBeFalsy();
+			expect( request1.alreadyHasData( { one: 1 } ) ).toBeFalsy();
+			expect( request2.alreadyHasData( { one: 1 } ) ).toBeFalsy();
 		} );
 
 		it( 'returns true if data is set', () => {
 			const request1 = new ResourceRequest( {}, {}, 'resource1', 'read', { one: 1 } );
 
-			expect( request1.hasData( { one: 1 } ) ).toBeTruthy();
+			expect( request1.alreadyHasData( { one: 1 } ) ).toBeTruthy();
 		} );
 
 		it( 'returns flase if data set is different', () => {
 			const request1 = new ResourceRequest( {}, {}, 'resource1', 'read', { one: 1 } );
 
-			expect( request1.hasData( { one: 2 } ) ).toBeFalsy();
+			expect( request1.alreadyHasData( { one: 2 } ) ).toBeFalsy();
 		} );
 	} );
 
@@ -205,11 +203,11 @@ describe( 'ResourceRequest', () => {
 			const requirement2 = { freshness: 4 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', null, tenSecondsAgo );
+			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', undefined, tenSecondsAgo );
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.getTimeLeft( now ) ).toBe( 2 * MINUTE );
 
-			expect( request.append( requirement2, resourceState, null, now ) ).toBeTruthy();
+			expect( request.append( requirement2, resourceState, undefined, now ) ).toBeTruthy();
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.getTimeLeft( now ) ).toBe( 1 * MINUTE );
 		} );
@@ -219,11 +217,11 @@ describe( 'ResourceRequest', () => {
 			const requirement2 = { freshness: 5 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', null, tenSecondsAgo );
+			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', undefined, tenSecondsAgo );
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.getTimeLeft( now ) ).toBe( 1 * MINUTE );
 
-			expect( request.append( requirement2, resourceState, null, now ) ).toBeTruthy();
+			expect( request.append( requirement2, resourceState, undefined, now ) ).toBeTruthy();
 			expect( request.getStatus( now ) ).toBe( STATUS.scheduled );
 			expect( request.getTimeLeft( now ) ).toBe( 1 * MINUTE );
 		} );
@@ -233,10 +231,10 @@ describe( 'ResourceRequest', () => {
 			const requirement2 = { freshness: 4 * MINUTE, timeout: 3 * SECOND };
 			const resourceState = { lastReceived: threeMinutesAgo };
 
-			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', null, tenSecondsAgo );
+			const request = new ResourceRequest( requirement1, resourceState, 'resource1', 'read', undefined, tenSecondsAgo );
 			expect( request.getStatus( now ) ).toBe( STATUS.unnecessary );
 
-			expect( request.append( requirement2, resourceState, null, now ) ).toBeFalsy();
+			expect( request.append( requirement2, resourceState, undefined, now ) ).toBeFalsy();
 			expect( request.getStatus( now ) ).toBe( STATUS.unnecessary );
 		} );
 
