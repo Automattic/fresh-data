@@ -204,7 +204,7 @@ export default class Scheduler {
 		Object.keys( requestsByOperation ).forEach( ( operationName ) => {
 			// Send one operation, and associate all requests for it
 			const operationFunc = this.operations[ operationName ];
-			promises.push( sendOperation( operationFunc, requests, this.dataReceived ) );
+			promises.push( sendOperation( operationFunc, requests, this.dataReceived, now ) );
 		} );
 
 		// Return a list of operation promises

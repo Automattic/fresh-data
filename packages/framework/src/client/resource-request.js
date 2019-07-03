@@ -1,5 +1,5 @@
 import debugFactory from 'debug';
-import { isEqual, isMatch, isNil } from 'lodash';
+import { isMatch, isNil } from 'lodash';
 import { isDateEarlier } from '../utils/dates';
 import { SECOND } from '../utils/constants';
 

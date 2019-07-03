@@ -1,6 +1,4 @@
-import { isEmpty } from 'lodash';
 import Scheduler, {
-	getRequestsByOperation,
 	combineRequestData,
 	sendOperation
 } from '../scheduler';
