@@ -13,8 +13,8 @@ export default class Scheduler {
 	 */
 	constructor(
 		operations,
-		setTimeout = window.setTimeout,
-		clearTimeout = window.clearTimeout,
+		setTimeout = window.setTimeout.bind( window ),
+		clearTimeout = window.clearTimeout.bind( window ),
 	) {
 		this.debug = debugFactory( 'fresh-data:scheduler' );
 

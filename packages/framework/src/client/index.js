@@ -1,14 +1,13 @@
 import debugFactory from 'debug';
 import { uniqueId } from 'lodash';
 import { updateDevInfo } from '../devinfo';
-import Scheduler, { DEFAULT_TIMER_INTERVAL } from './scheduler';
+import Scheduler from './scheduler';
 
 const DEFAULT_READ_OPERATION = 'read';
 
 export default class ApiClient {
 	constructor( apiSpec ) {
 		const { operations, mutations, selectors } = apiSpec;
-		const timerInterval = apiSpec.timerInterval || DEFAULT_TIMER_INTERVAL;
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
 
 		this.uid = uniqueId();
@@ -22,7 +21,7 @@ export default class ApiClient {
 
 		this.readOperationName = readOperationName;
 
-		this.scheduler = new Scheduler( operations, timerInterval );
+		this.scheduler = new Scheduler( operations );
 
 		this.selectors = selectors && mapFunctions( selectors, this.getResource, this.requireResource );
 
