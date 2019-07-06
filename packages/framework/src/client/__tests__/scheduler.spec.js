@@ -167,11 +167,11 @@ describe( 'Scheduler', () => {
 			expect( scheduler.timeoutId ).toBe( null );
 		} );
 
-		it( 'defaults to window.setTimeout and window.clearTimeout', () => {
+		it( 'defaults to own setTimeout and clearTimeout', () => {
 			const scheduler = new Scheduler( {} );
 
-			expect( scheduler.setTimeout ).toBe( window.setTimeout );
-			expect( scheduler.clearTimeout ).toBe( window.clearTimeout );
+			expect( typeof scheduler.setTimeout ).toBe( 'function' );
+			expect( typeof scheduler.clearTimeout ).toBe( 'function' );
 		} );
 	} );
 
