@@ -15,7 +15,6 @@ export default class Scheduler {
 		this.setTimeout = setTimeout;
 		this.clearTimeout = clearTimeout;
 		this.timeoutId = null;
-		this.nextRequestTime = null;
 	}
 
 	/**
@@ -26,9 +25,8 @@ export default class Scheduler {
 			debug( 'Cancelling next update.' );
 			this.clearTimeout( this.timeoutId );
 			this.timeoutId = null;
-			this.nextRequestTime = null;
 		}
-	}
+	};
 
 	/**
 	 * (Re)schedules next run of request processing, based on the current collection of requests.
@@ -36,19 +34,18 @@ export default class Scheduler {
 	 * @param {Date} now The current time
 	 */
 	updateDelay = ( now = new Date() ) => {
-		const currentDelay = this.nextRequestTime ? now.getTime() - this.nextRequestTime : null;
+		if ( null !== this.timeoutId ) {
+			this.clearTimeout( this.timeoutId );
+			this.timeoutId = null;
+		}
+
 		const nextDelay = this.getNextRequestDelay( now );
 
-		if ( nextDelay !== currentDelay ) {
-			this.stop();
-
-			if ( nextDelay !== null ) {
-				debug( `Scheduling next update for ${ nextDelay / 1000 } seconds from now.` );
-				this.nextRequestTime = new Date( now.getTime() + nextDelay );
-				this.timeoutId = this.setTimeout( this.processRequests, nextDelay );
-			}
+		if ( null !== nextDelay ) {
+			debug( `Scheduling next update for ${ nextDelay / 1000 } seconds from now.` );
+			this.timeoutId = this.setTimeout( this.processRequests, nextDelay );
 		}
-	}
+	};
 
 	/**
 	 * Processes the current collection of requests.
@@ -59,7 +56,7 @@ export default class Scheduler {
 		this.resendTimeouts();
 		this.sendReadyRequests();
 		this.updateDelay();
-	}
+	};
 
 	/**
 	 * Gets the next time a request is due to be sent.
@@ -80,7 +77,7 @@ export default class Scheduler {
 		} );
 
 		return delay;
-	}
+	};
 
 	/**
 	 * Finds a request that is either scheduled or overdue.
@@ -96,7 +93,7 @@ export default class Scheduler {
 			}
 			return false;
 		} );
-	}
+	};
 
 	/**
 	 * Finds requests that are in flight by resourceName
@@ -108,7 +105,7 @@ export default class Scheduler {
 		return this.requests.filter( ( r ) => {
 			return ( resourceName === r.resourceName && STATUS.inFlight === r.getStatus( now ) );
 		} );
-	}
+	};
 
 	/**
 	 * Schedule a read of a resource name according to the requirement set given.
@@ -193,7 +190,7 @@ export default class Scheduler {
 	 * @return {boolean} True if the request is ready to be sent, false otherwise.
 	 */
 	isRequestReady = ( request, now = new Date() ) => {
-		const status = request.getStatus( now = new Date() );
+		const status = request.getStatus( now );
 		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
 			const timeLeft = request.getTimeLeft( now );
 			return ( timeLeft <= 0 );

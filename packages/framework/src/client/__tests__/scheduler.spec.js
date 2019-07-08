@@ -25,7 +25,6 @@ describe( 'Scheduler', () => {
 			expect( scheduler.setTimeout ).toBe( setTimeout );
 			expect( scheduler.clearTimeout ).toBe( clearTimeout );
 			expect( scheduler.timeoutId ).toBe( null );
-			expect( scheduler.nextRequestTime ).toBe( null );
 		} );
 
 		it( 'defaults to window.setTimeout and window.clearTimeout', () => {
@@ -126,10 +125,9 @@ describe( 'Scheduler', () => {
 			expect( setTimeout.mock.calls[ 0 ][ 1 ] ).toBe( 0 );
 		} );
 
-		it( 'Stops timeout and starts a new timeout when a newer request is scheduled', () => {
+		it( 'Starts a new timeout when a newer request is scheduled', () => {
 			const setTimeout = jest.fn();
 			const scheduler = new Scheduler( () => {}, setTimeout, () => {} );
-			scheduler.stop = jest.fn();
 
 			scheduler.requests.push(
 				new ResourceRequest( 'resource1', { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, now )
@@ -137,7 +135,6 @@ describe( 'Scheduler', () => {
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests.push(
 				new ResourceRequest( 'resource1', { freshness: 4 * MINUTE }, { lastReceived: threeMinutesAgo }, now )
@@ -145,16 +142,14 @@ describe( 'Scheduler', () => {
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 2 );
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 2 );
 
 			expect( setTimeout.mock.calls[ 1 ][ 0 ] ).toBe( scheduler.processRequests );
 			expect( setTimeout.mock.calls[ 1 ][ 1 ] / MINUTE ).toBeCloseTo( 1, 2 );
 		} );
 
-		it( 'Stops timeout and starts a new zero timeout when a immediately due request is scheduled', () => {
+		it( 'Starts a new zero timeout when a immediately due request is scheduled', () => {
 			const setTimeout = jest.fn();
 			const scheduler = new Scheduler( () => {}, setTimeout, () => {} );
-			scheduler.stop = jest.fn();
 
 			scheduler.requests.push(
 				new ResourceRequest( 'resource1', { freshness: 5 * MINUTE }, { lastReceived: threeMinutesAgo }, now )
@@ -162,7 +157,6 @@ describe( 'Scheduler', () => {
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests.push(
 				new ResourceRequest( 'resource2', {}, {}, now )
@@ -170,16 +164,14 @@ describe( 'Scheduler', () => {
 			scheduler.updateDelay( now );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 2 );
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 2 );
 
 			expect( setTimeout.mock.calls[ 1 ][ 0 ] ).toBe( scheduler.processRequests );
 			expect( setTimeout.mock.calls[ 1 ][ 1 ] ).toBe( 0 );
 		} );
 
-		it( 'Stops timeout and does not start a new one if there are no longer any requests scheduled/overdue', () => {
+		it( 'Does not start a new one if there are no longer any requests scheduled/overdue', () => {
 			const setTimeout = jest.fn();
 			const scheduler = new Scheduler( () => {}, setTimeout, () => {} );
-			scheduler.stop = jest.fn();
 
 			scheduler.requests.push(
 				new ResourceRequest( 'resource1', { freshness: 5 * MINUTE }, { lastReceived: fourMinutesAgo }, threeMinutesAgo )
@@ -187,12 +179,10 @@ describe( 'Scheduler', () => {
 			scheduler.updateDelay( threeMinutesAgo );
 
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 1 );
 
 			scheduler.requests[ 0 ].getStatus = () => STATUS.complete;
 			scheduler.updateDelay( now );
 
-			expect( scheduler.stop ).toHaveBeenCalledTimes( 2 );
 			expect( setTimeout ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
