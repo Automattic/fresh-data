@@ -673,48 +673,6 @@ describe( 'Scheduler', () => {
 				expect( scheduler.requests[ 1 ].getStatus( now ) ).toBe( STATUS.complete );
 			} );
 		} );
-	} );
-
-	describe( 'cleanUp', () => {
-		it( 'does not clear scheduled requests', () => {
-			const operations = {
-				read: jest.fn(),
-			};
-			const scheduler = new Scheduler( operations, () => {}, () => {} );
-
-			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
-			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
-
-			expect( scheduler.requests.length ).toBe( 1 );
-
-			scheduler.cleanUp();
-
-			expect( scheduler.requests.length ).toBe( 1 );
-			expect( scheduler.requests[ 0 ].getStatus() ).toBe( STATUS.scheduled );
-		} );
-
-		it( 'clears out completed and failed requests', () => {
-			const operations = {
-				read: jest.fn(),
-			};
-			const scheduler = new Scheduler( operations, () => {}, () => {} );
-
-			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
-			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
-
-			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', undefined, now );
-			scheduler.requests[ 1 ].getStatus = () => STATUS.complete;
-
-			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', undefined, now );
-			scheduler.requests[ 2 ].getStatus = () => STATUS.failed;
-
-			expect( scheduler.requests.length ).toBe( 3 );
-
-			scheduler.cleanUp();
-
-			expect( scheduler.requests.length ).toBe( 1 );
-			expect( scheduler.requests[ 0 ].getStatus() ).toBe( STATUS.scheduled );
-		} );
 
 		it( 'combines data from multiple requests into one operation call', () => {
 			const operations = {
@@ -852,6 +810,48 @@ describe( 'Scheduler', () => {
 					{ resource2: { data: { two: 'two' } } },
 				);
 			} );
+		} );
+	} );
+
+	describe( 'cleanUp', () => {
+		it( 'does not clear scheduled requests', () => {
+			const operations = {
+				read: jest.fn(),
+			};
+			const scheduler = new Scheduler( operations, () => {}, () => {} );
+
+			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
+			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
+
+			expect( scheduler.requests.length ).toBe( 1 );
+
+			scheduler.cleanUp();
+
+			expect( scheduler.requests.length ).toBe( 1 );
+			expect( scheduler.requests[ 0 ].getStatus() ).toBe( STATUS.scheduled );
+		} );
+
+		it( 'clears out completed and failed requests', () => {
+			const operations = {
+				read: jest.fn(),
+			};
+			const scheduler = new Scheduler( operations, () => {}, () => {} );
+
+			scheduler.scheduleRequest( {}, {}, 'scheduledResource', 'read', undefined, now );
+			scheduler.requests[ 0 ].getStatus = () => STATUS.scheduled;
+
+			scheduler.scheduleRequest( {}, {}, 'completeResource', 'read', undefined, now );
+			scheduler.requests[ 1 ].getStatus = () => STATUS.complete;
+
+			scheduler.scheduleRequest( {}, {}, 'failedResource', 'read', undefined, now );
+			scheduler.requests[ 2 ].getStatus = () => STATUS.failed;
+
+			expect( scheduler.requests.length ).toBe( 3 );
+
+			scheduler.cleanUp();
+
+			expect( scheduler.requests.length ).toBe( 1 );
+			expect( scheduler.requests[ 0 ].getStatus() ).toBe( STATUS.scheduled );
 		} );
 	} );
 

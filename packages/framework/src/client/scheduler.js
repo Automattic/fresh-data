@@ -103,7 +103,7 @@ export default class Scheduler {
 	/**
 	 * Finds a request that is either scheduled or overdue.
 	 * @param {string} resourceName The name of the resource for the operation
-	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {string} operation The name of the operation to be performed
 	 * @param {Date} now The current time.
 	 * @return {ResourceRequest} The scheduled request, or null if none found
 	 */
@@ -121,7 +121,7 @@ export default class Scheduler {
 	/**
 	 * Finds requests that are in flight by resourceName
 	 * @param {string} resourceName The name of the resource to check
-	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {string} operation The name of the operation to be performed
 	 * @param {Date} now The current time.
 	 * @return {Array} Any requests for the given resource which are currently in flight.
 	 */
@@ -140,7 +140,7 @@ export default class Scheduler {
 	 * @param {Object} requirement The set of requirements (freshness, timeout)
 	 * @param {Object} resourceState The current snapshot of resource state
 	 * @param {string} resourceName The name of the resource for the operation
-	 * @param {string} operation The name of the operation to be performed (defaults to 'read')
+	 * @param {string} operation The name of the operation to be performed
 	 * @param {Object} data The data to be sent for the operation (defaults to undefined)
 	 * @param {Date} now The current time.
 	 */
