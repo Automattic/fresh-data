@@ -4,9 +4,6 @@
  * in order to use Fresh Data with your own APIs.
  */
 
-// Combine this in your top-level Redux reducer under 'freshData'.
-export { default as reducer } from './reducer/index';
-
 // Children of the ApiProvider can access API data from context.
 export { default as ApiProvider } from './provider';
 
