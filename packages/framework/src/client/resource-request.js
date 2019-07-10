@@ -15,7 +15,7 @@ export const STATUS = {
 };
 
 export default class ResourceRequest {
-	constructor( resourceName, requirement, resourceState, now ) {
+	constructor( resourceName, requirement, resourceState, now = new Date() ) {
 		this.debug = debugFactory( 'fresh-data:request(' + resourceName + ')' );
 		this.resourceName = resourceName;
 		this.time = calculateRequestTime( requirement, resourceState, now );
@@ -31,7 +31,7 @@ export default class ResourceRequest {
 		}
 	}
 
-	addRequirement( requirement, resourceState, now ) {
+	addRequirement( requirement, resourceState, now = new Date() ) {
 		const status = this.getStatus( now );
 		if ( STATUS.scheduled === status || STATUS.overdue === status ) {
 			const requestTime = calculateRequestTime( requirement, resourceState, now );
