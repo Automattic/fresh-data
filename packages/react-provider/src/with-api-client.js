@@ -46,7 +46,6 @@ export default function withApiClient( options ) {
 				const { client } = this.state;
 				if ( client ) {
 					client.unsubscribe( this.handleSubscriptionChange );
-					client.setComponentData( this );
 				}
 			}
 
@@ -89,12 +88,8 @@ export default function withApiClient( options ) {
 
 				if ( client ) {
 					if ( mapSelectorsToProps ) {
-						client.setComponentData(
-							this,
-							( selectors ) => {
-								selectorProps = mapSelectorsToProps( selectors, this.props );
-							}
-						);
+						const selectors = client.getSelectors();
+						selectorProps = mapSelectorsToProps( selectors, this.props );
 					}
 
 					if ( mapMutationsToProps ) {

@@ -207,25 +207,20 @@ describe( 'withApiClient', () => {
 		} );
 
 		// TODO: This test runs code a bit deep, split it up into an ApiClient test and this one.
-		it( 'should provide working mutation functions to derived props.', () => {
-			const putFunc = jest.fn();
-			const updateFunc = jest.fn();
-
+		it( 'should schedule operations via mutation functions.', () => {
 			apiSpec = {
 				operations: {
 					update: ( resourceNames, resourceData ) => {
 						const filteredNames = resourceNames.filter( name => startsWith( name, 'thing:' ) );
 						return filteredNames.reduce( ( requests, name ) => {
-							const id = name.substr( name.indexOf( ':' ) + 1 );
 							const data = resourceData[ name ];
-							requests[ name ] = putFunc( [ 'things', id ], { data } );
+							requests[ name ] = { data };
 							return requests;
 						}, {} );
 					},
 				},
 				mutations: {
 					updateThing: ( operations ) => ( id, data ) => {
-						updateFunc( id, data );
 						const resourceName = `thing:${ id }`;
 						operations.update( [ resourceName ], { [ resourceName ]: data } );
 					},
@@ -254,13 +249,11 @@ describe( 'withApiClient', () => {
 			const ComponentWithApiClient = withApiClient( { mapMutationsToProps } )( Component );
 			mount( <ComponentWithApiClient testProp="testValue" />, { context: { getApiClient } } );
 
-			expect( updateFunc ).not.toHaveBeenCalled();
-
 			mutationProps.updateThing( 1, { id: 1, color: 'red' } );
-			expect( updateFunc ).toHaveBeenCalledTimes( 1 );
-			expect( updateFunc ).toHaveBeenCalledWith( 1, { id: 1, color: 'red' } );
-			expect( putFunc ).toHaveBeenCalledTimes( 1 );
-			expect( putFunc ).toHaveBeenCalledWith( [ 'things', '1' ], { data: { id: 1, color: 'red' } } );
+
+			const request = apiClient.scheduler.getScheduledRequest( 'thing:1', 'update' );
+			expect( request ).not.toBeUndefined();
+			expect( request.data ).toEqual( { id: 1, color: 'red' } );
 		} );
 	} );
 

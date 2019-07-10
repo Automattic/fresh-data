@@ -122,8 +122,8 @@ describe( 'ApiProvider', () => {
 			);
 			const provider = wrapper.instance();
 
-			expect( provider.apiClient.dataHandlers.dataRequested ).toBe( provider.dataRequested );
-			expect( provider.apiClient.dataHandlers.dataReceived ).toBe( provider.dataReceived );
+			expect( provider.apiClient.scheduler.dataRequested ).toBe( provider.dataRequested );
+			expect( provider.apiClient.scheduler.dataReceived ).toBe( provider.dataReceived );
 
 			provider.dataRequested( [ 'one', 'two' ] );
 

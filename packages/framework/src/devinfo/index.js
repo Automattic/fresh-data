@@ -1,7 +1,3 @@
-import getComponents from './components';
-import getResources from './resources';
-import getSummary from './summary';
-
 const devInfo = {};
 
 /**
@@ -30,14 +26,9 @@ export function updateDevInfo( client ) {
  * @return {Object} A devInfo object with summary, resources, and components.
  */
 function generateDevInfo( client ) {
-	const components = getComponents( client );
-	const resources = getResources( client );
-	const summary = getSummary( resources );
-
 	const info = {
-		summary,
-		resources,
-		components,
+		// TODO: Re-add info based on scheduler data.
+		name: client.getName(),
 	};
 
 	return info;
