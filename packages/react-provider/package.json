@@ -102,7 +102,9 @@
 		"moduleNameMapper": {
 			"\\.(css)$": "identity-obj-proxy"
 		},
-		"setupFilesAfterEnv": [ "jest-enzyme" ],
+		"setupFilesAfterEnv": [
+			"jest-enzyme"
+		],
 		"testEnvironment": "enzyme",
 		"testPathIgnorePatterns": [
 			"/node_modules/",
