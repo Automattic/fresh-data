@@ -1,6 +1,6 @@
 {
   "name": "example_github-api",
-  "version": "0.6.1",
+  "version": "0.7.0-beta.0",
   "license": "MIT",
   "private": true,
   "scripts": {
