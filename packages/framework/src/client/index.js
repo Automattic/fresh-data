@@ -18,6 +18,8 @@ export default class ApiClient {
 		this.dataHandlers = null;
 		this.subscriptionCallbacks = new Set();
 		this.state = {};
+		// TODO: This will no longer be necessary when redux state is simplified out.
+		this.isStateStale = false;
 
 		this.readOperationName = readOperationName;
 
@@ -45,8 +47,15 @@ export default class ApiClient {
 		return this.name || ( 'UID_' + this.uid );
 	}
 
+	// TODO: This function will no longer be necessary when redux state is simplified out.
 	setDataHandlers = ( { dataRequested, dataReceived } ) => {
-		this.scheduler.setDataHandlers( dataRequested, dataReceived );
+		this.scheduler.setDataHandlers( ( resourceNames ) => {
+			this.isStateStale = true;
+			dataRequested( resourceNames );
+		}, ( resources ) => {
+			this.isStateStale = true;
+			dataReceived( resources );
+		} );
 	}
 
 	setState = ( state ) => {
@@ -55,6 +64,7 @@ export default class ApiClient {
 			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
 			updateDevInfo( this );
 		}
+		this.isStateStale = false;
 	}
 
 	subscribe = ( callback ) => {
@@ -84,7 +94,13 @@ export default class ApiClient {
 	requireResource = ( requirement, resourceName, now = new Date() ) => {
 		const resources = this.state.resources || {};
 		const resourceState = resources[ resourceName ] || {};
-		this.scheduler.scheduleRequest( requirement, resourceState, resourceName, this.readOperationName, undefined, now );
+		// TODO: Remove this check after redux state is simplified out.
+		// This is necessary because components are getting re-rendered twice when dataReceived is dispatched.
+		// First before the state is updated, and second afterwards. This prevents resources from getting rescheduled
+		// on the first re-render. After redux dispatching is no longer used, components should no longer re-render twice.
+		if ( ! this.isStateStale ) {
+			this.scheduler.scheduleRequest( requirement, resourceState, resourceName, this.readOperationName, undefined, now );
+		}
 		return this.getResource( resourceName );
 	};
 
