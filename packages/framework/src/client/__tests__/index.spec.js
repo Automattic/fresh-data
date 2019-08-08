@@ -146,15 +146,19 @@ describe( 'ApiClient', () => {
 	describe( '#setDataHandlers', () => {
 		it( 'should set the data handlers on the scheduler', () => {
 			const apiClient = new ApiClient( {} );
-			apiClient.scheduler.setDataHandlers = jest.fn();
 
-			const dataRequested = () => {};
-			const dataReceived = () => {};
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
 
 			apiClient.setDataHandlers( { dataRequested, dataReceived } );
 
-			expect( apiClient.scheduler.setDataHandlers ).toHaveBeenCalledTimes( 1 );
-			expect( apiClient.scheduler.setDataHandlers ).toHaveBeenCalledWith( dataRequested, dataReceived );
+			apiClient.scheduler.dataRequested( { 1: 'one' } );
+			apiClient.scheduler.dataReceived( { 2: 'two' } );
+
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( { 1: 'one' } );
+			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
+			expect( dataReceived ).toHaveBeenCalledWith( { 2: 'two' } );
 		} );
 	} );
 
