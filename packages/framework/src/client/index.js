@@ -19,7 +19,10 @@ export default class ApiClient {
 		this.subscriptionCallbacks = new Set();
 		this.state = {};
 		// TODO: This will no longer be necessary when redux state is simplified out.
-		this.isStateStale = false;
+		// This variable is used to keep track of the moment
+		// between the data handler being called and the new state being set on the client.
+		// During this moment, no requests should be scheduled because they'd be working on timestamps that are out of date.
+		this.isClientStateInSync = false;
 
 		this.readOperationName = readOperationName;
 
@@ -50,10 +53,10 @@ export default class ApiClient {
 	// TODO: This function will no longer be necessary when redux state is simplified out.
 	setDataHandlers = ( { dataRequested, dataReceived } ) => {
 		this.scheduler.setDataHandlers( ( resourceNames ) => {
-			this.isStateStale = true;
+			this.isClientStateInSync = false;
 			dataRequested( resourceNames );
 		}, ( resources ) => {
-			this.isStateStale = true;
+			this.isClientStateInSync = false;
 			dataReceived( resources );
 		} );
 	}
@@ -64,7 +67,7 @@ export default class ApiClient {
 			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
 			updateDevInfo( this );
 		}
-		this.isStateStale = false;
+		this.isClientStateInSync = true;
 	}
 
 	subscribe = ( callback ) => {
@@ -98,7 +101,7 @@ export default class ApiClient {
 		// This is necessary because components are getting re-rendered twice when dataReceived is dispatched.
 		// First before the state is updated, and second afterwards. This prevents resources from getting rescheduled
 		// on the first re-render. After redux dispatching is no longer used, components should no longer re-render twice.
-		if ( ! this.isStateStale ) {
+		if ( this.isClientStateInSync ) {
 			this.scheduler.scheduleRequest( requirement, resourceState, resourceName, this.readOperationName, undefined, now );
 		}
 		return this.getResource( resourceName );
