@@ -266,7 +266,9 @@ export async function sendOperation( operation, requests, dataReceived, now ) {
 		requests.forEach( ( request ) => {
 			request.requestComplete();
 		} );
-		resourceSets.forEach( ( resources ) => dataReceived( resources ) );
+		resourceSets.forEach( ( resources ) => {
+			dataReceived( resources );
+		} );
 	} ).catch( ( error ) => {
 		requests.forEach( ( request ) => {
 			request.requestFailed( error );

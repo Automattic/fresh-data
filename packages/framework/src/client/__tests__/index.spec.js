@@ -146,15 +146,19 @@ describe( 'ApiClient', () => {
 	describe( '#setDataHandlers', () => {
 		it( 'should set the data handlers on the scheduler', () => {
 			const apiClient = new ApiClient( {} );
-			apiClient.scheduler.setDataHandlers = jest.fn();
 
-			const dataRequested = () => {};
-			const dataReceived = () => {};
+			const dataRequested = jest.fn();
+			const dataReceived = jest.fn();
 
 			apiClient.setDataHandlers( { dataRequested, dataReceived } );
 
-			expect( apiClient.scheduler.setDataHandlers ).toHaveBeenCalledTimes( 1 );
-			expect( apiClient.scheduler.setDataHandlers ).toHaveBeenCalledWith( dataRequested, dataReceived );
+			apiClient.scheduler.dataRequested( { 1: 'one' } );
+			apiClient.scheduler.dataReceived( { 2: 'two' } );
+
+			expect( dataRequested ).toHaveBeenCalledTimes( 1 );
+			expect( dataRequested ).toHaveBeenCalledWith( { 1: 'one' } );
+			expect( dataReceived ).toHaveBeenCalledTimes( 1 );
+			expect( dataReceived ).toHaveBeenCalledWith( { 2: 'two' } );
 		} );
 	} );
 
@@ -208,6 +212,7 @@ describe( 'ApiClient', () => {
 		it( 'should schedule a request for a resource that does not yet exist.', () => {
 			const apiClient = new ApiClient( emptyApiSpec );
 			apiClient.scheduler.scheduleRequest = jest.fn();
+			apiClient.setState( {} );
 
 			apiClient.requireResource( {}, 'thing:1', now );
 
@@ -218,7 +223,7 @@ describe( 'ApiClient', () => {
 		it( 'should schedule a request for a resource that already exists.', () => {
 			const apiClient = new ApiClient( emptyApiSpec );
 			apiClient.scheduler.scheduleRequest = jest.fn();
-			apiClient.state = { resources: { 'thing:1': { lastReceived: 2 * SECOND } } };
+			apiClient.setState( { resources: { 'thing:1': { lastReceived: 2 * SECOND } } } );
 
 			const requirement = { freshness: 5 * SECOND };
 
