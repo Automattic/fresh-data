@@ -1,6 +1,6 @@
 {
   "name": "example_wp-rest-api",
-  "version": "0.7.0-beta.0",
+  "version": "0.7.0-beta.1",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -15,8 +15,8 @@
     "react-scripts": "^3.0.0"
   },
   "dependencies": {
-    "@fresh-data/framework": "^0.7.0-beta",
-    "@fresh-data/react-provider": "^0.7.0-beta",
+    "@fresh-data/framework": "^0.7.0-beta.1",
+    "@fresh-data/react-provider": "^0.7.0-beta.1",
     "ajv": "^6.10.0",
     "debug": "^4.1.1",
     "lodash": "^4.17.11",
