@@ -212,6 +212,7 @@ describe( 'ApiClient', () => {
 		it( 'should schedule a request for a resource that does not yet exist.', () => {
 			const apiClient = new ApiClient( emptyApiSpec );
 			apiClient.scheduler.scheduleRequest = jest.fn();
+			apiClient.setState( {} );
 
 			apiClient.requireResource( {}, 'thing:1', now );
 
@@ -222,7 +223,7 @@ describe( 'ApiClient', () => {
 		it( 'should schedule a request for a resource that already exists.', () => {
 			const apiClient = new ApiClient( emptyApiSpec );
 			apiClient.scheduler.scheduleRequest = jest.fn();
-			apiClient.state = { resources: { 'thing:1': { lastReceived: 2 * SECOND } } };
+			apiClient.setState( { resources: { 'thing:1': { lastReceived: 2 * SECOND } } } );
 
 			const requirement = { freshness: 5 * SECOND };
 
