@@ -6,7 +6,7 @@ import Scheduler from './scheduler';
 const DEFAULT_READ_OPERATION = 'read';
 
 export default class ApiClient {
-	constructor( apiSpec ) {
+	constructor( apiSpec, appDocument = document ) {
 		const { operations, mutations, selectors } = apiSpec;
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
 
@@ -43,11 +43,29 @@ export default class ApiClient {
 		);
 		this.mutations = mutations && mapFunctions( mutations, mutationOperations );
 
+		if ( appDocument ) {
+			this.setVisibilityListener( appDocument );
+		}
+
 		updateDevInfo( this );
 	}
 
 	getName = () => {
 		return this.name || ( 'UID_' + this.uid );
+	}
+
+	setVisibilityListener = ( appDocument ) => {
+		appDocument.addEventListener( 'visibilitychange', () => {
+			const isHidden = ( 'hidden' === appDocument.visibilityState );
+
+			if ( isHidden ) {
+				this.debug( 'App has become hidden, cancelling updates until visible again.' );
+				this.scheduler.stop();
+			} else {
+				this.debug( 'App has become visible again, scheduling next update.' );
+				this.scheduler.updateDelay();
+			}
+		} );
 	}
 
 	// TODO: This function will no longer be necessary when redux state is simplified out.

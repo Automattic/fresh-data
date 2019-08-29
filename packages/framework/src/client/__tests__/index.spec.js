@@ -37,8 +37,37 @@ describe( 'ApiClient', () => {
 	};
 
 	it( 'should initialize to empty state', () => {
-		const apiClient = new ApiClient( emptyApiSpec );
+		const apiClient = new ApiClient( emptyApiSpec, null );
 		expect( apiClient.state ).toEqual( {} );
+	} );
+
+	it( 'should stop scheduler when hidden and update scheduler when visible', () => {
+		let eventListener = null;
+		const doc = {
+			addEventListener: ( name, listener ) => {
+				eventListener = listener;
+			},
+			visibilityState: 'visible',
+		};
+		const apiClient = new ApiClient( emptyApiSpec, doc );
+		apiClient.scheduler = {
+			stop: jest.fn(),
+			updateDelay: jest.fn(),
+		};
+
+		expect( eventListener ).not.toBe( null );
+
+		// Simulate tab hidden
+		doc.visibilityState = 'hidden';
+		eventListener()
+
+		expect( apiClient.scheduler.stop ).toHaveBeenCalledTimes( 1 );
+
+		// Simulate tab shown again
+		doc.visibilityState = 'visible';
+		eventListener()
+
+		expect( apiClient.scheduler.updateDelay ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'should map mutations to operations', () => {
@@ -59,7 +88,7 @@ describe( 'ApiClient', () => {
 			},
 		};
 
-		const apiClient = new ApiClient( apiSpec );
+		const apiClient = new ApiClient( apiSpec, null );
 		apiClient.scheduler.scheduleMutationOperation = jest.fn();
 
 		apiClient.getMutations().createThing();
@@ -87,7 +116,7 @@ describe( 'ApiClient', () => {
 			},
 		};
 
-		const apiClient = new ApiClient( apiSpec );
+		const apiClient = new ApiClient( apiSpec, null );
 		apiClient.setState( {
 			resources: {
 				resource1: { data: { one: 1 } },
@@ -115,7 +144,7 @@ describe( 'ApiClient', () => {
 		const apiSpec = {
 			selectors: thingSelectors,
 		};
-		const apiClient = new ApiClient( apiSpec );
+		const apiClient = new ApiClient( apiSpec, null );
 		apiClient.setState( thing1ClientState );
 
 		const dataThing1 = apiClient.getResource( 'thing:1' ).data;
@@ -128,14 +157,14 @@ describe( 'ApiClient', () => {
 				name: 'apiname',
 			};
 
-			const apiClient = new ApiClient( apiSpec );
+			const apiClient = new ApiClient( apiSpec, null );
 
 			expect( apiClient.getName() ).toBe( 'apiname' );
 		} );
 
 		it ( 'should create a unique name if no name given in apiSpec', () => {
-			const apiClient1 = new ApiClient( {} );
-			const apiClient2 = new ApiClient( {} );
+			const apiClient1 = new ApiClient( {}, null );
+			const apiClient2 = new ApiClient( {}, null );
 
 			expect( isString( apiClient1.getName() ) ).toBeTruthy();
 			expect( isString( apiClient2.getName() ) ).toBeTruthy();
@@ -145,7 +174,7 @@ describe( 'ApiClient', () => {
 
 	describe( '#setDataHandlers', () => {
 		it( 'should set the data handlers on the scheduler', () => {
-			const apiClient = new ApiClient( {} );
+			const apiClient = new ApiClient( {}, null );
 
 			const dataRequested = jest.fn();
 			const dataReceived = jest.fn();
@@ -165,14 +194,14 @@ describe( 'ApiClient', () => {
 	describe( '#setState', () => {
 		it( 'should set state', () => {
 			const clientState = { resources: {} };
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.setState( clientState );
 			expect( apiClient.state ).toBe( clientState );
 		} );
 
 		it( 'should not set an identical state', () => {
 			const clientState = { resources: {} };
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 
 			const callback = jest.fn();
 			apiClient.subscribe( callback );
@@ -186,12 +215,12 @@ describe( 'ApiClient', () => {
 
 	describe( '#getResource', () => {
 		it( 'should return an empty object if the resource does not yet exist.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			expect( apiClient.getResource( 'nonexistentResource:1' ) ).toEqual( {} );
 		} );
 
 		it( 'should return resource state.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.getResource( 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
 		} );
@@ -199,18 +228,18 @@ describe( 'ApiClient', () => {
 
 	describe( '#requireResource', () => {
 		it( 'should return an empty object if the resource does not yet exist.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			expect( apiClient.requireResource( {}, 'nonexistentResource:1' ) ).toEqual( {} );
 		} );
 
 		it( 'should return resource state just like getResource.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.requireResource( {}, 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
 		} );
 
 		it( 'should schedule a request for a resource that does not yet exist.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.scheduler.scheduleRequest = jest.fn();
 			apiClient.setState( {} );
 
@@ -221,7 +250,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should schedule a request for a resource that already exists.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.scheduler.scheduleRequest = jest.fn();
 			apiClient.setState( { resources: { 'thing:1': { lastReceived: 2 * SECOND } } } );
 
@@ -236,7 +265,7 @@ describe( 'ApiClient', () => {
 
 	describe( '#subscribe', () => {
 		it( 'should add a callback to the subscription list.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			const callback = jest.fn();
 
 			expect( apiClient.subscriptionCallbacks.size ).toBe( 0 );
@@ -249,7 +278,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not add a callback multiple times.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			const callback = jest.fn();
 
 			expect( apiClient.subscribe( callback ) ).toBe( callback );
@@ -260,7 +289,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should remove a callback to the subscription list.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			const callback = jest.fn();
 
 			apiClient.subscribe( callback );
@@ -271,7 +300,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should not attempt remove a callback twice.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			const callback = jest.fn();
 
 			apiClient.subscribe( callback );
@@ -282,7 +311,7 @@ describe( 'ApiClient', () => {
 		} );
 
 		it( 'should call the callback whenever state is set on the client.', () => {
-			const apiClient = new ApiClient( emptyApiSpec );
+			const apiClient = new ApiClient( emptyApiSpec, null );
 			const callback = jest.fn();
 			const state = {};
 
