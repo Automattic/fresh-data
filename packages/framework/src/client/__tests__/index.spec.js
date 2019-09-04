@@ -59,15 +59,16 @@ describe( 'ApiClient', () => {
 
 		// Simulate tab hidden
 		doc.visibilityState = 'hidden';
-		eventListener()
+		eventListener();
 
 		expect( apiClient.scheduler.stop ).toHaveBeenCalledTimes( 1 );
 
 		// Simulate tab shown again
 		doc.visibilityState = 'visible';
-		eventListener()
+		eventListener();
 
 		expect( apiClient.scheduler.updateDelay ).toHaveBeenCalledTimes( 1 );
+		expect( apiClient.scheduler.stop ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'should map mutations to operations', () => {
