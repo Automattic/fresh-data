@@ -31,7 +31,7 @@
 		"@fresh-data/framework": "file:./packages/framework",
 		"babel-eslint": "10.0.2",
 		"codecov": "3.5.0",
-		"cross-env": "5.2.0",
+		"cross-env": "5.2.1",
 		"eslint": "6.3.0",
 		"eslint-config-wordpress": "2.0.0",
 		"eslint-plugin-jest": "22.17.0",
