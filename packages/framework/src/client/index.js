@@ -160,15 +160,27 @@ export default class ApiClient {
 	}
 
 	/**
-	 * Gets a resource without requiring it.
+	 * Gets a resource and optionally requires it.
 	 *
 	 * @param {string} resourceName The name of the resource to retrieve.
+	 * @param {Object} [requirement] Optional requirements object. e.g. `{ freshness: 15 * MINUTE }`
+	 * @param {Date} [now] Date as of now (for testing)
 	 * @return {Object} The resource object for the given name, or undefined if none.
 	 */
-	getResource = ( resourceName ) => {
+	getResource = ( resourceName, requirement = false, now = new Date() ) => {
 		const resources = this.state.resources || {};
-		const resource = resources[ resourceName ] || {};
-		return resource;
+		const resourceState = resources[ resourceName ] || {};
+
+		if ( requirement ) {
+			// TODO: Remove this check after redux state is simplified out.
+			// This is necessary because components are getting re-rendered twice when dataReceived is dispatched.
+			// First before the state is updated, and second afterwards. This prevents resources from getting rescheduled
+			// on the first re-render. After redux dispatching is no longer used, components should no longer re-render twice.
+			if ( this.isClientStateInSync ) {
+				this.scheduler.scheduleRequest( requirement, resourceState, resourceName, this.readOperationName, undefined, now );
+			}
+		}
+		return resourceState;
 	};
 
 	/**
@@ -176,12 +188,17 @@ export default class ApiClient {
 	 *
 	 * This function is deprecated. Use `getResource()` instead.
 	 *
+	 * @deprecated in 0.8.0
+	 *
 	 * @param {Object} [requirement] Optional requirements object. e.g. `{ freshness: 15 * MINUTE }`
 	 * @param {string} resourceName The name of the resource to retrieve.
 	 * @param {Date} [now] Date as of now (for testing)
 	 * @return {Object} The resource object for the given name, or undefined if none.
 	 */
 	requireResource = ( requirement, resourceName, now = new Date() ) => {
+		// TODO: Add link to github readme doc in message below.
+		console.warn( 'fresh-data requireResource is deprecated, use getResource instead' ); // eslint-disable-line no-console
+
 		const resources = this.state.resources || {};
 		const resourceState = resources[ resourceName ] || {};
 		// TODO: Remove this check after redux state is simplified out.
