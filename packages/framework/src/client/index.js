@@ -5,7 +5,18 @@ import Scheduler from './scheduler';
 
 const DEFAULT_READ_OPERATION = 'read';
 
+/**
+ * ApiClient class
+ *
+ * An instance of this class represents an active connection to an API with a set of resources scheduled to be fetched.
+ */
 export default class ApiClient {
+	/**
+	 * Creates an API Client from an API Spec
+	 *
+	 * @param {Object} apiSpec The specification for this client, contains operations, selectors, mutations
+	 * @param {Document} appDocument The application document to be used, defaults to global document
+	 */
 	constructor( apiSpec, appDocument = document ) {
 		const { operations, mutations, selectors } = apiSpec;
 		const readOperationName = apiSpec.readOperationName || DEFAULT_READ_OPERATION;
@@ -50,10 +61,25 @@ export default class ApiClient {
 		updateDevInfo( this );
 	}
 
+	/**
+	 * Gets the name of this API client.
+	 *
+	 * @return {string} The name of the API spec or a randomly generated name.
+	 */
 	getName = () => {
 		return this.name || ( 'UID_' + this.uid );
 	}
 
+	/**
+	 * Sets the visibility listener for this client.
+	 *
+	 * This is used to prevent requests when the document is not visible.
+	 * This usually happens when another tab is active, or another workspace.
+	 *
+	 * See https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
+	 *
+	 * @param {Document} appDocument The document object (defaults to window.document)
+	 */
 	setVisibilityListener = ( appDocument ) => {
 		appDocument.addEventListener( 'visibilitychange', () => {
 			const isHidden = ( 'hidden' === appDocument.visibilityState );
@@ -68,7 +94,13 @@ export default class ApiClient {
 		} );
 	}
 
-	// TODO: This function will no longer be necessary when redux state is simplified out.
+	/**
+	 * Sets the data handlers for this client.
+	 *
+	 * TODO: This function will no longer be necessary when redux state is simplified out.
+	 *
+	 * @param {Object} dataHandlers contains functions for `dataRequested` and `dataReceived`.
+	 */
 	setDataHandlers = ( { dataRequested, dataReceived } ) => {
 		this.scheduler.setDataHandlers( ( resourceNames ) => {
 			this.isClientStateInSync = false;
@@ -79,6 +111,13 @@ export default class ApiClient {
 		} );
 	}
 
+	/**
+	 * Sets the state of this client.
+	 *
+	 * TODO: Remove this function after removing redux requirement.
+	 *
+	 * @param {Object} state The new state for the client.
+	 */
 	setState = ( state ) => {
 		if ( this.state === state ) {
 			return;
@@ -90,6 +129,12 @@ export default class ApiClient {
 		updateDevInfo( this );
 	}
 
+	/**
+	 * Subscribe to changes in the client state.
+	 *
+	 * @param {Function} callback The function to be called when any client resource state changes.
+	 * @return {Function} The callback given, or false if already subscribed.
+	 */
 	subscribe = ( callback ) => {
 		if ( this.subscriptionCallbacks.has( callback ) ) {
 			this.debug( 'Attempting to add a subscription callback twice:', callback );
@@ -99,6 +144,12 @@ export default class ApiClient {
 		return callback;
 	}
 
+	/**
+	 * Unsubscribe from changes in the client state.
+	 *
+	 * @param {Function} callback The callback to be unsubscribed.
+	 * @return {Function} The callback given, or false if not subscribed.
+	 */
 	unsubscribe = ( callback ) => {
 		if ( ! this.subscriptionCallbacks.has( callback ) ) {
 			this.debug( 'Attempting to remove a callback that is not subscribed:', callback );
@@ -108,12 +159,28 @@ export default class ApiClient {
 		return callback;
 	}
 
+	/**
+	 * Gets a resource without requiring it.
+	 *
+	 * @param {string} resourceName The name of the resource to retrieve.
+	 * @return {Object} The resource object for the given name, or undefined if none.
+	 */
 	getResource = ( resourceName ) => {
 		const resources = this.state.resources || {};
 		const resource = resources[ resourceName ] || {};
 		return resource;
 	};
 
+	/**
+	 * Requires a resource and returns it.
+	 *
+	 * This function is deprecated. Use `getResource()` instead.
+	 *
+	 * @param {Object} [requirement] Optional requirements object. e.g. `{ freshness: 15 * MINUTE }`
+	 * @param {string} resourceName The name of the resource to retrieve.
+	 * @param {Date} [now] Date as of now (for testing)
+	 * @return {Object} The resource object for the given name, or undefined if none.
+	 */
 	requireResource = ( requirement, resourceName, now = new Date() ) => {
 		const resources = this.state.resources || {};
 		const resourceState = resources[ resourceName ] || {};
@@ -127,10 +194,20 @@ export default class ApiClient {
 		return this.getResource( resourceName );
 	};
 
+	/**
+	 * Gets the mutations from the API Spec.
+	 *
+	 * @return {Object} The set of mutations given in the `apiSpec` when creating this api client.
+	 */
 	getMutations = () => {
 		return this.mutations;
 	}
 
+	/**
+	 * Gets the selectors from the API Spec.
+	 *
+	 * @return {Object} The set of selectors given in the `apiSpec` when creating this api client.
+	 */
 	getSelectors = () => {
 		return this.selectors;
 	}
