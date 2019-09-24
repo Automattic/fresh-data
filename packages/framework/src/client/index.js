@@ -80,12 +80,14 @@ export default class ApiClient {
 	}
 
 	setState = ( state ) => {
-		if ( this.state !== state ) {
-			this.state = state;
-			this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
-			updateDevInfo( this );
+		if ( this.state === state ) {
+			return;
 		}
+
+		this.state = state;
 		this.isClientStateInSync = true;
+		this.subscriptionCallbacks.forEach( ( callback ) => callback( this ) );
+		updateDevInfo( this );
 	}
 
 	subscribe = ( callback ) => {
