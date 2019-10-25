@@ -57,7 +57,7 @@
 		"codecov": "3.6.1",
 		"cross-env": "6.0.0",
 		"debug": "4.1.1",
-		"eslint": "6.4.0",
+		"eslint": "6.6.0",
 		"eslint-config-wordpress": "2.0.0",
 		"eslint-plugin-jest": "22.17.0",
 		"eslint-plugin-jsx-a11y": "6.2.3",
