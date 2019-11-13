@@ -55,7 +55,7 @@
 		"babel-eslint": "10.0.3",
 		"babel-jest": "24.9.0",
 		"codecov": "3.6.1",
-		"cross-env": "6.0.0",
+		"cross-env": "6.0.3",
 		"debug": "4.1.1",
 		"eslint": "6.6.0",
 		"eslint-config-wordpress": "2.0.0",
