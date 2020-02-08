@@ -30,7 +30,7 @@
 	"devDependencies": {
 		"@fresh-data/framework": "file:./packages/framework",
 		"babel-eslint": "10.0.3",
-		"codecov": "3.6.1",
+		"codecov": "3.6.5",
 		"cross-env": "6.0.3",
 		"eslint": "6.6.0",
 		"eslint-config-wordpress": "2.0.0",
