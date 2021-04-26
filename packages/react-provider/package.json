@@ -74,7 +74,7 @@
 		"eslint-plugin-react": "7.16.0",
 		"eslint-plugin-wordpress": "git://github.com/WordPress-Coding-Standards/eslint-plugin-wordpress.git",
 		"identity-obj-proxy": "3.0.0",
-		"jest": "24.9.0",
+		"jest": "26.0.0",
 		"jest-environment-enzyme": "7.1.1",
 		"jest-enzyme": "7.1.1",
 		"lerna": "3.18.4",
