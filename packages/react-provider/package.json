@@ -64,7 +64,7 @@
 		"babel-jest": "24.9.0",
 		"codecov": "3.6.1",
 		"cross-env": "6.0.3",
-		"debug": "4.1.1",
+		"debug": "4.3.4",
 		"enzyme": "3.10.0",
 		"enzyme-adapter-react-16": "1.14.0",
 		"eslint": "6.6.0",
