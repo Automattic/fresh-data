@@ -81,7 +81,7 @@
 		"lodash": "4.17.15",
 		"react": "16.11.0",
 		"react-dom": "16.11.0",
-		"react-redux": "7.1.1",
+		"react-redux": "7.2.8",
 		"redux": "4.0.4",
 		"rimraf": "3.0.0",
 		"rollup": "1.27.0",
