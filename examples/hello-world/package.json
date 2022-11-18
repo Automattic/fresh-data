@@ -10,7 +10,7 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "react-scripts": "^3.0.0"
+    "react-scripts": "^5.0.1"
   },
   "dependencies": {
     "@fresh-data/framework": "^0.7.0",
