@@ -25,7 +25,11 @@ export default class ResourceRequest {
 	 * @param {Object} data Data to be sent for the operation
 	 * @param {Date} now The current time
 	 */
-	constructor( requirement, resourceState, resourceName, operation, data, now = new Date() ) {
+	constructor( requirement, resourceState, resourceName, operation, data, now = data instanceof Date ? data : new Date() ) {
+		if ( data instanceof Date ) {
+			data = undefined;
+		}
+
 		this.debug = debugFactory( 'fresh-data:request(' + resourceName + ' ' + operation + ')' );
 		this.resourceName = resourceName;
 		this.operation = operation;

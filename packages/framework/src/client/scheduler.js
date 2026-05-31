@@ -82,7 +82,7 @@ export default class Scheduler {
 			if ( STATUS.overdue === status ) {
 				delay = 0;
 			} else if ( STATUS.scheduled === status ) {
-				delay = Math.min( delay || Number.MAX_VALUE, request.getTimeLeft() );
+				delay = Math.min( delay || Number.MAX_VALUE, request.getTimeLeft( now ) );
 				delay = Math.max( delay, 0 ); // Ensure we never send a negative delay
 			}
 		} );
@@ -150,8 +150,12 @@ export default class Scheduler {
 		resourceName,
 		operation,
 		data = undefined,
-		now = new Date()
+		now = data instanceof Date ? data : new Date()
 	) => {
+		if ( data instanceof Date ) {
+			data = undefined;
+		}
+
 		const identicalInFlightRequest = find(
 			this.getInFlightRequests( resourceName, operation, now ),
 			( request ) => {
