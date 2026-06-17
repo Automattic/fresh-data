@@ -8,14 +8,14 @@ describe( 'ApiClient', () => {
 	const emptyApiSpec = {};
 
 	const thingSelectors = {
-		getThing: ( getResource, requireResource ) => ( requirement, id ) => {
+		getThing: ( getResource ) => ( requirement, id ) => {
 			const resourceName = `thing:${ id }`;
-			requireResource( requirement, resourceName );
+			getResource( resourceName, requirement );
 			return getResource( resourceName ).data;
 		},
-		getThingPage: ( getResource, requireResource ) => ( requirement, page, perPage ) => {
+		getThingPage: ( getResource ) => ( requirement, page, perPage ) => {
 			const resourceName = `thing-page:{page:${ page },perPage:${ perPage }}`;
-			requireResource( requirement, resourceName );
+			getResource( resourceName, requirement );
 			return getResource( resourceName ).data;
 		},
 	};
@@ -104,9 +104,9 @@ describe( 'ApiClient', () => {
 		expect( write ).not.toHaveBeenCalled();
 	} );
 
-	it( 'should map selectors to getResource and requireResource', () => {
-		const getThing = ( getResource, requireResource ) => ( thingName1, thingName2 ) => {
-			const resource1 = requireResource( { freshness: 30 * SECOND }, thingName1, now );
+	it( 'should map selectors to getResource', () => {
+		const getThing = ( getResource ) => ( thingName1, thingName2 ) => {
+			const resource1 = getResource( thingName1, { freshness: 30 * SECOND }, now );
 			const resource2 = getResource( thingName2 );
 			return { [ thingName1 ]: resource1, [ thingName2 ]: resource2 };
 		};
@@ -225,26 +225,13 @@ describe( 'ApiClient', () => {
 			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
 			expect( apiClient.getResource( 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
 		} );
-	} );
-
-	describe( '#requireResource', () => {
-		it( 'should return an empty object if the resource does not yet exist.', () => {
-			const apiClient = new ApiClient( emptyApiSpec, null );
-			expect( apiClient.requireResource( {}, 'nonexistentResource:1' ) ).toEqual( {} );
-		} );
-
-		it( 'should return resource state just like getResource.', () => {
-			const apiClient = new ApiClient( emptyApiSpec, null );
-			apiClient.setState( { resources: { 'thing:1': { lastRequested: now, data: { foot: 'red' } } } } );
-			expect( apiClient.requireResource( {}, 'thing:1' ) ).toEqual( { lastRequested: now, data: { foot: 'red' } } );
-		} );
 
 		it( 'should schedule a request for a resource that does not yet exist.', () => {
 			const apiClient = new ApiClient( emptyApiSpec, null );
 			apiClient.scheduler.scheduleRequest = jest.fn();
 			apiClient.setState( {} );
 
-			apiClient.requireResource( {}, 'thing:1', now );
+			apiClient.getResource( 'thing:1', {}, now );
 
 			expect( apiClient.scheduler.scheduleRequest ).toHaveBeenCalledTimes( 1 );
 			expect( apiClient.scheduler.scheduleRequest ).toHaveBeenCalledWith( {}, {}, 'thing:1', 'read', undefined, now );
@@ -257,7 +244,7 @@ describe( 'ApiClient', () => {
 
 			const requirement = { freshness: 5 * SECOND };
 
-			apiClient.requireResource( requirement, 'thing:1', now );
+			apiClient.getResource( 'thing:1', requirement, now );
 
 			expect( apiClient.scheduler.scheduleRequest ).toHaveBeenCalledTimes( 1 );
 			expect( apiClient.scheduler.scheduleRequest ).toHaveBeenCalledWith( requirement, { lastReceived: 2 * SECOND }, 'thing:1', 'read', undefined, now );
